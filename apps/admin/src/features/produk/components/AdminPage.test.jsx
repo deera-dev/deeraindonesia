@@ -46,6 +46,11 @@ vi.mock("@deera/shared/features/auth/hooks", () => ({
   useAuth: () => authState,
 }));
 
+const useKeepQtyByKodeMock = vi.fn(() => ({}));
+vi.mock("@deera/shared/features/keep/hooks", () => ({
+  useKeepQtyByKode: (...a) => useKeepQtyByKodeMock(...a),
+}));
+
 vi.mock("@deera/shared/components/BackToTop", () => ({
   default: () => <div data-testid="back-to-top" />,
 }));
@@ -359,12 +364,28 @@ describe("AdminPage", () => {
     });
   });
 
-  it("klik Keluar memanggil signOut & navigate ke /login", async () => {
+  it("klik Keluar membuka dialog konfirmasi, belum langsung signOut", () => {
+    renderPage();
+    fireEvent.click(screen.getByText("Keluar"));
+    expect(screen.getByText("Keluar dari Akun?")).toBeInTheDocument();
+    expect(signOutMock).not.toHaveBeenCalled();
+  });
+
+  it("klik Keluar lalu konfirmasi 'Ya, Keluar' memanggil signOut & navigate ke /login", async () => {
     signOutMock.mockResolvedValue(undefined);
     renderPage();
     fireEvent.click(screen.getByText("Keluar"));
+    fireEvent.click(screen.getByText("Ya, Keluar"));
     await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("/login", { replace: true }));
     expect(signOutMock).toHaveBeenCalled();
+  });
+
+  it("klik Keluar lalu Batal tidak memanggil signOut", () => {
+    renderPage();
+    fireEvent.click(screen.getByText("Keluar"));
+    fireEvent.click(screen.getByText("Batal"));
+    expect(screen.queryByText("Keluar dari Akun?")).not.toBeInTheDocument();
+    expect(signOutMock).not.toHaveBeenCalled();
   });
 
   it("subscribe ke channel realtime 'admin-transfer-notif' saat mount", () => {
@@ -461,11 +482,11 @@ describe("AdminPage", () => {
   });
 
   describe("ProductCard stok prop", () => {
-    it("stok fallback ke default { gudang:0, cideng:0, tegalgubug:0 } saat kode tidak ada di stokMap", () => {
+    it("stok fallback ke default { gudang:0, cideng:0, tegalgubug:0, ngorder:0 } saat kode tidak ada di stokMap", () => {
       useProductsMock.mockReturnValue({ products: PRODUCTS, loading: false, error: null });
       renderPage();
       const stokD02 = JSON.parse(screen.getByTestId("stok-D-02-OSK").textContent);
-      expect(stokD02).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0 });
+      expect(stokD02).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 });
     });
   });
 

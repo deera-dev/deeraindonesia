@@ -1,44 +1,54 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  createSupabaseMock,
-  makeBuilder,
-  resetSupabaseMock,
-} from "../../../../../test/helpers/supabaseMock";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createSupabaseMock, makeBuilder, resetSupabaseMock } from "../../../../../test/helpers/supabaseMock";
 
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
 
 const { fetchBukuPotonganData, upsertExpectedStok } = await import("./api");
 
-beforeEach(() => {
-  resetSupabaseMock(supabaseMock);
-});
+beforeEach(() => { resetSupabaseMock(supabaseMock); });
 
 describe("fetchBukuPotonganData", () => {
-  function mockAllSources(stokData, expData, expError = null, soldData = {}, soldError = null) {
+  function mockAllSources(
+    stokData,
+    expData,
+    expError = null,
+    soldData = {},
+    soldError = null,
+    dikirimData = {},
+    dikirimError = null,
+  ) {
     supabaseMock.from.mockImplementation((table) => {
       if (table === "stok_warna") return makeBuilder({ data: stokData, error: null });
       if (table === "expected_stok") return makeBuilder({ data: expData, error: expError });
       return makeBuilder({ data: null, error: null });
     });
-    supabaseMock.rpc.mockResolvedValue({ data: soldData, error: soldError });
+    supabaseMock.rpc.mockImplementation((name) => {
+      if (name === "get_keep_terkirim_summary_by_variant") {
+        return Promise.resolve({ data: dikirimData, error: dikirimError });
+      }
+      return Promise.resolve({ data: soldData, error: soldError });
+    });
   }
 
-  it("mengembalikan stokRows, expectedRows, soldMap, tableError=false saat semua sukses", async () => {
-    const stokRows = [
-      { kode: "D-01", size: "Midi", warna: "_", gudang: 5, cideng: 2, tegalgubug: 1 },
-    ];
+  it("mengembalikan stokRows, expectedRows, soldMap, dikirimMap, tableError=false saat semua sukses", async () => {
+    const stokRows = [{ kode: "D-01", size: "Midi", warna: "_", gudang: 5, cideng: 2, tegalgubug: 1 }];
     const expRows = [{ kode: "D-01", size: "Midi", warna: "_", expected_qty: 10 }];
     const soldMap = { "D-01": { Midi: { _: 4 } } };
-    mockAllSources(stokRows, expRows, null, soldMap);
+    // Dikirim (keep terkirim) DIPISAH dari soldMap — sumber RPC beda, jadi
+    // dipastikan tidak ketuker/ketimpa satu sama lain.
+    const dikirimMap = { "D-01": { Midi: { _: 2 } } };
+    mockAllSources(stokRows, expRows, null, soldMap, null, dikirimMap);
 
     const result = await fetchBukuPotonganData();
 
     expect(result.stokRows).toBe(stokRows);
     expect(result.expectedRows).toBe(expRows);
     expect(result.soldMap).toBe(soldMap);
+    expect(result.dikirimMap).toBe(dikirimMap);
     expect(result.tableError).toBe(false);
     expect(supabaseMock.rpc).toHaveBeenCalledWith("get_sold_summary_by_variant");
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_keep_terkirim_summary_by_variant");
   });
 
   it("tableError=true saat expected_stok mengembalikan error code 42P01 (tabel belum ada)", async () => {
@@ -51,14 +61,15 @@ describe("fetchBukuPotonganData", () => {
     expect(result.expectedRows).toEqual([]);
   });
 
-  it("data null → stokRows & expectedRows fallback ke [], soldMap fallback ke {}", async () => {
-    mockAllSources(null, null, null, null);
+  it("data null → stokRows & expectedRows fallback ke [], soldMap & dikirimMap fallback ke {}", async () => {
+    mockAllSources(null, null, null, null, null, null);
 
     const result = await fetchBukuPotonganData();
 
     expect(result.stokRows).toEqual([]);
     expect(result.expectedRows).toEqual([]);
     expect(result.soldMap).toEqual({});
+    expect(result.dikirimMap).toEqual({});
     expect(result.tableError).toBe(false);
   });
 
@@ -68,6 +79,14 @@ describe("fetchBukuPotonganData", () => {
     const result = await fetchBukuPotonganData();
 
     expect(result.soldMap).toEqual({});
+  });
+
+  it("RPC get_keep_terkirim_summary_by_variant gagal → dikirimMap fallback ke {} (tidak melempar error)", async () => {
+    mockAllSources([{ kode: "D-01" }], [{ kode: "D-01" }], null, {}, null, null, new Error("rpc fail"));
+
+    const result = await fetchBukuPotonganData();
+
+    expect(result.dikirimMap).toEqual({});
   });
 });
 
@@ -81,10 +100,8 @@ describe("upsertExpectedStok", () => {
 
     expect(supabaseMock.from).toHaveBeenCalledWith("expected_stok");
     expect(upsertBuilder.upsert).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ kode: "D-01", expected_qty: 10, updated_at: expect.any(String) }),
-      ]),
-      { onConflict: "kode,size,warna" },
+      expect.arrayContaining([expect.objectContaining({ kode: "D-01", expected_qty: 10, updated_at: expect.any(String) })]),
+      { onConflict: "kode,size,warna" }
     );
     expect(result[0].updated_at).toBeTypeOf("string");
   });
@@ -93,8 +110,6 @@ describe("upsertExpectedStok", () => {
     const errBuilder = makeBuilder({ data: null, error: new Error("upsert fail") });
     supabaseMock.from.mockReturnValue(errBuilder);
 
-    await expect(
-      upsertExpectedStok([{ kode: "X", size: "Midi", warna: "_", expected_qty: 0 }]),
-    ).rejects.toThrow("upsert fail");
+    await expect(upsertExpectedStok([{ kode: "X", size: "Midi", warna: "_", expected_qty: 0 }])).rejects.toThrow("upsert fail");
   });
 });

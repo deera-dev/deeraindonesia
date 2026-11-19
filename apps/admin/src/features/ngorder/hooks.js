@@ -1,58 +1,61 @@
-import { useAuth } from "@deera/shared/features/auth/hooks";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "@deera/shared/features/theme/hooks";
+import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { geocodeAddressMulti } from "@deera/shared/lib/geocode";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { mapStyles, tokoAutoGeocodeQueue, buildGeocodeQueries } from "./utils";
 import {
-  useAddRencanaMutation,
-  useMarkGeocodeFailedMutation,
-  useRemoveRencanaMutation,
   useRencanaQuery,
-  useSetTokoLocationMutation,
+  useAddRencanaMutation,
+  useRemoveRencanaMutation,
   useUpdateKunjunganMutation,
+  useSetTokoLocationMutation,
+  useMarkGeocodeFailedMutation,
 } from "./queries";
-import { clearLegacyRencana, readLegacyRencanaIds, usePetaFilterStore } from "./store";
-import { buildGeocodeQueries, mapStyles, tokoAutoGeocodeQueue } from "./utils";
+import { usePetaFilterStore, readLegacyRencanaIds, clearLegacyRencana } from "./store";
 
 export {
-  useCreateKirimanMutation,
+  useTokoListQuery,
   useCreateTokoMutation,
+  useUpdateTokoMutation,
   useDeleteTokoMutation,
+  useTokoItemsQuery,
+  useCreateKirimanMutation,
+  useUpdateItemStatusMutation,
+  useSetTokoLocationMutation,
   useKunjunganTokoQuery,
   useNgorderRealtime,
-  useSetTokoLocationMutation,
-  useTokoItemsQuery,
-  useTokoListQuery,
-  useUpdateItemStatusMutation,
-  useUpdateTokoMutation,
+  useResolveGoogleMapsLinkMutation,
 } from "./queries";
 export {
-  buildGeocodeQueries,
-  buildGeocodeQuery,
-  buildGmapsDirUrl,
-  buildGmapsPlaceUrl,
-  buildRencanaShareText,
-  buildTokoPayloadFromPlace,
-  clusterPoints,
+  summarizeTokoItems,
+  latestItemByKode,
+  STATUS_LABEL,
+  summarizeByDaerah,
   distinctDaerahList,
+  STATUS_APPROACH_LABEL,
+  KESAN_LABEL,
+  buildGeocodeQuery,
+  buildGeocodeQueries,
+  tokoWithLocation,
+  tokoNeedingGeocode,
+  tokoAutoGeocodeQueue,
   filterToko,
+  KUNJUNGAN_STATUS_LABEL,
+  sortRencana,
   fmtJarak,
+  summarizeRencana,
+  buildRencanaShareText,
+  buildGmapsDirUrl,
   guessDaerahFromAddress,
   isDuplicateToko,
-  KESAN_LABEL,
-  KUNJUNGAN_STATUS_LABEL,
-  latestItemByKode,
-  mapStyles,
+  buildTokoPayloadFromPlace,
+  clusterPoints,
   parseSosmed,
-  STATUS_APPROACH_LABEL,
-  STATUS_LABEL,
-  sortRencana,
-  summarizeByDaerah,
-  summarizeRencana,
-  summarizeTokoItems,
-  tokoAutoGeocodeQueue,
-  tokoNeedingGeocode,
-  tokoWithLocation,
+  buildGmapsPlaceUrl,
+  mapStyles,
+  isGoogleMapsLink,
+  parseGoogleMapsUrlLocal,
 } from "./utils";
 
 export function useCurrentActor() {
@@ -90,11 +93,7 @@ export function usePetaRencana() {
     toggle,
     addMany: (tokoIds) => add.mutate({ tokoIds, user: actor }, { onError: showError }),
     remove: (row) => remove.mutate([row], { onError: showError }),
-    clear: (list = rows) =>
-      remove.mutate(
-        list.filter((r) => !r.id?.startsWith("tmp-")),
-        { onError: showError },
-      ),
+    clear: (list = rows) => remove.mutate(list.filter((r) => !r.id?.startsWith("tmp-")), { onError: showError }),
     updateKunjungan: (row, patch) => update.mutateAsync({ row, patch, user: actor }),
     isUpdating: update.isPending,
   };
@@ -121,9 +120,7 @@ export function useMigrateLegacyRencana(tokoList, rencana) {
       {
         onSuccess: () => {
           clearLegacyRencana();
-          toast.success(
-            `${ids.length} toko dari rencana lama di perangkat ini dipindahkan ke rencana bersama.`,
-          );
+          toast.success(`${ids.length} toko dari rencana lama di perangkat ini dipindahkan ke rencana bersama.`);
         },
         onError: showError,
       },
@@ -160,12 +157,7 @@ export function useAutoGeocodeToko(tokoList, enabled) {
         try {
           const loc = await geocodeAddressMulti(buildGeocodeQueries(t));
           if (loc) {
-            await latestRef.current.setLocation.mutateAsync({
-              id: t.id,
-              lat: loc.lat,
-              lng: loc.lng,
-              source: "auto",
-            });
+            await latestRef.current.setLocation.mutateAsync({ id: t.id, lat: loc.lat, lng: loc.lng, source: "auto" });
             ok++;
           } else {
             await latestRef.current.markFailed.mutateAsync(t.id);

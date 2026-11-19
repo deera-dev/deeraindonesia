@@ -1,3 +1,4 @@
+
 export const fmtDate = (d) =>
   d
     ? new Date(d + "T00:00:00").toLocaleDateString("id-ID", {
@@ -66,6 +67,7 @@ export function buildNomor() {
   return `SPL-${ymd}-${rand}`;
 }
 
+
 export function sortPlanningQueue(sampels) {
   return (sampels ?? [])
     .filter((s) => s.status === "planning")
@@ -97,9 +99,6 @@ export function sortWithPinnedFirst(sampels) {
   });
 }
 
-export function canDeleteComment(comment, currentUserEmail) {
-  return !!comment?.user_email && !!currentUserEmail && comment.user_email === currentUserEmail;
-}
 
 export function formatDisplayName(nameOrEmail) {
   if (!nameOrEmail) return "";
@@ -111,53 +110,10 @@ export function formatDisplayName(nameOrEmail) {
     .join(" ");
 }
 
-export const ALL_MENTION = { id: "__all__", email: "*", full_name: "All" };
-
-export function buildMentionProfiles(profiles) {
-  return [
-    ALL_MENTION,
-    ...(profiles ?? []).map((p) => ({
-      ...p,
-      full_name: formatDisplayName(p.full_name) || p.email,
-    })),
-  ];
-}
-
-export function splitMentionSegments(text, profiles) {
-  if (!text) return [];
-  const names = (profiles ?? [])
-    .map((p) => p.full_name)
-    .filter(Boolean)
-    .sort((a, b) => b.length - a.length);
-  if (names.length === 0) return [{ text, isMention: false }];
-
-  const escaped = names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const pattern = new RegExp(`@(${escaped.join("|")})\\b`, "gi");
-  const segments = [];
-  let lastIndex = 0;
-  let match;
-  while ((match = pattern.exec(text)) !== null) {
-    if (match.index > lastIndex)
-      segments.push({ text: text.slice(lastIndex, match.index), isMention: false });
-    segments.push({ text: match[0], isMention: true });
-    lastIndex = match.index + match[0].length;
-  }
-  if (lastIndex < text.length) segments.push({ text: text.slice(lastIndex), isMention: false });
-  return segments;
-}
-
-export function buildReadByNames(reads, atOrAfter, excludeEmails) {
-  if (!atOrAfter) return [];
-  const excluded = Array.isArray(excludeEmails) ? excludeEmails : [excludeEmails];
-  return (reads ?? [])
-    .filter((r) => !excluded.includes(r.user_email) && r.last_read_at >= atOrAfter)
-    .map((r) => formatDisplayName(r.user_name || r.user_email));
-}
-
-export function buildTimeline(history, comments) {
-  const historyItems = (history ?? []).map((h) => ({ type: "history", at: h.changed_at, raw: h }));
-  const commentItems = (comments ?? []).map((c) => ({ type: "comment", at: c.created_at, raw: c }));
-  return [...historyItems, ...commentItems].sort((a, b) => (a.at ?? "").localeCompare(b.at ?? ""));
+export function buildTimeline(history) {
+  return (history ?? [])
+    .map((h) => ({ type: "history", at: h.changed_at, raw: h }))
+    .sort((a, b) => (a.at ?? "").localeCompare(b.at ?? ""));
 }
 
 export const MAX_WO_REF_FOTOS = 6;
@@ -169,32 +125,24 @@ function toPointers(text) {
     .filter(Boolean);
 }
 
-export function listAllWoFotos(sampel, comments) {
+export function splitCatatanPoints(text) {
+  return String(text ?? "")
+    .split(/\r?\n|,/)
+    .map((l) => l.replace(/^\s*[-\u2022*\u00b7]+\s*/, "").trim())
+    .filter(Boolean);
+}
+
+export function listAllWoFotos(sampel) {
   const urls = [
     ...(sampel?.foto ?? []),
     ...(sampel?.model_foto ?? []),
     sampel?.bahan_foto,
     ...(sampel?.bahan_items ?? []).map((b) => b?.foto),
-    ...listCommentFotos(comments),
   ].filter(Boolean);
   return [...new Set(urls)];
 }
 
-export function listCommentFotos(comments, excludeUrls = []) {
-  const seen = [];
-  for (const c of comments ?? []) {
-    for (const url of [c.image_url, c.target_foto_url]) {
-      if (url && !excludeUrls.includes(url) && !seen.includes(url)) seen.push(url);
-    }
-  }
-  return seen;
-}
-
-export function buildWoNotes(
-  sampel,
-  comments,
-  { excludeUrls = [], selected = null, maxRefs = MAX_WO_REF_FOTOS } = {},
-) {
+export function buildWoNotes(sampel, { excludeUrls = [], selected = null, maxRefs = MAX_WO_REF_FOTOS } = {}) {
   const refFotos = [];
   const labelFor = (url) => {
     if (!url || excludeUrls.includes(url)) return null;
@@ -208,18 +156,6 @@ export function buildWoNotes(
   };
 
   const bullets = [...toPointers(sampel?.perubahan)];
-  for (const c of comments ?? []) {
-    const lines = toPointers(c.text);
-    const labels = [labelFor(c.image_url), labelFor(c.target_foto_url)].filter(Boolean);
-    const unique = [...new Set(labels)];
-    const ref = unique.length ? ` (lihat Foto ${unique.join(" & ")})` : "";
-    if (lines.length === 0) {
-      if (ref) bullets.push(`Lihat Foto ${unique.join(" & ")}`);
-      continue;
-    }
-    lines[lines.length - 1] += ref;
-    bullets.push(...lines);
-  }
   for (const url of selected ?? []) labelFor(url);
   return { text: bullets.map((b) => `- ${b}`).join("\n"), refFotos };
 }
@@ -241,19 +177,15 @@ export function buildRepeatPrefill(product) {
 }
 
 export function repeatFotoFor(sampel, products) {
-  const p = (products ?? []).find(
-    (x) => x.id === sampel?.repeat_dari_id || x.kode === sampel?.repeat_dari_kode,
-  );
+  const p = (products ?? []).find((x) => x.id === sampel?.repeat_dari_id || x.kode === sampel?.repeat_dari_kode);
   const foto = p ? productFotos(p) : [];
-  return foto.length ? foto : (sampel?.model_foto ?? []);
+  return foto.length ? foto : sampel?.model_foto ?? [];
 }
 
 export function buildPrintHtml(dataUrls) {
   const list = Array.isArray(dataUrls) ? dataUrls : [dataUrls];
   const imgs = list
-    .map(
-      (src, i) => `<img id="${i === 0 ? "wo" : "wo" + i}" src="${src}" alt="Work Order ${i + 1}">`,
-    )
+    .map((src, i) => `<img id="${i === 0 ? "wo" : "wo" + i}" src="${src}" alt="Work Order ${i + 1}">`)
     .join("");
   return (
     '<!doctype html><html><head><meta charset="utf-8"><title>Work Order</title>' +
@@ -327,6 +259,39 @@ export function filterByBahan(sampels = [], bahan = "") {
   return (sampels ?? []).filter((s) =>
     (s?.bahan_items ?? []).some((b) => (b?.nama_bahan ?? "").trim() === bahan),
   );
+}
+
+export const WO_ZONA = [
+  { key: "dada", label: "Dada" },
+  { key: "bawah", label: "Bawah" },
+  { key: "lengan", label: "Lengan" },
+  { key: "tangan_depan", label: "Manset" },
+  { key: "samping", label: "Samping" },
+  { key: "belakang", label: "Belakang" },
+  { key: "pundak", label: "Pundak" },
+];
+
+export const MOTIF_OPTIONS = [
+  { key: "motif", label: "Motif" },
+  { key: "polos", label: "Polos" },
+];
+
+export function emptyZonaCatatan() {
+  return Object.fromEntries(
+    WO_ZONA.map((z) => [z.key, { catatan: "", crop: null, motif: null, aktif: true }]),
+  );
+}
+
+export function isZonaAktif(entry) {
+  return entry?.aktif !== false;
+}
+
+export function zonaHasContent(zona) {
+  return WO_ZONA.some((z) => {
+    const entry = zona?.[z.key];
+    if (!isZonaAktif(entry)) return false;
+    return !!entry?.catatan?.trim() || !!entry?.crop || !!entry?.motif;
+  });
 }
 
 export function photoGridDims(n) {

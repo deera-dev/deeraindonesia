@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
 import React from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
 import { createWrapper } from "../../../test/utils";
 
 vi.mock("./shared/components/ProtectedRoute", () => ({
@@ -27,6 +27,7 @@ vi.mock("./features/produksi-sampel", () => ({
 vi.mock("./features/produksi-jahit", () => ({
   ProduksiJahitPage: () => <div>ProduksiJahitPage</div>,
 }));
+vi.mock("./features/cmt", () => ({ CmtPage: () => <div>CmtPage</div> }));
 vi.mock("./features/analytics", () => ({ AnalyticsPage: () => <div>AnalyticsPage</div> }));
 vi.mock("./features/pasar-restock", () => ({
   PasarRestockPage: () => <div>PasarRestockPage</div>,
@@ -118,6 +119,11 @@ describe("App routing", () => {
   it("renders ProduksiJahitPage at /produksi/jahit", () => {
     renderAtPath("/produksi/jahit");
     expect(screen.getByText("ProduksiJahitPage")).toBeInTheDocument();
+  });
+
+  it("renders CmtPage at /produksi/cmt", () => {
+    renderAtPath("/produksi/cmt");
+    expect(screen.getByText("CmtPage")).toBeInTheDocument();
   });
 
   it("redirects unknown routes to /", () => {

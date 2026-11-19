@@ -1,36 +1,41 @@
-import { describe, expect, it } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
-  applyOverflowPlan,
-  buildChanged,
   buildOverflowChanges,
-  bukuCompare,
-  bukuKey,
-  bukuRow,
-  bukuSummary,
-  computeSizeCount,
-  dikerjakanKey,
-  fillMissingStokRows,
-  isSyntheticStokId,
-  kodeNum,
+  applyOverflowPlan,
   LOCS,
-  parseCount,
-  parseSyntheticStokId,
+  SIZE_ORDER,
+  sortRows,
+  kodeNum,
+  sortProductsTerbaru,
+  SIZE_COLORS,
+  dikerjakanKey,
+  syntheticStokId,
+  isSyntheticStokId,
   pendingPlaceholderRow,
-  pendingWarnaPcs,
+  parseCount,
+  computeSizeCount,
+  buildChanged,
   productLocTotal,
   productStatus,
-  SIZE_COLORS,
-  SIZE_ORDER,
-  sortProductsTerbaru,
-  sortRows,
+  bukuCompare,
   stokAllTotal,
-  syntheticStokId,
+  pendingWarnaPcs,
+  bukuRow,
+  bukuSummary,
+  bukuKey,
+  parseSyntheticStokId,
+  fillMissingStokRows,
+  bukuSeharusnyaForLoc,
+  ALL_LOC,
 } from "./utils";
 
 describe("LOCS", () => {
-  it("memiliki 3 entri: gudang, cideng, tegalgubug", () => {
-    expect(LOCS).toHaveLength(3);
-    expect(LOCS.map((l) => l.key)).toEqual(["gudang", "cideng", "tegalgubug"]);
+  // Ngorder = stok tersendiri (dibawa keliling toko), diisi langsung sama
+  // seperti Gudang — lihat previewOverflow/handleSubmit di StokOpnamePage.jsx
+  // (tidak pernah auto-ambil dari lokasi lain utk ngorder).
+  it("memiliki 4 entri: gudang, cideng, tegalgubug, ngorder", () => {
+    expect(LOCS).toHaveLength(4);
+    expect(LOCS.map((l) => l.key)).toEqual(["gudang", "cideng", "tegalgubug", "ngorder"]);
   });
 });
 
@@ -58,20 +63,14 @@ describe("sortRows", () => {
   });
 
   it("tidak memutasi array asli", () => {
-    const rows = [
-      { size: "Gamis", warna: "A" },
-      { size: "Midi", warna: "B" },
-    ];
+    const rows = [{ size: "Gamis", warna: "A" }, { size: "Midi", warna: "B" }];
     const original = [...rows];
     sortRows(rows);
     expect(rows).toEqual(original);
   });
 
   it("size tidak dikenal mendapat order 99 (ditaruh paling akhir)", () => {
-    const rows = [
-      { size: "Unknown", warna: "A" },
-      { size: "Midi", warna: "B" },
-    ];
+    const rows = [{ size: "Unknown", warna: "A" }, { size: "Midi", warna: "B" }];
     const sorted = sortRows(rows);
     expect(sorted[0].size).toBe("Midi");
     expect(sorted[1].size).toBe("Unknown");
@@ -152,6 +151,7 @@ describe("dikerjakanKey", () => {
   });
 });
 
+
 describe("syntheticStokId / isSyntheticStokId / parseSyntheticStokId", () => {
   it("membuat id sintetik yang bisa dideteksi & di-decode balik", () => {
     const id = syntheticStokId("D-33-POL", "Midi", "_");
@@ -189,24 +189,11 @@ describe("fillMissingStokRows", () => {
   });
 
   it("hanya mengisi kombinasi yang BELUM ada, baris nyata tidak diduplikasi", () => {
-    const existing = [
-      {
-        id: "real-1",
-        kode: "D-33-POL",
-        size: "Midi",
-        warna: "HITAM",
-        gudang: 5,
-        cideng: 0,
-        tegalgubug: 0,
-      },
-    ];
+    const existing = [{ id: "real-1", kode: "D-33-POL", size: "Midi", warna: "HITAM", gudang: 5, cideng: 0, tegalgubug: 0 }];
     const result = fillMissingStokRows(product, existing);
     expect(result).toHaveLength(4);
     expect(result.find((r) => r.id === "real-1")).toMatchObject({ gudang: 5 });
-    const placeholderKeys = result
-      .filter((r) => isSyntheticStokId(r.id))
-      .map((r) => `${r.size}__${r.warna}`)
-      .sort();
+    const placeholderKeys = result.filter((r) => isSyntheticStokId(r.id)).map((r) => `${r.size}__${r.warna}`).sort();
     expect(placeholderKeys).toEqual(["Gamis__HITAM", "Gamis__MERAH", "Midi__MERAH"]);
   });
 
@@ -289,16 +276,8 @@ describe("hitung per produk", () => {
   });
 
   it("produk tanpa warna: satu baris stok, tanpa sisa", () => {
-    const plain = [
-      { id: "x", kode: "K", size: "Midi", warna: "_", gudang: 4, cideng: 0, tegalgubug: 0 },
-    ];
-    const c = computeSizeCount({
-      kode: "K",
-      size: "Midi",
-      sizeRows: plain,
-      loc: "gudang",
-      entries: { x: "7" },
-    });
+    const plain = [{ id: "x", kode: "K", size: "Midi", warna: "_", gudang: 4, cideng: 0, tegalgubug: 0 }];
+    const c = computeSizeCount({ kode: "K", size: "Midi", sizeRows: plain, loc: "gudang", entries: { x: "7" } });
     expect(c.hasColors).toBe(false);
     expect(c.pending).toBeNull();
     expect(c.changes[0].next).toBe(7);
@@ -321,6 +300,24 @@ describe("hitung per produk", () => {
     expect(pendingWarnaPcs(rowsColored, "gudang")).toBe(6);
     expect(pendingWarnaPcs([rowsColored[2]], "gudang")).toBe(0);
   });
+
+  // Stok ngorder (dibawa keliling toko) tidak di-opname langsung, tapi
+  // tetap harus ikut dihitung di total "Semua" — kalau tidak, produk yang
+  // lagi dibawa ngorder kelihatan "kurang" padahal cuma lagi di luar.
+  it("stokAllTotal & productLocTotal(ALL_LOC) ikut menghitung ngorder", () => {
+    const rows = [
+      { kode: "K", size: "Midi", warna: "HITAM", gudang: 2, cideng: 1, tegalgubug: 0, ngorder: 3 },
+      { kode: "K", size: "Midi", warna: "MERAH", gudang: 1, cideng: 0, tegalgubug: 2, ngorder: 0 },
+    ];
+    expect(stokAllTotal(rows)).toBe(9);
+    expect(productLocTotal(rows, ALL_LOC.key)).toBe(9);
+  });
+
+  it("stokAllTotal & productLocTotal(ALL_LOC): baris tanpa field ngorder (lama) dianggap 0", () => {
+    const rows = [{ kode: "K", size: "Midi", warna: "HITAM", gudang: 2, cideng: 1, tegalgubug: 0 }];
+    expect(stokAllTotal(rows)).toBe(3);
+    expect(productLocTotal(rows, ALL_LOC.key)).toBe(3);
+  });
 });
 
 describe("buku potongan (data dari backend get_buku_potongan)", () => {
@@ -329,9 +326,7 @@ describe("buku potongan (data dari backend get_buku_potongan)", () => {
     sizes: { K__Midi: { expected: 13, sold: 13, seharusnya: 0 } },
     kodes: { K: { expected: 13, sold: 10, seharusnya: 3 } },
   };
-  const stokRows = [
-    { kode: "K", size: "Midi", warna: "HITAM", gudang: 2, cideng: 1, tegalgubug: 0 },
-  ];
+  const stokRows = [{ kode: "K", size: "Midi", warna: "HITAM", gudang: 2, cideng: 1, tegalgubug: 0 }];
 
   it("bukuRow / bukuSummary hanya mencari data", () => {
     expect(bukuRow(buku, "K", "Midi", "HITAM")).toEqual({ expected: 10, sold: 4, seharusnya: 6 });
@@ -346,5 +341,31 @@ describe("buku potongan (data dari backend get_buku_potongan)", () => {
     expect(bukuCompare(buku, "K", stokRows)).toEqual({ seharusnya: 3, stok: 3, selisih: 0 });
     expect(bukuCompare(buku, "K", stokRows, -1)).toEqual({ seharusnya: 3, stok: 2, selisih: -1 });
     expect(bukuCompare(buku, "X", stokRows)).toBeNull();
+  });
+
+  // Admin: "seharusnya itu kan untuk semua lokasi, agak bingung... bisa ga
+  // seharusnya ada di cideng sekian, tg sekian, gudang sekian" — entry.byLocation
+  // (dari migrasi buku_potongan_seharusnya_per_lokasi) dipakai utk pecah ini.
+  describe("bukuSeharusnyaForLoc", () => {
+    const entry = { seharusnya: 11, byLocation: { gudang: { seharusnya: 8 }, cideng: { seharusnya: 3 } } };
+
+    it("loc spesifik -> ambil dari byLocation, BUKAN totalan combined", () => {
+      expect(bukuSeharusnyaForLoc(entry, "gudang")).toBe(8);
+      expect(bukuSeharusnyaForLoc(entry, "cideng")).toBe(3);
+    });
+
+    it("loc ALL_LOC.key (atau tidak diisi) -> totalan combined (seharusnya), sama seperti sebelumnya", () => {
+      expect(bukuSeharusnyaForLoc(entry, ALL_LOC.key)).toBe(11);
+      expect(bukuSeharusnyaForLoc(entry, undefined)).toBe(11);
+    });
+
+    it("lokasi tidak ada di byLocation (mis. belum pernah ada transfer ke sana) -> 0", () => {
+      expect(bukuSeharusnyaForLoc(entry, "tegalgubug")).toBe(0);
+    });
+
+    it("entry null/undefined -> 0, tidak crash", () => {
+      expect(bukuSeharusnyaForLoc(null, "gudang")).toBe(0);
+      expect(bukuSeharusnyaForLoc(undefined, "gudang")).toBe(0);
+    });
   });
 });

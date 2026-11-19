@@ -179,27 +179,13 @@ export default function StrukContent({ sale }) {
 
       {isTukarTambah ? (
         <div style={{ margin: "8px 0" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: 15,
-              marginBottom: 4,
-            }}
-          >
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, marginBottom: 4 }}>
             <span>Subtotal</span>
             <span>Rp {formatHarga(sale.saleSubtotal ?? 0)}</span>
           </div>
           {discount > 0 && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: 15,
-                marginBottom: 4,
-              }}
-            >
-              <span>Diskon</span>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, marginBottom: 4 }}>
+              <span>Potong</span>
               <span>- Rp {formatHarga(discount)}</span>
             </div>
           )}
@@ -238,7 +224,7 @@ export default function StrukContent({ sale }) {
                 marginBottom: 4,
               }}
             >
-              <span>Diskon</span>
+              <span>Potong</span>
               <span>- Rp {formatHarga(discount)}</span>
             </div>
           </div>
@@ -256,7 +242,9 @@ export default function StrukContent({ sale }) {
           margin: "8px 0 12px",
         }}
       >
-        <span>{isRefundToBuyer ? "UANG KEMBALI" : isRetur ? "TOTAL RETUR" : "TOTAL"}</span>
+        <span>
+          {isRefundToBuyer ? "UANG KEMBALI" : isRetur ? "TOTAL RETUR" : "TOTAL"}
+        </span>
         <span>Rp {formatHarga(Math.abs(netTotal))}</span>
       </div>
 
@@ -278,6 +266,7 @@ export default function StrukContent({ sale }) {
               flex: 1,
               minWidth: 0,
               marginBottom: 7,
+              textAlign: "center",
               paddingLeft: i > 0 ? 12 : 0,
               borderLeft: i > 0 ? "1px dashed #000" : "none",
             }}

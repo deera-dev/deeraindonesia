@@ -235,10 +235,14 @@ export function useCreateSale() {
     buyerHp,
     pelangganId,
     location,
+    skipStockAdjustment = false,
+    stokAdjustments,
   }) {
     const now = new Date();
     const loc = location ?? getMarketLocation(now);
-    const adjs = await splitPendingAdjustments(buildAdjustments(items, loc, -1));
+    const adjs = skipStockAdjustment
+      ? (stokAdjustments ?? [])
+      : await splitPendingAdjustments(buildAdjustments(items, loc, -1));
 
     const sale = {
       date: localDateStr(now),
@@ -258,14 +262,14 @@ export function useCreateSale() {
     };
 
     const localId = await db.sales.add(sale);
-    await applyStokLocal(adjs);
+    if (!skipStockAdjustment) await applyStokLocal(adjs);
 
     if (navigator.onLine) {
       try {
         const { id: _lid, status, supabase_id: _sid, ...payload } = { ...sale, id: localId };
         const { data, error } = await supabase.from("sales").insert(payload).select("id").single();
         if (!error) {
-          await applyStokToSupabase(adjs);
+          if (!skipStockAdjustment) await applyStokToSupabase(adjs);
           await db.sales.update(localId, { status: "synced", supabase_id: data?.id ?? null });
 
           supabase.functions
@@ -278,6 +282,39 @@ export function useCreateSale() {
     }
 
     return localId;
+  };
+}
+
+// Dipakai khusus utk keep "terkirim": stok sudah dikurangi lebih dulu
+// (lihat useAdjustStokOnly), jadi createSale dipanggil dgn
+// skipStockAdjustment agar tidak dikurangi dobel; stok_adjustments yang
+// disimpan di sales tetap persis sama dgn yang diterapkan saat terkirim,
+// supaya retur nanti tetap mengembalikan ke lokasi yang benar.
+export function useAdjustStokOnly() {
+  return async function adjustStokOnly({ items, location, sign = -1 }) {
+    const adjs = await splitPendingAdjustments(buildAdjustments(items, location, sign));
+    if (adjs.length === 0) return adjs;
+    await applyStokLocal(adjs);
+    if (navigator.onLine) {
+      try {
+        await applyStokToSupabase(adjs);
+      } catch {}
+    }
+    return adjs;
+  };
+}
+
+export function useReverseStokAdjustments() {
+  return async function reverseStokAdjustments(stokAdjustments) {
+    const reversed = (stokAdjustments ?? []).map((a) => ({ ...a, delta: -a.delta }));
+    if (reversed.length === 0) return reversed;
+    await applyStokLocal(reversed);
+    if (navigator.onLine) {
+      try {
+        await applyStokToSupabase(reversed);
+      } catch {}
+    }
+    return reversed;
   };
 }
 

@@ -1,16 +1,12 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
 vi.mock("../../../shared/components/FinanceLayout", () => ({
   default: ({ children, title, headerAction }) => (
-    <div>
-      <h1>{title}</h1>
-      {headerAction}
-      {children}
-    </div>
+    <div><h1>{title}</h1>{headerAction}{children}</div>
   ),
 }));
 vi.mock("../../../shared/lib/format", () => ({
@@ -26,26 +22,14 @@ vi.mock("../components/PettycashForm", () => ({
   ),
 }));
 
+const CUR_MONTH = new Date().toISOString().slice(0, 7);
+
 const mockDelete = vi.fn().mockResolvedValue(undefined);
 vi.mock("../hooks", () => ({
   usePettycashAll: vi.fn(() => ({
     rows: [
-      {
-        id: "pc1",
-        tanggal: "2026-07-01",
-        jenis: "isi",
-        kategori: "ATK",
-        keterangan: "isi ulang",
-        jumlah: 300000,
-      },
-      {
-        id: "pc2",
-        tanggal: "2026-07-02",
-        jenis: "keluar",
-        kategori: "Operasional",
-        keterangan: "beli kertas",
-        jumlah: 50000,
-      },
+      { id: "pc1", tanggal: `${CUR_MONTH}-01`, jenis: "isi", kategori: "ATK", keterangan: "isi ulang", jumlah: 300000 },
+      { id: "pc2", tanggal: `${CUR_MONTH}-02`, jenis: "keluar", kategori: "Operasional", keterangan: "beli kertas", jumlah: 50000 },
     ],
     saldo: 250000,
     loading: false,
@@ -60,10 +44,7 @@ import PettycashPage from "./PettycashPage";
 beforeEach(() => {
   vi.clearAllMocks();
   mockDelete.mockResolvedValue(undefined);
-  vi.stubGlobal(
-    "confirm",
-    vi.fn(() => true),
-  );
+  vi.stubGlobal("confirm", vi.fn(() => true));
 });
 
 describe("PettycashPage", () => {
@@ -110,10 +91,7 @@ describe("PettycashPage", () => {
   });
 
   it("does not delete when confirm=false", async () => {
-    vi.stubGlobal(
-      "confirm",
-      vi.fn(() => false),
-    );
+    vi.stubGlobal("confirm", vi.fn(() => false));
     render(<PettycashPage />);
     fireEvent.click(screen.getAllByText("Hapus")[0]);
     expect(mockDelete).not.toHaveBeenCalled();
@@ -122,31 +100,24 @@ describe("PettycashPage", () => {
 
 describe("PettycashPage — additional branches", () => {
   it("shows loadError message", () => {
-    usePettycashAll.mockReturnValueOnce({
-      rows: [],
-      saldo: 0,
-      loading: false,
-      loadError: "DB error",
-    });
+    usePettycashAll.mockReturnValueOnce({ rows: [], saldo: 0, loading: false, loadError: "DB error" });
     render(<PettycashPage />);
     expect(screen.getByText(/Gagal memuat/)).toBeInTheDocument();
   });
 
   it("negative saldo uses red class (renders without crash)", () => {
     usePettycashAll.mockReturnValueOnce({
-      rows: [],
-      saldo: -50000,
-      loading: false,
-      loadError: null,
+      rows: [], saldo: -50000, loading: false, loadError: null,
     });
     render(<PettycashPage />);
     expect(screen.getByText("Rp-50000")).toBeInTheDocument();
   });
 
-  it("filterBulan onChange updates filter", () => {
+  it("filterBulan onChange updates filter saat filterJenis bukan 'semua'", () => {
     render(<PettycashPage />);
+    fireEvent.click(screen.getByText("↓ Isi Ulang"));
     const monthInput = document.querySelector('input[type="month"]');
-    fireEvent.change(monthInput, { target: { value: "2026-06" } });
+    fireEvent.change(monthInput, { target: { value: "2020-01" } });
     expect(screen.queryByText("isi ulang")).toBeNull();
   });
 
@@ -166,19 +137,8 @@ describe("PettycashPage — additional branches", () => {
 
   it("keterangan=null shows dash", () => {
     usePettycashAll.mockReturnValueOnce({
-      rows: [
-        {
-          id: "pc3",
-          tanggal: "2026-07-03",
-          jenis: "isi",
-          kategori: "ATK",
-          keterangan: null,
-          jumlah: 10000,
-        },
-      ],
-      saldo: 10000,
-      loading: false,
-      loadError: null,
+      rows: [{ id: "pc3", tanggal: "2026-07-03", jenis: "isi", kategori: "ATK", keterangan: null, jumlah: 10000 }],
+      saldo: 10000, loading: false, loadError: null,
     });
     render(<PettycashPage />);
     expect(screen.getByText("—")).toBeInTheDocument();
@@ -217,26 +177,10 @@ describe("PettycashPage — periodeIsi/keluar || 0 branch", () => {
   it("covers || 0 fallback in reduce when jumlah=0", () => {
     usePettycashAll.mockReturnValueOnce({
       rows: [
-        {
-          id: "pc5",
-          tanggal: "2026-07-05",
-          jenis: "isi",
-          kategori: "ATK",
-          keterangan: null,
-          jumlah: 0,
-        },
-        {
-          id: "pc6",
-          tanggal: "2026-07-06",
-          jenis: "keluar",
-          kategori: "Ops",
-          keterangan: null,
-          jumlah: 0,
-        },
+        { id: "pc5", tanggal: "2026-07-05", jenis: "isi",    kategori: "ATK", keterangan: null, jumlah: 0 },
+        { id: "pc6", tanggal: "2026-07-06", jenis: "keluar", kategori: "Ops", keterangan: null, jumlah: 0 },
       ],
-      saldo: 0,
-      loading: false,
-      loadError: null,
+      saldo: 0, loading: false, loadError: null,
     });
     render(<PettycashPage />);
     expect(screen.getAllByText("Rp0").length).toBeGreaterThan(0);
@@ -251,6 +195,41 @@ describe("PettycashPage — Semua filter reset", () => {
     fireEvent.click(screen.getByText("Semua"));
     expect(screen.getByText("beli kertas")).toBeInTheDocument();
     expect(screen.getByText("isi ulang")).toBeInTheDocument();
+  });
+});
+
+describe("PettycashPage — 'Semua' tidak lagi terikat bulan (Denny 2026-11-04: 'ga ngaruh perbulan lagi, tapi keseluruhan full')", () => {
+  it("filter Semua tetap tampilkan transaksi dari bulan lain (ganti filterBulan tidak ngaruh)", () => {
+    render(<PettycashPage />);
+    const monthInput = document.querySelector('input[type="month"]');
+    fireEvent.change(monthInput, { target: { value: "2020-01" } });
+    expect(screen.getByText("isi ulang")).toBeInTheDocument();
+    expect(screen.getByText("beli kertas")).toBeInTheDocument();
+  });
+
+  it("input bulan disabled saat filter Semua aktif", () => {
+    render(<PettycashPage />);
+    const monthInput = document.querySelector('input[type="month"]');
+    expect(monthInput).toBeDisabled();
+  });
+
+  it("input bulan aktif lagi begitu pindah ke Isi Ulang/Pengeluaran", () => {
+    render(<PettycashPage />);
+    fireEvent.click(screen.getByText("↓ Isi Ulang"));
+    const monthInput = document.querySelector('input[type="month"]');
+    expect(monthInput).not.toBeDisabled();
+  });
+
+  it("label ringkasan berubah jadi 'semua periode' saat filter Semua aktif", () => {
+    render(<PettycashPage />);
+    expect(screen.getByText(/Isi Ulang \(semua periode\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Pengeluaran \(semua periode\)/)).toBeInTheDocument();
+  });
+
+  it("label ringkasan balik jadi 'periode ini' saat filter bukan Semua", () => {
+    render(<PettycashPage />);
+    fireEvent.click(screen.getByText("↓ Isi Ulang"));
+    expect(screen.getByText(/Isi Ulang \(periode ini\)/)).toBeInTheDocument();
   });
 });
 

@@ -1,7 +1,7 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { describe, it, expect, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./api", () => ({
   fetchGajianList: vi.fn().mockResolvedValue([{ id: "g1" }]),
@@ -32,6 +32,8 @@ vi.mock("./api", () => ({
   fetchCmt: vi.fn().mockResolvedValue([]),
   saveCmt: vi.fn().mockResolvedValue(undefined),
   deleteCmt: vi.fn().mockResolvedValue(undefined),
+  fetchPendingCmtSetoran: vi.fn().mockResolvedValue({ jahitRows: [], fullRows: [] }),
+  syncPendingCmtIntoGajian: vi.fn().mockResolvedValue("gc1"),
   fetchProdukList: vi.fn().mockResolvedValue([]),
   fetchUpahJahitByKode: vi.fn().mockResolvedValue({ "D-01-OSK": 27000 }),
   fetchUpahJahitHistoryByKode: vi.fn().mockResolvedValue({ "D-01-OSK": 25000 }),
@@ -41,6 +43,7 @@ vi.mock("./api", () => ({
   fetchJahitForRincian: vi.fn().mockResolvedValue([]),
   fetchQCForRincian: vi.fn().mockResolvedValue([]),
   fetchKreatifForRincian: vi.fn().mockResolvedValue([]),
+  fetchFinishingForRincian: vi.fn().mockResolvedValue([]),
   loadFinishingReconciliation: vi.fn().mockResolvedValue({}),
   applyFinishingStockIntake: vi.fn().mockResolvedValue(undefined),
   syncJahitCardsFromGajian: vi.fn().mockResolvedValue({ updatedCards: 0, kodeSynced: [] }),
@@ -49,45 +52,48 @@ vi.mock("./api", () => ({
 
 import {
   gajianKeys,
-  useApplyFinishingStockIntakeMutation,
-  useCmtQuery,
-  useCreateGajianPeriodeMutation,
-  useDeleteCmtMutation,
-  useDeleteFinishingMutation,
-  useDeleteGajianPeriodeMutation,
-  useDeleteJahitMutation,
-  useDeleteKreatifMutation,
-  useDeletePotongMutation,
-  useDeleteQCMutation,
-  useFinalizeGajianMutation,
-  useFinishingQuery,
-  useGajianDetailQuery,
   useGajianListQuery,
-  useGajianTotalsQuery,
-  useJahitForRincianQuery,
-  useJahitQuery,
-  useKancingHppMapQuery,
-  useKaryawanIdsInGajianQuery,
-  useKreatifForRincianQuery,
-  useKreatifQuery,
-  useLoadFinishingReconciliationMutation,
-  usePotongForRincianQuery,
-  usePotongQuery,
-  useProdukListQuery,
-  useProduksiTotalMapQuery,
-  useQCForRincianQuery,
-  useQCQuery,
-  useSaveCmtMutation,
-  useSaveFinishingMutation,
+  useGajianDetailQuery,
+  useCreateGajianPeriodeMutation,
+  useDeleteGajianPeriodeMutation,
   useSaveGajianRequestMutation,
-  useSaveJahitMutation,
-  useSaveKreatifMutation,
+  useFinalizeGajianMutation,
+  useGajianTotalsQuery,
+  useKaryawanIdsInGajianQuery,
+  usePotongQuery,
   useSavePotongMutation,
+  useDeletePotongMutation,
+  useJahitQuery,
+  useSaveJahitMutation,
+  useDeleteJahitMutation,
+  useFinishingQuery,
+  useSaveFinishingMutation,
+  useDeleteFinishingMutation,
+  useQCQuery,
   useSaveQCMutation,
+  useDeleteQCMutation,
+  useKreatifQuery,
+  useSaveKreatifMutation,
+  useDeleteKreatifMutation,
+  useCmtQuery,
+  useSaveCmtMutation,
+  useDeleteCmtMutation,
+  usePendingCmtSetoranQuery,
+  useSyncPendingCmtIntoGajianMutation,
+  usePotongForRincianQuery,
+  useJahitForRincianQuery,
+  useQCForRincianQuery,
+  useKreatifForRincianQuery,
+  useFinishingForRincianQuery,
+  useProdukListQuery,
+  useUpahJahitMapQuery,
+  useUpahJahitHistoryMapQuery,
+  useProduksiTotalMapQuery,
+  useKancingHppMapQuery,
+  useLoadFinishingReconciliationMutation,
+  useApplyFinishingStockIntakeMutation,
   useSyncJahitCardsFromGajianMutation,
   useSyncKancingHppFromFinishingMutation,
-  useUpahJahitHistoryMapQuery,
-  useUpahJahitMapQuery,
 } from "./queries";
 
 function wrapper() {
@@ -110,11 +116,13 @@ describe("gajianKeys", () => {
     expect(Array.isArray(gajianKeys.qc("g1"))).toBe(true);
     expect(Array.isArray(gajianKeys.kreatif("g1"))).toBe(true);
     expect(Array.isArray(gajianKeys.cmt("g1"))).toBe(true);
+    expect(Array.isArray(gajianKeys.pendingCmtSetoran())).toBe(true);
     expect(Array.isArray(gajianKeys.produk())).toBe(true);
     expect(Array.isArray(gajianKeys.rincianPotong("g1"))).toBe(true);
     expect(Array.isArray(gajianKeys.rincianJahit("g1"))).toBe(true);
     expect(Array.isArray(gajianKeys.rincianQC("g1"))).toBe(true);
     expect(Array.isArray(gajianKeys.rincianKreatif("g1"))).toBe(true);
+    expect(Array.isArray(gajianKeys.rincianFinishing("g1"))).toBe(true);
   });
 });
 
@@ -446,6 +454,17 @@ describe("CMT Luar queries", () => {
     const { result } = renderHook(() => useDeleteCmtMutation(), { wrapper: wrapper() });
     expect(typeof result.current.mutate).toBe("function");
   });
+  it("usePendingCmtSetoranQuery fetches jahitRows/fullRows", async () => {
+    const { result } = renderHook(() => usePendingCmtSetoranQuery(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({ jahitRows: [], fullRows: [] });
+  });
+  it("useSyncPendingCmtIntoGajianMutation exposes mutate", () => {
+    const { result } = renderHook(() => useSyncPendingCmtIntoGajianMutation(), {
+      wrapper: wrapper(),
+    });
+    expect(typeof result.current.mutate).toBe("function");
+  });
 });
 
 describe("mutations fire and cover callbacks", () => {
@@ -529,6 +548,13 @@ describe("mutations fire and cover callbacks", () => {
     result.current.mutate("row1");
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
+  it("useSyncPendingCmtIntoGajianMutation fires mutationFn + onSuccess", async () => {
+    const { result } = renderHook(() => useSyncPendingCmtIntoGajianMutation(), {
+      wrapper: wrapper(),
+    });
+    result.current.mutate({ gajianId: "g1", group: {} });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
 });
 
 describe("Rincian queries", () => {
@@ -555,5 +581,13 @@ describe("Rincian queries", () => {
   it("useKreatifForRincianQuery fetches when id provided", async () => {
     const { result } = renderHook(() => useKreatifForRincianQuery("g1"), { wrapper: wrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+  it("useFinishingForRincianQuery fetches when id provided", async () => {
+    const { result } = renderHook(() => useFinishingForRincianQuery("g1"), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+  it("useFinishingForRincianQuery disabled when falsy", () => {
+    const { result } = renderHook(() => useFinishingForRincianQuery(null), { wrapper: wrapper() });
+    expect(result.current.fetchStatus).toBe("idle");
   });
 });

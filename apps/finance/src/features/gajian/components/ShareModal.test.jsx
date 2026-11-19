@@ -1,20 +1,20 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 vi.mock("../hooks", () => ({
   usePerKaryawanRincian: vi.fn(() => ({ perKaryawan: [], loading: false })),
 }));
 vi.mock("../utils", () => ({
   generateWAText: vi.fn(() => "WA_TEXT"),
+  attachGasAtkToPerKaryawan: vi.fn((perKaryawan) => perKaryawan),
+  findTambahanByLabel: vi.fn(() => null),
+  BELI_GAS_LABEL: "Beli Gas",
+  PERSIAPAN_ATK_LABEL: "Persiapan ATK",
 }));
 vi.mock("./GajianShareCard", () => ({
   default: React.forwardRef(function GajianShareCard(props, ref) {
-    return (
-      <div ref={ref} data-testid="share-card">
-        ShareCard
-      </div>
-    );
+    return <div ref={ref} data-testid="share-card">ShareCard</div>;
   }),
 }));
 
@@ -34,86 +34,31 @@ beforeEach(() => {
 
 describe("ShareModal", () => {
   it("renders Bagikan Ringkasan title", () => {
-    render(
-      <ShareModal
-        gajian={gajian}
-        totals={totals}
-        gajianId="g1"
-        tambahan={[]}
-        pettycash="0"
-        kasbonDeds={[]}
-        totalRequest={0}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     expect(screen.getByText("Bagikan Ringkasan")).toBeInTheDocument();
   });
 
   it("renders wa text in default teks tab", () => {
-    render(
-      <ShareModal
-        gajian={gajian}
-        totals={totals}
-        gajianId="g1"
-        tambahan={[]}
-        pettycash="0"
-        kasbonDeds={[]}
-        totalRequest={0}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     expect(screen.getByText("WA_TEXT")).toBeInTheDocument();
   });
 
   it("calls onClose when × clicked", () => {
     const onClose = vi.fn();
-    render(
-      <ShareModal
-        gajian={gajian}
-        totals={totals}
-        gajianId="g1"
-        tambahan={[]}
-        pettycash="0"
-        kasbonDeds={[]}
-        totalRequest={0}
-        onClose={onClose}
-      />,
-    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={onClose} />);
     fireEvent.click(screen.getByText("×"));
     expect(onClose).toHaveBeenCalled();
   });
 
   it("calls onClose when backdrop clicked", () => {
     const onClose = vi.fn();
-    render(
-      <ShareModal
-        gajian={gajian}
-        totals={totals}
-        gajianId="g1"
-        tambahan={[]}
-        pettycash="0"
-        kasbonDeds={[]}
-        totalRequest={0}
-        onClose={onClose}
-      />,
-    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={onClose} />);
     fireEvent.click(document.querySelector(".absolute.inset-0"));
     expect(onClose).toHaveBeenCalled();
   });
 
   it("copies wa text when Salin Teks clicked", async () => {
-    render(
-      <ShareModal
-        gajian={gajian}
-        totals={totals}
-        gajianId="g1"
-        tambahan={[]}
-        pettycash="0"
-        kasbonDeds={[]}
-        totalRequest={0}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText("Salin Teks"));
     await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalled());
     expect(screen.getByText("✓ Tersalin")).toBeInTheDocument();
@@ -121,55 +66,31 @@ describe("ShareModal", () => {
 
   it("opens WA link when Buka di WA clicked", () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
-    render(
-      <ShareModal
-        gajian={gajian}
-        totals={totals}
-        gajianId="g1"
-        tambahan={[]}
-        pettycash="0"
-        kasbonDeds={[]}
-        totalRequest={0}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText("Buka di WA"));
     expect(openSpy).toHaveBeenCalledWith(expect.stringContaining("wa.me"), "_blank");
     openSpy.mockRestore();
   });
 
   it("switches to gambar tab", () => {
-    render(
-      <ShareModal
-        gajian={gajian}
-        totals={totals}
-        gajianId="g1"
-        tambahan={[]}
-        pettycash="0"
-        kasbonDeds={[]}
-        totalRequest={0}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText(/Gambar/));
     expect(screen.getByTestId("share-card")).toBeInTheDocument();
   });
 
   it("shows Unduh PNG button in gambar tab", () => {
-    render(
-      <ShareModal
-        gajian={gajian}
-        totals={totals}
-        gajianId="g1"
-        tambahan={[]}
-        pettycash="0"
-        kasbonDeds={[]}
-        totalRequest={0}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText(/Gambar/));
     expect(screen.getByText("Unduh PNG")).toBeInTheDocument();
+  });
+
+  it("attaches Beli Gas/Persiapan ATK to perKaryawan via attachGasAtkToPerKaryawan", async () => {
+    const { attachGasAtkToPerKaryawan, findTambahanByLabel, BELI_GAS_LABEL, PERSIAPAN_ATK_LABEL } = await import("../utils");
+    findTambahanByLabel.mockImplementation((tambahan, label) =>
+      label === BELI_GAS_LABEL ? { label, jumlah: 100000 } : label === PERSIAPAN_ATK_LABEL ? { label, jumlah: 600000 } : null,
+    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
+    expect(attachGasAtkToPerKaryawan).toHaveBeenCalledWith([], { beliGas: 100000, atk: 600000 });
   });
 });
 
@@ -179,18 +100,7 @@ vi.mock("html-to-image", () => ({
 
 describe("ShareModal — tab switching back to teks", () => {
   it("clicking Teks WA tab while on gambar switches back", async () => {
-    render(
-      <ShareModal
-        gajian={gajian}
-        totals={totals}
-        gajianId="g1"
-        tambahan={[]}
-        pettycash="0"
-        kasbonDeds={[]}
-        totalRequest={0}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText(/🖼 Gambar/));
     expect(screen.getByTestId("share-card")).toBeInTheDocument();
     fireEvent.click(screen.getByText(/📝 Teks WA/));
@@ -202,18 +112,7 @@ describe("ShareModal — tab switching back to teks", () => {
 describe("ShareModal — downloadImage", () => {
   it("calls toPng and triggers download on Unduh PNG click", async () => {
     const { toPng } = await import("html-to-image");
-    render(
-      <ShareModal
-        gajian={gajian}
-        totals={totals}
-        gajianId="g1"
-        tambahan={[]}
-        pettycash="0"
-        kasbonDeds={[]}
-        totalRequest={0}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText(/🖼 Gambar/));
     const fakeLink = { href: "", download: "", click: vi.fn() };
     const createSpy = vi.spyOn(document, "createElement").mockReturnValueOnce(fakeLink);
@@ -225,23 +124,8 @@ describe("ShareModal — downloadImage", () => {
   it("shows Memproses while generating", async () => {
     const { toPng } = await import("html-to-image");
     let resolveCapture;
-    toPng.mockReturnValueOnce(
-      new Promise((res) => {
-        resolveCapture = res;
-      }),
-    );
-    render(
-      <ShareModal
-        gajian={gajian}
-        totals={totals}
-        gajianId="g1"
-        tambahan={[]}
-        pettycash="0"
-        kasbonDeds={[]}
-        totalRequest={0}
-        onClose={vi.fn()}
-      />,
-    );
+    toPng.mockReturnValueOnce(new Promise((res) => { resolveCapture = res; }));
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText(/🖼 Gambar/));
     fireEvent.click(screen.getByText("Unduh PNG"));
     await waitFor(() => expect(screen.getByText("Memproses...")).toBeInTheDocument());
@@ -265,18 +149,7 @@ describe("ShareModal — shareImage", () => {
       canShare: vi.fn().mockReturnValue(true),
       share: vi.fn().mockResolvedValue(undefined),
     });
-    render(
-      <ShareModal
-        gajian={gajian}
-        totals={totals}
-        gajianId="g1"
-        tambahan={[]}
-        pettycash="0"
-        kasbonDeds={[]}
-        totalRequest={0}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText(/🖼 Gambar/));
     fireEvent.click(screen.getByText("Bagikan Gambar"));
     await waitFor(() => expect(toPng).toHaveBeenCalled());
@@ -287,18 +160,7 @@ describe("ShareModal — shareImage", () => {
   it("falls back to download when canShare is false", async () => {
     const { toPng } = await import("html-to-image");
     Object.assign(navigator, { canShare: vi.fn().mockReturnValue(false), share: undefined });
-    render(
-      <ShareModal
-        gajian={gajian}
-        totals={totals}
-        gajianId="g1"
-        tambahan={[]}
-        pettycash="0"
-        kasbonDeds={[]}
-        totalRequest={0}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText(/🖼 Gambar/));
     const fakeLink = { href: "", download: "", click: vi.fn() };
     const createSpy = vi.spyOn(document, "createElement").mockReturnValueOnce(fakeLink);
@@ -315,18 +177,7 @@ describe("ShareModal — shareImage", () => {
       canShare: vi.fn().mockReturnValue(true),
       share: vi.fn().mockRejectedValue(abortErr),
     });
-    render(
-      <ShareModal
-        gajian={gajian}
-        totals={totals}
-        gajianId="g1"
-        tambahan={[]}
-        pettycash="0"
-        kasbonDeds={[]}
-        totalRequest={0}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<ShareModal gajian={gajian} totals={totals} gajianId="g1" tambahan={[]} pettycash="0" kasbonDeds={[]} totalRequest={0} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText(/Gambar/));
     expect(() => fireEvent.click(screen.getByText("Bagikan Gambar"))).not.toThrow();
     await waitFor(() => expect(toPng).toHaveBeenCalled());

@@ -1,34 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  addComment,
-  approveRepeat,
   createPlanning,
   createSampels,
-  deleteComment,
   deleteSampel,
-  fetchComments,
-  fetchReadsBySampel,
   fetchSampels,
-  fetchUnreadDiskusi,
-  lanjutKeWorkOrder,
   logWorkOrder,
+  saveWoDraft,
   markSampelDibuat,
-  markSampelRead,
   mundurStepSampel,
   reorderPlanning,
   saveBatchDecisions,
-  setWoSelesai,
   togglePinned,
-  updatePlanning,
   updateSampel,
+  approveRepeat,
+  lanjutKeWorkOrder,
+  setWoSelesai,
+  updatePlanning,
 } from "./api";
 
 export const produksiSampelKeys = {
   all: ["produksi-sampel"],
-};
-
-export const sampelCommentsKeys = {
-  bySampel: (sampelId) => ["sampel-comments", sampelId],
 };
 
 export function useSampelsQuery() {
@@ -49,10 +40,7 @@ export function useCreatePlanningMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, userEmail, userName }) =>
-      createPlanning(entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, {
-        userEmail,
-        userName,
-      }),
+      createPlanning(entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, { userEmail, userName }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
     },
@@ -175,36 +163,6 @@ export function useTogglePinnedMutation() {
   });
 }
 
-export function useCommentsQuery(sampelId) {
-  return useQuery({
-    queryKey: sampelCommentsKeys.bySampel(sampelId),
-    queryFn: () => fetchComments(sampelId),
-    enabled: !!sampelId,
-  });
-}
-
-export function useAddCommentMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: addComment,
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: sampelCommentsKeys.bySampel(variables.sampelId) });
-      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.unread });
-    },
-  });
-}
-
-export function useDeleteCommentMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id }) => deleteComment(id),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: sampelCommentsKeys.bySampel(variables.sampelId) });
-      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.unread });
-    },
-  });
-}
-
 export function useLogWorkOrderMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -213,34 +171,10 @@ export function useLogWorkOrderMutation() {
   });
 }
 
-export const sampelReadsKeys = {
-  unread: ["sampel-unread"],
-  bySampel: (sampelId) => ["sampel-reads", "sampel", sampelId],
-};
-
-export function useUnreadDiskusiQuery() {
-  return useQuery({
-    queryKey: sampelReadsKeys.unread,
-    queryFn: fetchUnreadDiskusi,
-    refetchOnWindowFocus: true,
-  });
-}
-
-export function useReadsBySampelQuery(sampelId) {
-  return useQuery({
-    queryKey: sampelReadsKeys.bySampel(sampelId),
-    queryFn: () => fetchReadsBySampel(sampelId),
-    enabled: !!sampelId,
-  });
-}
-
-export function useMarkSampelReadMutation() {
+export function useSaveWoDraftMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: markSampelRead,
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.unread });
-      queryClient.invalidateQueries({ queryKey: sampelReadsKeys.bySampel(variables.sampelId) });
-    },
+    mutationFn: saveWoDraft,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all }),
   });
 }

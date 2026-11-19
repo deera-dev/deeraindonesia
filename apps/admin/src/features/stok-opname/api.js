@@ -29,17 +29,14 @@ export async function saveStokOpname({ changed, stokRows, products }) {
       gudang: vals.gudang !== undefined ? vals.gudang : (row?.gudang ?? 0),
       cideng: vals.cideng !== undefined ? vals.cideng : (row?.cideng ?? 0),
       tegalgubug: vals.tegalgubug !== undefined ? vals.tegalgubug : (row?.tegalgubug ?? 0),
+      ngorder: vals.ngorder !== undefined ? vals.ngorder : (row?.ngorder ?? 0),
     };
     return {
       id: isNew ? undefined : row?.id,
       kode,
       size,
       warna,
-      before: {
-        gudang: row?.gudang ?? 0,
-        cideng: row?.cideng ?? 0,
-        tegalgubug: row?.tegalgubug ?? 0,
-      },
+      before: { gudang: row?.gudang ?? 0, cideng: row?.cideng ?? 0, tegalgubug: row?.tegalgubug ?? 0, ngorder: row?.ngorder ?? 0 },
       after: merged,
     };
   });
@@ -52,6 +49,7 @@ export async function saveStokOpname({ changed, stokRows, products }) {
       gudang: r.after.gudang,
       cideng: r.after.cideng,
       tegalgubug: r.after.tegalgubug,
+      ngorder: r.after.ngorder,
       updated_at: new Date().toISOString(),
     };
     return r.id ? { id: r.id, ...base } : base;

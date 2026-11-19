@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { kodeNum, rowKey, SIZE_ORDER, selisihCls, selisihLabel, sortRows } from "./utils";
+import { describe, it, expect } from "vitest";
+import { SIZE_ORDER, sortRows, kodeNum, rowKey, selisihCls, selisihLabel, flattenVariantMap } from "./utils";
 
 describe("SIZE_ORDER", () => {
   it("urutan Midi < Midi Jumbo < Gamis < Gamis Jumbo", () => {
@@ -74,5 +74,25 @@ describe("selisihLabel", () => {
 
   it("< 0 → '{n}' (dengan minus)", () => {
     expect(selisihLabel(-3)).toBe("-3");
+  });
+});
+
+describe("flattenVariantMap", () => {
+  it("meratakan {kode:{size:{warna:qty}}} jadi map datar kode__size__warna", () => {
+    const nested = { "D-01-OSK": { Midi: { HITAM: 3, PUTIH: 0 }, Gamis: { _: 2 } } };
+    expect(flattenVariantMap(nested)).toEqual({
+      "D-01-OSK__Midi__HITAM": 3,
+      "D-01-OSK__Midi__PUTIH": 0,
+      "D-01-OSK__Gamis___": 2,
+    });
+  });
+
+  it("input null/undefined → {} tanpa crash", () => {
+    expect(flattenVariantMap(null)).toEqual({});
+    expect(flattenVariantMap(undefined)).toEqual({});
+  });
+
+  it("input {} → {}", () => {
+    expect(flattenVariantMap({})).toEqual({});
   });
 });

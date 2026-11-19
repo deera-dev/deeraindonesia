@@ -1,18 +1,12 @@
-import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { useState } from "react";
+import { cldUrl } from "@deera/shared/lib/cloudinary";
+import { fmtDate, STATUS_META, isWoSelesai, isSedangDibuat } from "../utils";
 import PhotoLightbox from "../../../shared/components/PhotoLightbox";
-import { fmtDate, isSedangDibuat, isWoSelesai, STATUS_META } from "../utils";
 
 function ZoomHint() {
   return (
     <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-black/45 flex items-center justify-center pointer-events-none">
-      <svg
-        viewBox="0 0 20 20"
-        className="w-2.5 h-2.5 text-white"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      >
+      <svg viewBox="0 0 20 20" className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth="2">
         <circle cx="8.5" cy="8.5" r="5.5" />
         <line x1="16" y1="16" x2="12.5" y2="12.5" strokeLinecap="round" />
       </svg>
@@ -21,86 +15,37 @@ function ZoomHint() {
 }
 
 const ICON_PATHS = {
-  image: (
-    <>
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <circle cx="9" cy="10" r="1.5" />
-      <path d="m21 16-5-5-8 8" />
-    </>
-  ),
-  chat: <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 21 12Z" />,
-  edit: (
-    <>
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-    </>
-  ),
-  trash: (
-    <>
-      <path d="M3 6h18" />
-      <path d="M8 6V4h8v2" />
-      <path d="m19 6-1 14H6L5 6" />
-    </>
-  ),
-  back: (
-    <>
-      <path d="M9 14 4 9l5-5" />
-      <path d="M4 9h11a5 5 0 0 1 0 10h-3" />
-    </>
-  ),
+  image: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="1.5" /><path d="m21 16-5-5-8 8" /></>,
+  edit: <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></>,
+  trash: <><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="m19 6-1 14H6L5 6" /></>,
+  back: <><path d="M9 14 4 9l5-5" /><path d="M4 9h11a5 5 0 0 1 0 10h-3" /></>,
   next: <path d="M5 12h14m-6-6 6 6-6 6" />,
   check: <path d="m5 12 5 5 9-10" />,
-  doc: (
-    <>
-      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-      <path d="M14 3v5h5M9 13h6M9 17h6" />
-    </>
-  ),
-  repeat: (
-    <>
-      <path d="M17 2l4 4-4 4" />
-      <path d="M3 11V9a3 3 0 0 1 3-3h15" />
-      <path d="m7 22-4-4 4-4" />
-      <path d="M21 13v2a3 3 0 0 1-3 3H3" />
-    </>
-  ),
+  doc: <><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5M9 13h6M9 17h6" /></>,
+  repeat: <><path d="M17 2l4 4-4 4" /><path d="M3 11V9a3 3 0 0 1 3-3h15" /><path d="m7 22-4-4 4-4" /><path d="M21 13v2a3 3 0 0 1-3 3H3" /></>,
 };
 
 const TONES = {
-  default:
-    "border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text",
+  default: "border border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text",
   active: "border border-skin-accent text-skin-accent-text bg-skin-gold",
   danger: "border border-skin-bdr text-red-400 hover:text-red-600 hover:border-red-300",
   primary: "bg-emerald-600 text-white border border-emerald-600 hover:bg-emerald-700",
   "ok-outline": "border border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10",
 };
 
-function IconBtn({ label, onClick, icon, tone = "default", active = false, badge = 0 }) {
+function IconBtn({ label, shortLabel, onClick, icon, tone = "default", active = false }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`relative shrink-0 w-10 h-10 flex items-center justify-center transition active:scale-95 ${TONES[active ? "active" : tone]}`}
+      className={`inline-flex items-center gap-1.5 shrink-0 px-3 py-2 text-xs font-semibold whitespace-nowrap transition active:scale-95 ${TONES[active ? "active" : tone]}`}
     >
-      <svg
-        viewBox="0 0 24 24"
-        className="w-[18px] h-[18px]"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
+      <svg viewBox="0 0 24 24" className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         {ICON_PATHS[icon]}
       </svg>
-      {badge > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
-          {badge > 9 ? "9+" : badge}
-        </span>
-      )}
+      <span>{shortLabel ?? label}</span>
     </button>
   );
 }
@@ -114,11 +59,10 @@ export default function SampelCard({
   onWoSampel,
   onSampelJadi,
   onApproveRepeat,
-  onOpenDiscussion,
+  onOpenRiwayat,
   onWorkOrder,
   onWoSelesai,
   onMundur,
-  unreadCount = 0,
 }) {
   const [expanded, setExpanded] = useState(false);
   const [fotoIdx, setFotoIdx] = useState(0);
@@ -141,7 +85,7 @@ export default function SampelCard({
     bahanItems.length > 0
       ? bahanItems.map((b, i) => b.foto ?? (i === 0 ? sampel.bahan_foto : null)).filter(Boolean)
       : [sampel.bahan_foto].filter(Boolean);
-  const thumbUrl = isPlanning ? (bahanFotos[0] ?? modelFotos[0]) : fotos[0];
+  const thumbUrl = isPlanning ? bahanFotos[0] ?? modelFotos[0] : fotos[0];
 
   const planningGallery = [...bahanFotos, ...modelFotos].filter(Boolean);
   const galleryUrls = isPlanning ? planningGallery : [...fotos, ...bahanFotos, ...modelFotos];
@@ -172,9 +116,7 @@ export default function SampelCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-semibold text-sm text-skin-text">{sampel.nama}</p>
-              <span
-                className={`text-[9px] font-editorial tracking-[0.1em] uppercase px-2 py-0.5 ${meta.cls}`}
-              >
+              <span className={`text-[9px] font-editorial tracking-[0.1em] uppercase px-2 py-0.5 ${meta.cls}`}>
                 {meta.label}
               </span>
               {selesai && (
@@ -212,9 +154,7 @@ export default function SampelCard({
             )}
             {sampel.status === "ditahan" && (
               <p className="text-[10px] text-amber-500 mt-0.5 truncate">
-                {sampel.ditahan_note
-                  ? `Catatan: ${sampel.ditahan_note}`
-                  : "Ditahan untuk ditinjau lagi"}
+                {sampel.ditahan_note ? `Catatan: ${sampel.ditahan_note}` : "Ditahan untuk ditinjau lagi"}
               </p>
             )}
           </div>
@@ -274,7 +214,7 @@ export default function SampelCard({
           </div>
         )}
 
-        <div className="flex items-center gap-1.5 pt-1">
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
           {!isPlanning && totalFoto > 0 && (
             <IconBtn
               label={expanded ? "Tutup foto" : `Foto (${totalFoto})`}
@@ -283,21 +223,17 @@ export default function SampelCard({
               icon="image"
             />
           )}
-          <IconBtn
-            label="Diskusi"
-            onClick={() => onOpenDiscussion(sampel)}
-            icon="chat"
-            badge={unreadCount}
-          />
+          <IconBtn label="Riwayat" onClick={() => onOpenRiwayat(sampel)} icon="doc" />
           {onEditPlan && isPlanning && (
             <IconBtn
               label="Edit judul, bahan & foto acuan"
+              shortLabel="Edit"
               onClick={() => onEditPlan(sampel)}
               icon="edit"
             />
           )}
           {sampel.status === "draft" && (
-            <IconBtn label="Edit foto sampel" onClick={() => onEdit(sampel)} icon="edit" />
+            <IconBtn label="Edit foto sampel" shortLabel="Edit" onClick={() => onEdit(sampel)} icon="edit" />
           )}
           <IconBtn label="Hapus" onClick={() => onDelete(sampel)} icon="trash" tone="danger" />
 
@@ -307,62 +243,28 @@ export default function SampelCard({
             <IconBtn label={mundurLabel} onClick={() => onMundur(sampel)} icon="back" />
           )}
           {isPlanning && sampel.is_repeat && !sedangDibuat && onApproveRepeat && (
-            <IconBtn
-              label="Approve Repeat"
-              onClick={() => onApproveRepeat(sampel)}
-              icon="repeat"
-              tone="ok-outline"
-            />
+            <IconBtn label="Approve Repeat" onClick={() => onApproveRepeat(sampel)} icon="repeat" tone="ok-outline" />
           )}
           {isPlanning && sedangDibuat && (
             <IconBtn label="WO Sampel" onClick={() => onWoSampel(sampel)} icon="doc" />
           )}
           {sampel.status === "approved" && (
-            <IconBtn
-              label={selesai ? "Lihat Work Order" : "Buat Work Order"}
-              onClick={() => onWorkOrder(sampel)}
-              icon="doc"
-            />
+            <IconBtn label={selesai ? "Lihat Work Order" : "Buat Work Order"} onClick={() => onWorkOrder(sampel)} icon="doc" />
           )}
           {isPlanning && !sedangDibuat && (
-            <IconBtn
-              label="Buat WO Sampel"
-              onClick={() => onWoSampel(sampel)}
-              icon="next"
-              tone="primary"
-            />
+            <IconBtn label="Buat WO Sampel" onClick={() => onWoSampel(sampel)} icon="next" tone="primary" />
           )}
           {isPlanning && sedangDibuat && (
-            <IconBtn
-              label="Sampel Sudah Jadi"
-              onClick={() => onSampelJadi(sampel)}
-              icon="check"
-              tone="primary"
-            />
+            <IconBtn label="Sampel Sudah Jadi" onClick={() => onSampelJadi(sampel)} icon="check" tone="primary" />
           )}
           {sampel.status === "draft" && (
-            <IconBtn
-              label="Review & Approval"
-              onClick={() => onReview(sampel)}
-              icon="check"
-              tone="primary"
-            />
+            <IconBtn label="Review & Approval" onClick={() => onReview(sampel)} icon="check" tone="primary" />
           )}
           {sampel.status === "ditahan" && (
-            <IconBtn
-              label="Tinjau Ulang"
-              onClick={() => onReview(sampel)}
-              icon="next"
-              tone="primary"
-            />
+            <IconBtn label="Tinjau Ulang" onClick={() => onReview(sampel)} icon="next" tone="primary" />
           )}
           {sampel.status === "approved" && !selesai && onWoSelesai && (
-            <IconBtn
-              label="Tandai WO Selesai"
-              onClick={() => onWoSelesai(sampel, true)}
-              icon="check"
-              tone="primary"
-            />
+            <IconBtn label="Tandai WO Selesai" onClick={() => onWoSelesai(sampel, true)} icon="check" tone="primary" />
           )}
         </div>
       </div>
@@ -370,18 +272,18 @@ export default function SampelCard({
       {expanded && totalFoto > 0 && (
         <div className="border-t border-skin-bdr px-4 pb-4 pt-3 space-y-2">
           {fotos.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setLightboxIndex(fotoIdx)}
-              className="relative block w-full"
-            >
-              <img
-                src={cldUrl(fotos[fotoIdx], { width: 700 })}
-                className="w-full max-h-72 object-contain bg-skin-raised border border-skin-bdr"
-                alt={`foto ${fotoIdx + 1}`}
-              />
-              <ZoomHint />
-            </button>
+          <button
+            type="button"
+            onClick={() => setLightboxIndex(fotoIdx)}
+            className="relative block w-full"
+          >
+            <img
+              src={cldUrl(fotos[fotoIdx], { width: 700 })}
+              className="w-full max-h-72 object-contain bg-skin-raised border border-skin-bdr"
+              alt={`foto ${fotoIdx + 1}`}
+            />
+            <ZoomHint />
+          </button>
           )}
           {fotos.length > 1 && (
             <div className="flex flex-wrap gap-1.5 pt-1">
@@ -481,9 +383,7 @@ export default function SampelCard({
         index={lightboxIndex}
         onClose={() => setLightboxIndex(null)}
         onNavigate={(delta) =>
-          setLightboxIndex((i) =>
-            Math.min(Math.max((i ?? 0) + delta, 0), lightboxImages.length - 1),
-          )
+          setLightboxIndex((i) => Math.min(Math.max((i ?? 0) + delta, 0), lightboxImages.length - 1))
         }
       />
     </div>

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 vi.mock("../../shared/lib/format", () => ({
   fmtRp: (n) => `Rp${n}`,
@@ -6,50 +6,55 @@ vi.mock("../../shared/lib/format", () => ({
 }));
 
 import {
-  autoSelectIfSingle,
-  BELI_GAS_AMOUNT,
-  BELI_GAS_LABEL,
-  buildJahitCardSync,
-  buildJahitContributionsByKode,
-  buildKasbonDeductionsPayload,
-  buildKodeReconciliation,
-  buildManualRowsFromLog,
-  buildPerKaryawanMap,
-  buildReconciliationRow,
   buildRequestBreakdown,
-  buildTambahanPayload,
-  calcFinishingPerPcs,
-  calcKancingQty,
-  calcLubangQty,
-  calcTotalRequest,
-  calcUpahFinishing,
-  calcUpahKreatif,
-  calcUpahPotong,
-  cleanTambahan,
-  deriveKancingPerPcs,
-  findTambahanByLabel,
-  generateWAText,
+  TABS,
   JAHIT_MARKS,
   newKartu,
-  newManualReconciliationRow,
   newPermak,
   newProduk,
-  otherTambahan,
-  PERSIAPAN_ATK_LABEL,
-  pettycashTerpakaiFromSaldo,
-  pickPendingCards,
-  recalcReconciliationRow,
+  calcUpahPotong,
+  calcFinishingPerPcs,
+  calcUpahFinishing,
+  calcUpahKreatif,
+  calcKancingQty,
+  deriveKancingPerPcs,
+  calcLubangQty,
+  summarizeFinishingItems,
+  rincianPotong,
   rincianJahit,
   rincianKreatif,
-  rincianPotong,
   rincianQC,
-  soldQtyFor,
-  stokTotalFor,
-  sumFinishingItemsJumlah,
-  sumKasbonDeduction,
-  summarizeFinishingItems,
+  rincianFinishing,
+  buildPerKaryawanMap,
+  attachGasAtkToPerKaryawan,
   sumTambahan,
-  TABS,
+  sumKasbonDeduction,
+  buildKasbonDeductionsPayload,
+  cleanTambahan,
+  calcTotalRequest,
+  generateWAText,
+  pettycashTerpakaiFromSaldo,
+  stokTotalFor,
+  soldQtyFor,
+  buildReconciliationRow,
+  recalcReconciliationRow,
+  newManualReconciliationRow,
+  buildManualRowsFromLog,
+  buildKodeReconciliation,
+  pickPendingCards,
+  pickPendingCmtKirim,
+  buildPendingUnits,
+  groupPendingCmtByVendor,
+  BELI_GAS_LABEL,
+  BELI_GAS_AMOUNT,
+  PERSIAPAN_ATK_LABEL,
+  findTambahanByLabel,
+  otherTambahan,
+  buildTambahanPayload,
+  buildJahitContributionsByKode,
+  buildJahitCardSync,
+  sumFinishingItemsJumlah,
+  autoSelectIfSingle,
 } from "./utils";
 
 const cfg = {
@@ -318,6 +323,26 @@ describe("rincianQC", () => {
   });
 });
 
+describe("rincianFinishing", () => {
+  it("returns a line per item with jumlah>0", () => {
+    const items = [
+      { jumlah: 10, nama_produk: "D-07-OSK" },
+      { jumlah: 0, nama_produk: "D-08" },
+    ];
+    const r = { total_upah: calcUpahFinishing(items, cfg), items };
+    const lines = rincianFinishing(r, cfg);
+    expect(lines).toHaveLength(1);
+    expect(lines[0].label).toContain("D-07-OSK");
+  });
+  it("adds a Tambahan manual line when total_upah differs from calculated", () => {
+    const r = { total_upah: 999999, items: [] };
+    const lines = rincianFinishing(r, cfg);
+    expect(lines).toHaveLength(1);
+    expect(lines[0].label).toBe("Tambahan manual");
+    expect(lines[0].sub).toBe(999999);
+  });
+});
+
 describe("buildPerKaryawanMap", () => {
   it("aggregates by karyawan nama", () => {
     const potong = [
@@ -335,19 +360,25 @@ describe("buildPerKaryawanMap", () => {
     expect(res[0][0]).toBe("BUDI");
     expect(res[0][1].total).toBe(100000);
   });
-  it("includes QC rows when includeQC=true", () => {
+  it("always includes QC rows (no more includeQC flag)", () => {
     const qc = [{ karyawan: { nama: "SARI" }, total_upah: 5000, jumlah_pcs: 10 }];
-    const res = buildPerKaryawanMap({
-      potong: [],
-      jahit: [],
-      qc,
-      kreatif: [],
-      cfg,
-      includeQC: true,
-    });
+    const res = buildPerKaryawanMap({ potong: [], jahit: [], qc, kreatif: [], cfg });
     expect(res).toHaveLength(1);
   });
-  it("sorts by total desc", () => {
+  it("includes finishing rows", () => {
+    const finishing = [
+      {
+        karyawan: { nama: "SITI" },
+        total_upah: 15000,
+        items: [{ jumlah: 10, nama_produk: "D-07" }],
+      },
+    ];
+    const res = buildPerKaryawanMap({ potong: [], jahit: [], qc: [], kreatif: [], finishing, cfg });
+    expect(res).toHaveLength(1);
+    expect(res[0][0]).toBe("SITI");
+    expect(res[0][1].total).toBe(15000);
+  });
+  it("sorts by total desc when tim sama/tidak diketahui", () => {
     const potong = [
       {
         karyawan: { nama: "A" },
@@ -368,6 +399,44 @@ describe("buildPerKaryawanMap", () => {
     ];
     const res = buildPerKaryawanMap({ potong, jahit: [], qc: [], kreatif: [], cfg });
     expect(res[0][0]).toBe("B");
+  });
+  it("mengelompokkan per tim: Potong, Jahit, Finishing, QC, baru sisanya", () => {
+    const potong = [{ karyawan: { nama: "POTONG1", tim: "potong" }, total_upah: 10000, jumlah_pola: 0, jumlah_sampel: 0, qty_potongan: 0, tarif_potongan: 0 }];
+    const jahit = [{ karyawan: { nama: "JAHIT1", tim: "jahit" }, total_upah: 999999, kartu_items: [], permak_items: [] }];
+    const qc = [{ karyawan: { nama: "QC1", tim: "qc" }, total_upah: 5000, jumlah_pcs: 10 }];
+    const finishing = [{ karyawan: { nama: "FIN1", tim: "finishing" }, total_upah: 1000, items: [] }];
+    const res = buildPerKaryawanMap({ potong, jahit, qc, kreatif: [], finishing, cfg });
+    expect(res.map(([nama]) => nama)).toEqual(["POTONG1", "JAHIT1", "FIN1", "QC1"]);
+  });
+});
+
+describe("attachGasAtkToPerKaryawan", () => {
+  it("menambahkan Beli Gas ke karyawan Finishing", () => {
+    const perKaryawan = [["OM RUDI", { total: 1000000, tim: "finishing", rincian: [] }]];
+    const res = attachGasAtkToPerKaryawan(perKaryawan, { beliGas: 100000 });
+    expect(res[0][1].total).toBe(1100000);
+    expect(res[0][1].rincian.some((r) => r.label === BELI_GAS_LABEL && r.sub === 100000)).toBe(true);
+  });
+  it("menambahkan Persiapan ATK ke karyawan QC dengan total terbesar", () => {
+    const perKaryawan = [
+      ["OM SEP", { total: 142500, tim: "qc", rincian: [] }],
+      ["QC KECIL", { total: 50000, tim: "qc", rincian: [] }],
+    ];
+    const res = attachGasAtkToPerKaryawan(perKaryawan, { atk: 600000 });
+    const bySep = res.find(([nama]) => nama === "OM SEP");
+    const byKecil = res.find(([nama]) => nama === "QC KECIL");
+    expect(bySep[1].total).toBe(742500);
+    expect(byKecil[1].total).toBe(50000);
+  });
+  it("tidak mengubah apapun kalau beliGas & atk keduanya 0/kosong", () => {
+    const perKaryawan = [["OM RUDI", { total: 1000000, tim: "finishing", rincian: [] }]];
+    const res = attachGasAtkToPerKaryawan(perKaryawan);
+    expect(res).toBe(perKaryawan);
+  });
+  it("tidak melempar error kalau tidak ada karyawan Finishing/QC sama sekali", () => {
+    const perKaryawan = [["BUDI", { total: 1000, tim: "potong", rincian: [] }]];
+    const res = attachGasAtkToPerKaryawan(perKaryawan, { beliGas: 100000, atk: 600000 });
+    expect(res[0][1].total).toBe(1000);
   });
 });
 
@@ -941,5 +1010,155 @@ describe("pickPendingCards", () => {
   it("tidak ada kombinasi yang pas -> pakai batch terbaru saja", () => {
     const cards = [card("old", "b1", 20, "2026-01-01"), card("new", "b2", 15, "2026-03-01")];
     expect(pickPendingCards(cards, 18).map((c) => c.id)).toEqual(["new"]);
+  });
+});
+
+describe("pickPendingCmtKirim", () => {
+  const kirim = (id, kirim_no, qtySetor, created_at) => ({
+    id,
+    kirim_no,
+    qty_setor: qtySetor,
+    created_at,
+    size: "Midi",
+    warna: "HITAM",
+  });
+
+  it("kosong -> []", () => {
+    expect(pickPendingCmtKirim([], 10)).toEqual([]);
+  });
+
+  it("ambil kirim_no terbaru dulu sampai totalnya pas dengan jumlah Finance", () => {
+    const rows = [
+      kirim("old", "CMT-1", 20, "2026-01-01"),
+      kirim("mid", "CMT-2", 10, "2026-02-01"),
+      kirim("new", "CMT-3", 15, "2026-03-01"),
+    ];
+    expect(pickPendingCmtKirim(rows, 15).map((r) => r.id)).toEqual(["new"]);
+    expect(pickPendingCmtKirim(rows, 25).map((r) => r.id)).toEqual(["new", "mid"]);
+  });
+
+  it("tidak ada kombinasi yang pas -> pakai kirim_no terbaru saja", () => {
+    const rows = [kirim("old", "CMT-1", 20, "2026-01-01"), kirim("new", "CMT-2", 15, "2026-03-01")];
+    expect(pickPendingCmtKirim(rows, 18).map((r) => r.id)).toEqual(["new"]);
+  });
+});
+
+describe("buildPendingUnits", () => {
+  it("jahit_cards ada yang pending & cocok -> dipakai, cardId terisi & cmtKirimId null", () => {
+    const jahitRows = [
+      { id: "c1", batch_id: "b1", size: "Midi", warna: "HITAM", qty: 10, stok_masuk_log: [] },
+    ];
+    const units = buildPendingUnits(jahitRows, [], 10);
+    expect(units).toEqual([
+      { id: "c1", qty: 10, size: "Midi", warna: "HITAM", cardId: "c1", cmtKirimId: null },
+    ]);
+  });
+
+  it("jahit_cards kosong TAPI cmt_jahit_kirim ada -> dipakai, cmtKirimId terisi & cardId null, qty dari qty_setor", () => {
+    const cmtRows = [
+      {
+        id: "cmt1",
+        kirim_no: "CMT-1",
+        size: "Midi",
+        warna: "HITAM",
+        qty: 10,
+        qty_setor: 8,
+        created_at: "2026-11-10",
+      },
+    ];
+    const units = buildPendingUnits([], cmtRows, 8);
+    expect(units).toEqual([
+      { id: "cmt1", qty: 8, size: "Midi", warna: "HITAM", cardId: null, cmtKirimId: "cmt1" },
+    ]);
+  });
+
+  it("jahit_cards ADA pending (walau tidak cocok) -> tetap dipakai, cmt_jahit_kirim diabaikan", () => {
+    const jahitRows = [
+      { id: "c1", batch_id: "b1", size: "Midi", warna: "HITAM", qty: 3, stok_masuk_log: [] },
+    ];
+    const cmtRows = [
+      {
+        id: "cmt1",
+        kirim_no: "CMT-1",
+        size: "Midi",
+        warna: "HITAM",
+        qty: 10,
+        qty_setor: 10,
+        created_at: "2026-11-10",
+      },
+    ];
+    const units = buildPendingUnits(jahitRows, cmtRows, 10);
+    expect(units).toEqual([
+      { id: "c1", qty: 3, size: "Midi", warna: "HITAM", cardId: "c1", cmtKirimId: null },
+    ]);
+  });
+
+  it("keduanya kosong -> []", () => {
+    expect(buildPendingUnits([], [], 10)).toEqual([]);
+  });
+});
+
+describe("groupPendingCmtByVendor", () => {
+  it("kosong -> []", () => {
+    expect(groupPendingCmtByVendor([], [])).toEqual([]);
+  });
+
+  it("satu vendor, satu baris cmt_jahit_kirim -> satu grup, totalUpah = jumlahTerima x hargaUpah", () => {
+    const jahitRows = [
+      { id: "j1", nama_vendor: "Vendor A", harga_upah: 5000, qty: 10, qty_setor: 9 },
+    ];
+    const groups = groupPendingCmtByVendor(jahitRows, []);
+    expect(groups).toEqual([
+      {
+        namaVendor: "Vendor A",
+        hargaUpah: 5000,
+        jahitIds: ["j1"],
+        fullIds: [],
+        jumlahKirim: 10,
+        jumlahTerima: 9,
+        totalUpah: 45000,
+      },
+    ]);
+  });
+
+  it("vendor+harga sama dari cmt_jahit_kirim DAN cmt_setoran_full -> digabung jadi satu grup", () => {
+    const jahitRows = [
+      { id: "j1", nama_vendor: "Vendor A", harga_upah: 5000, qty: 10, qty_setor: 10 },
+    ];
+    const fullRows = [
+      {
+        id: "f1",
+        nama_vendor: "Vendor A",
+        harga_upah: 5000,
+        items: [{ size: "Midi", warna: "HITAM", qty: 5 }],
+      },
+    ];
+    const groups = groupPendingCmtByVendor(jahitRows, fullRows);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toMatchObject({
+      namaVendor: "Vendor A",
+      jahitIds: ["j1"],
+      fullIds: ["f1"],
+      jumlahKirim: 15,
+      jumlahTerima: 15,
+      totalUpah: 75000,
+    });
+  });
+
+  it("vendor sama tapi harga_upah beda -> grup terpisah", () => {
+    const jahitRows = [
+      { id: "j1", nama_vendor: "Vendor A", harga_upah: 5000, qty: 10, qty_setor: 10 },
+      { id: "j2", nama_vendor: "Vendor A", harga_upah: 6000, qty: 5, qty_setor: 5 },
+    ];
+    const groups = groupPendingCmtByVendor(jahitRows, []);
+    expect(groups).toHaveLength(2);
+  });
+
+  it("qty_setor null (belum pernah diisi) -> fallback ke qty kirim", () => {
+    const jahitRows = [
+      { id: "j1", nama_vendor: "Vendor A", harga_upah: 5000, qty: 10, qty_setor: null },
+    ];
+    const groups = groupPendingCmtByVendor(jahitRows, []);
+    expect(groups[0].jumlahTerima).toBe(10);
   });
 });

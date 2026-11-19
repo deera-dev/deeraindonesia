@@ -1,7 +1,7 @@
-import { render, screen } from "@testing-library/react";
 import React from "react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../features/notifikasi", () => ({ NotifBell: () => null }));
 vi.mock("@deera/shared/features/theme/hooks", () => ({
@@ -17,23 +17,15 @@ vi.mock("@deera/shared/components/ThemeToggle", () => ({
 vi.mock("@deera/shared/features/transfers/hooks", () => ({
   usePendingTransferCount: vi.fn(),
 }));
-vi.mock("@deera/shared/features/auth/hooks", () => ({
-  useAuth: vi.fn(() => ({ user: { email: "admin@deera.id" } })),
-}));
-vi.mock("../../features/produksi-sampel/hooks", () => ({
-  useTotalUnreadCount: vi.fn(),
-}));
 
+import ProduksiLayout from "./ProduksiLayout";
 import { useTheme } from "@deera/shared/features/theme/hooks";
 import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
-import { useTotalUnreadCount } from "../../features/produksi-sampel/hooks";
-import ProduksiLayout from "./ProduksiLayout";
 
 beforeEach(() => {
   vi.clearAllMocks();
   useTheme.mockReturnValue({ isDark: false, toggleTheme: vi.fn() });
   usePendingTransferCount.mockReturnValue(0);
-  useTotalUnreadCount.mockReturnValue({ total: 0, loading: false });
 });
 
 function renderLayout(props = {}, pathname = "/produksi/bahan") {
@@ -71,6 +63,7 @@ describe("ProduksiLayout", () => {
     expect(hrefs).toContain("/produksi/hpp");
     expect(hrefs).toContain("/produksi/bahan");
     expect(hrefs).toContain("/produksi/sampel");
+    expect(hrefs).toContain("/produksi/cmt");
     expect(hrefs).not.toContain("/produksi/laporan");
   });
 

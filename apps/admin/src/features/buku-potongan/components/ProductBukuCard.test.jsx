@@ -39,12 +39,12 @@ describe("ProductBukuCard", () => {
     expect(screen.getByText("Gamis Aisyah")).toBeInTheDocument();
   });
 
-  it("menampilkan ringkasan E (expected) · T (terjual) · S (sisa) di header — tanpa soldMap, T=0", () => {
+  it("menampilkan ringkasan E (expected) · T (terjual) · D (dikirim) · S (sisa) di header — tanpa soldMap/dikirimMap, T=0 D=0", () => {
     renderCard();
-    expect(screen.getByText(/E:15 · T:0 · S:14/)).toBeInTheDocument();
+    expect(screen.getByText(/E:15 · T:0 · D:0 · S:14/)).toBeInTheDocument();
   });
 
-  it("badge selisih (merah) memakai (sisa + terjual) - expected, BUKAN sisa saja", () => {
+  it("badge selisih (merah) memakai (sisa + dikirim + terjual) - expected, BUKAN sisa saja", () => {
     renderCard();
     expect(screen.getByText("-1")).toBeInTheDocument();
   });
@@ -52,11 +52,18 @@ describe("ProductBukuCard", () => {
   it("terjual (soldMap) mengurangi selisih negatif — kasus bugfix rekonsiliasi utama", () => {
     const soldMap = { "D-01-OSK__Midi__HITAM": 1 };
     renderCard({ soldMap });
-    expect(screen.getByText(/E:15 · T:1 · S:14/)).toBeInTheDocument();
+    expect(screen.getByText(/E:15 · T:1 · D:0 · S:14/)).toBeInTheDocument();
     expect(screen.queryByText("-1")).toBeNull();
   });
 
-  it("tidak menampilkan badge selisih saat (sisa + terjual) === expected", () => {
+  it("dikirim (keep terkirim, dikirimMap) juga mengurangi selisih negatif — terpisah dari terjual", () => {
+    const dikirimMap = { "D-01-OSK__Midi__HITAM": 1 };
+    renderCard({ dikirimMap });
+    expect(screen.getByText(/E:15 · T:0 · D:1 · S:14/)).toBeInTheDocument();
+    expect(screen.queryByText("-1")).toBeNull();
+  });
+
+  it("tidak menampilkan badge selisih saat (sisa + dikirim + terjual) === expected", () => {
     const exactActual = {
       "D-01-OSK__Midi__HITAM": 10,
       "D-01-OSK__Gamis__MERAH": 5,
@@ -126,6 +133,13 @@ describe("ProductBukuCard", () => {
     expect(screen.getAllByText("3").length).toBeGreaterThan(0);
   });
 
+  it("isOpen=true: kolom 'Dikirim' menampilkan nilai dari dikirimMap per row", () => {
+    const dikirimMap = { "D-01-OSK__Midi__HITAM": 2, "D-01-OSK__Gamis__MERAH": 0 };
+    renderCard({ isOpen: true, dikirimMap });
+    expect(screen.getAllByText("Dikirim").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("2").length).toBeGreaterThan(0);
+  });
+
   it("isOpen=true: kolom 'Sisa Stok' (dulu 'Stok Saat Ini') tetap menampilkan actualMap apa adanya", () => {
     renderCard({ isOpen: true });
     expect(screen.getAllByText("Sisa Stok").length).toBeGreaterThan(0);
@@ -144,10 +158,10 @@ describe("ProductBukuCard", () => {
   it("rows kosong: header tetap tampil tanpa crash", () => {
     renderCard({ rows: [] });
     expect(screen.getByText("D-01-OSK")).toBeInTheDocument();
-    expect(screen.getByText(/E:0 · T:0 · S:0/)).toBeInTheDocument();
+    expect(screen.getByText(/E:0 · T:0 · D:0 · S:0/)).toBeInTheDocument();
   });
 
-  it("soldMap tidak diberikan sama sekali: default ke {} tanpa crash", () => {
-    expect(() => renderCard({ soldMap: undefined })).not.toThrow();
+  it("soldMap/dikirimMap tidak diberikan sama sekali: default ke {} tanpa crash", () => {
+    expect(() => renderCard({ soldMap: undefined, dikirimMap: undefined })).not.toThrow();
   });
 });

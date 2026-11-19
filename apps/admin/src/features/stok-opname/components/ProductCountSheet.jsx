@@ -1,14 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  buildChanged,
-  bukuCompare,
-  computeSizeCount,
-  dikerjakanKey,
-  LOCS,
-  SIZE_ORDER,
-} from "../utils";
-import DiffSummary from "./DiffSummary";
+import { useState, useRef, useEffect } from "react";
 import SizeCountSection from "./SizeCountSection";
+import DiffSummary from "./DiffSummary";
+import ProductPhotoBanner from "./ProductPhotoBanner";
+import { LOCS, SIZE_ORDER, computeSizeCount, buildChanged, dikerjakanKey, bukuCompare } from "../utils";
 
 export default function ProductCountSheet({
   product,
@@ -46,8 +40,7 @@ export default function ProductCountSheet({
   );
   const changes = results.flatMap((r) => r.changes);
   const selisih = changes.reduce((s, c) => s + (c.next - c.old), 0);
-  const dirty =
-    Object.values(entries).some((v) => v !== "") || Object.values(totals).some((v) => v !== "");
+  const dirty = Object.values(entries).some((v) => v !== "") || Object.values(totals).some((v) => v !== "");
   const anyOver = results.some((r) => r.over);
   const cmp = bukuCompare(buku, product.kode, rows, selisih);
 
@@ -93,29 +86,22 @@ export default function ProductCountSheet({
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={tryClose} />
       <div className="relative bg-skin-card w-full max-w-lg h-[100dvh] md:h-auto md:max-h-[90dvh] flex flex-col border-t-2 md:border-2 border-skin-bdr shadow-xl">
-        <div className="flex items-center justify-between px-4 py-4 border-b border-skin-bdr-lt flex-shrink-0">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-skin-bdr-lt flex-shrink-0">
           <div className="min-w-0">
             <h2 className="font-mono text-base font-bold text-skin-text">{product.kode}</h2>
             <p className="text-xs text-skin-text3 truncate">
-              {product.nama} · <b>{locLabel}</b> ·{" "}
-              {step === "isi" ? "Langkah 1/2: isi hitungan" : "Langkah 2/2: periksa"}
+              {product.nama} · <b>{locLabel}</b> · {step === "isi" ? "Langkah 1/2: isi hitungan" : "Langkah 2/2: periksa"}
             </p>
           </div>
-          <button onClick={tryClose} aria-label="Tutup" className="text-2xl px-2 text-skin-text3">
+          <button onClick={tryClose} aria-label="Tutup" className="text-2xl px-2 text-skin-text3 flex-shrink-0">
             ×
           </button>
         </div>
+        <ProductPhotoBanner image={product.image} kode={product.kode} />
 
-        <div
-          ref={bodyRef}
-          onKeyDown={handleKeyDown}
-          className="flex-1 overflow-y-auto divide-y divide-skin-bdr-lt"
-        >
+        <div ref={bodyRef} onKeyDown={handleKeyDown} className="flex-1 overflow-y-auto divide-y divide-skin-bdr-lt">
           {confirmClose && (
-            <div
-              className="px-4 py-3 bg-amber-500/10 text-sm text-amber-700 dark:text-amber-400"
-              role="alert"
-            >
+            <div className="px-4 py-3 bg-amber-500/10 text-sm text-amber-700 dark:text-amber-400" role="alert">
               Hitungan di layar ini belum disimpan.{" "}
               <button className="underline font-bold" onClick={onClose}>
                 Tutup tanpa simpan
@@ -128,9 +114,7 @@ export default function ProductCountSheet({
           )}
           {step === "isi" ? (
             sizes.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-skin-text4 italic">
-                Belum ada data stok untuk produk ini.
-              </p>
+              <p className="px-4 py-6 text-sm text-skin-text4 italic">Belum ada data stok untuk produk ini.</p>
             ) : (
               sizes.map((size) => (
                 <SizeCountSection
@@ -164,26 +148,19 @@ export default function ProductCountSheet({
             </p>
           )}
           {step === "periksa" && overflowPlan && (
-            <div
-              data-testid="overflow-info"
-              className="text-xs px-2 py-1.5 border border-sky-500/40 bg-sky-500/10 text-sky-600 dark:text-sky-400 space-y-0.5"
-            >
+            <div data-testid="overflow-info" className="text-xs px-2 py-1.5 border border-sky-500/40 bg-sky-500/10 text-sky-600 dark:text-sky-400 space-y-0.5">
               <p className="font-semibold">
-                Stok Gudang otomatis berkurang {gudangTake} pcs (stok + terjual tidak boleh melebihi
-                produksi)
+                Stok Gudang otomatis berkurang {gudangTake} pcs (stok + terjual tidak boleh melebihi produksi)
               </p>
               {overflowPlan.sizes.flatMap((z) =>
                 z.adjustments.map((a) => (
                   <p key={z.size + a.warna}>
-                    {z.size} · {a.warna === "_" ? "Tanpa warna" : a.warna}: gudang {a.gudang_from} →{" "}
-                    {a.gudang_to}
+                    {z.size} · {a.warna === "_" ? "Tanpa warna" : a.warna}: gudang {a.gudang_from} → {a.gudang_to}
                   </p>
                 )),
               )}
               {overflowPlan.sizes.some((z) => Number(z.unresolved) > 0) && (
-                <p className="text-amber-600">
-                  Stok gudang tidak cukup untuk menutup semuanya, periksa lagi hitungan.
-                </p>
+                <p className="text-amber-600">Stok gudang tidak cukup untuk menutup semuanya, periksa lagi hitungan.</p>
               )}
             </div>
           )}

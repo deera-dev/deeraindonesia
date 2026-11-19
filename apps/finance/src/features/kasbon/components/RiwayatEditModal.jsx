@@ -44,62 +44,27 @@ export default function RiwayatEditModal({ kasbon, jenis, index, entry, onClose,
           <h2 className="font-editorial text-sm tracking-[0.2em] uppercase text-skin-text2">
             Edit Riwayat {jenis === "tambah" ? "Tambahan" : "Cicilan"}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-skin-text3 hover:text-red-500 text-2xl leading-none transition"
-          >
-            ×
-          </button>
+          <button onClick={onClose} className="text-skin-text3 hover:text-red-500 text-2xl leading-none transition">×</button>
         </div>
         <form onSubmit={handleSubmit} className="px-5 py-5 space-y-4">
           <div className="space-y-1.5">
             <label className={labelCls}>Tanggal</label>
-            <input
-              type="date"
-              value={tanggal}
-              onChange={(e) => setTanggal(e.target.value)}
-              required
-              className={inputCls}
-            />
+            <input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} required className={inputCls} />
           </div>
           <div className="space-y-1.5">
             <label className={labelCls}>Jumlah (Rp)</label>
-            <input
-              type="number"
-              min="1"
-              value={jumlah}
-              onChange={(e) => setJumlah(e.target.value)}
-              required
-              className={inputCls}
-            />
-            {jumlah && (
-              <p className="font-numeric text-xs text-skin-text3">{fmtRp(Number(jumlah) || 0)}</p>
-            )}
+            <input type="number" min="1" value={jumlah} onChange={(e) => setJumlah(e.target.value)} required className={inputCls} />
+            {jumlah && <p className="font-numeric text-xs text-skin-text3">{fmtRp(Number(jumlah) || 0)}</p>}
           </div>
           <div className="space-y-1.5">
             <label className={labelCls}>Keterangan</label>
-            <input
-              type="text"
-              value={keterangan}
-              onChange={(e) => setKeterangan(e.target.value)}
-              placeholder="Opsional"
-              className={inputCls}
-            />
+            <input type="text" value={keterangan} onChange={(e) => setKeterangan(e.target.value)} placeholder="Opsional" className={inputCls} />
           </div>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-50"
-            >
+            <button type="button" onClick={onClose} disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase border-2 border-skin-bdr text-skin-text2 disabled:opacity-50">
               Batal
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50"
-            >
+            <button type="submit" disabled={saving} className="flex-1 py-3 font-editorial text-sm tracking-[0.18em] uppercase text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-50">
               {saving ? "Menyimpan..." : "Simpan"}
             </button>
           </div>

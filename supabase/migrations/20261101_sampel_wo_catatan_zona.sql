@@ -1,0 +1,21 @@
+-- ============================================================
+-- Migration — sampel.wo_catatan_zona (checklist per-bagian Work Order)
+--
+-- Request (Denny 2026-11-01): tukang potong masih sering salah walau WO
+-- sudah punya "Kesimpulan Penting" (freeform). Alur kerja Denny sendiri
+-- selalu per-bagian secara berurutan: dada -> bawah -> lengan -> tangan
+-- depan -> samping -> belakang -> pundak. "Kesimpulan Penting" freeform
+-- tidak mengikuti urutan ini dan tidak menandai eksplisit bagian mana yang
+-- SAMA dgn foto patokan vs yang LUPA ditulis.
+--
+-- Kolom baru jsonb, additive — TIDAK mengganti wo_catatan (freeform) yang
+-- sudah ada, keduanya tetap dicetak di WO (lihat apps/admin/src/features/
+-- produksi-sampel/components/WorkOrderModal.jsx, ZonaChecklist.jsx,
+-- ZonaCropModal.jsx). Bentuk: { [zona_key]: { catatan: text, crop:
+-- {url, x, y, width, height} | null } }, 7 key tetap sesuai WO_ZONA di
+-- utils.js (dada/bawah/lengan/tangan_depan/samping/belakang/pundak).
+-- x/y/width/height adalah fraksi 0-1 dari foto referensi (dipakai sbg
+-- crop relatif Cloudinary, lihat packages/shared/lib/cloudinary.js cldUrl).
+-- ============================================================
+
+ALTER TABLE sampel ADD COLUMN IF NOT EXISTS wo_catatan_zona jsonb;

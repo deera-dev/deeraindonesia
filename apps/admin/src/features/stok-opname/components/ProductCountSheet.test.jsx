@@ -119,4 +119,26 @@ describe("ProductCountSheet", () => {
     fireEvent.click(screen.getByLabelText("Tambah HITAM, ukuran Midi"));
     expect(Number(input.value)).toBeGreaterThanOrEqual(1);
   });
+
+  it("menampilkan foto produk kalau ada, placeholder kalau tidak", () => {
+    setup();
+    expect(screen.queryByRole("img", { name: "K" })).not.toBeInTheDocument();
+    expect(screen.getByText("Belum ada foto")).toBeInTheDocument();
+  });
+
+  it("menampilkan foto produk via cldUrl kalau product.image ada", () => {
+    render(
+      <ProductCountSheet
+        product={{ ...product, image: "https://res.cloudinary.com/demo/image/upload/foo.jpg" }}
+        rows={rows}
+        loc="gudang"
+        onSubmit={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("img", { name: "K" })).toHaveAttribute(
+      "src",
+      expect.stringContaining("res.cloudinary.com"),
+    );
+  });
 });

@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 
 vi.mock("../../../shared/lib/format", () => ({
   fmtRp: vi.fn((v) => `Rp${v}`),
@@ -26,25 +26,9 @@ const gajianFinal = {
   kasbon_deductions: [],
 };
 
-const totals = {
-  gaji: 5000000,
-  potong: 1000000,
-  jahit: 2000000,
-  finishing: 0,
-  qa: 0,
-  kreatif: 0,
-  cmt: 0,
-};
+const totals = { gaji: 5000000, potong: 1000000, jahit: 2000000, finishing: 0, qa: 0, kreatif: 0, cmt: 0 };
 const perKaryawan = [
-  [
-    "BUDI",
-    {
-      total: 1500000,
-      nama_bank: "BCA",
-      no_rekening: "123",
-      rincian: [{ label: "Jahit 10 pcs", sub: 200000 }],
-    },
-  ],
+  ["BUDI", { total: 1500000, nama_bank: "BCA", no_rekening: "123", rincian: [{ label: "Jahit 10 pcs", sub: 200000 }] }],
 ];
 
 describe("GajianShareCard (draft mode)", () => {
@@ -58,7 +42,7 @@ describe("GajianShareCard (draft mode)", () => {
         pettycash="0"
         kasbonDeds={[]}
         totalRequest={4500000}
-      />,
+      />
     );
     expect(screen.getByText("Ringkasan Gajian")).toBeInTheDocument();
   });
@@ -73,7 +57,7 @@ describe("GajianShareCard (draft mode)", () => {
         pettycash="0"
         kasbonDeds={[]}
         totalRequest={4500000}
-      />,
+      />
     );
     expect(screen.getByText("2026-07-04")).toBeInTheDocument();
   });
@@ -88,7 +72,7 @@ describe("GajianShareCard (draft mode)", () => {
         pettycash="0"
         kasbonDeds={[]}
         totalRequest={4500000}
-      />,
+      />
     );
     expect(screen.queryByText("FINAL")).toBeNull();
   });
@@ -103,7 +87,7 @@ describe("GajianShareCard (draft mode)", () => {
         pettycash="0"
         kasbonDeds={[]}
         totalRequest={4800000}
-      />,
+      />
     );
     expect(screen.getByText("FINAL")).toBeInTheDocument();
   });
@@ -118,7 +102,7 @@ describe("GajianShareCard (draft mode)", () => {
         pettycash="0"
         kasbonDeds={[]}
         totalRequest={4500000}
-      />,
+      />
     );
     expect(screen.getByText("BUDI")).toBeInTheDocument();
     expect(screen.getByText(/BCA.*123/)).toBeInTheDocument();
@@ -134,7 +118,7 @@ describe("GajianShareCard (draft mode)", () => {
         pettycash="0"
         kasbonDeds={[]}
         totalRequest={4500000}
-      />,
+      />
     );
     expect(screen.getByText("Tim Potong")).toBeInTheDocument();
     expect(screen.getByText("Tim Jahit")).toBeInTheDocument();
@@ -150,7 +134,7 @@ describe("GajianShareCard (draft mode)", () => {
         pettycash="200000"
         kasbonDeds={[]}
         totalRequest={4700000}
-      />,
+      />
     );
     expect(screen.getByText("+ Uang Denny & Wulan Terpakai")).toBeInTheDocument();
   });
@@ -165,9 +149,35 @@ describe("GajianShareCard (draft mode)", () => {
         pettycash="0"
         kasbonDeds={[{ nama: "BUDI", jumlah: 300000 }]}
         totalRequest={4200000}
-      />,
+      />
     );
     expect(screen.getByText(/Kasbon BUDI/)).toBeInTheDocument();
+  });
+
+  it("adds border-top separator only when tim berganti antar karyawan berurutan", () => {
+    const perKaryawanMultiTim = [
+      ["POTONG1", { total: 10000, tim: "potong", rincian: [] }],
+      ["JAHIT1", { total: 20000, tim: "jahit", rincian: [] }],
+      ["FIN1", { total: 30000, tim: "finishing", rincian: [{ label: "+ Beli Gas", sub: 100000 }] }],
+    ];
+    render(
+      <GajianShareCard
+        gajian={gajianDraft}
+        totals={totals}
+        perKaryawan={perKaryawanMultiTim}
+        tambahan={[]}
+        pettycash="0"
+        kasbonDeds={[]}
+        totalRequest={4500000}
+      />,
+    );
+    const potong1 = screen.getByText("POTONG1").closest("div").parentElement;
+    const jahit1 = screen.getByText("JAHIT1").closest("div").parentElement;
+    const fin1 = screen.getByText("FIN1").closest("div").parentElement;
+    expect(potong1.style.borderTop).toBe("1px solid rgb(202, 177, 112)");
+    expect(jahit1.style.borderTop).toBe("1px solid rgb(202, 177, 112)");
+    expect(fin1.style.borderTop).toBe("1px solid rgb(202, 177, 112)");
+    expect(screen.getByText("+ Beli Gas")).toBeInTheDocument();
   });
 
   it("forwards ref to container div", () => {
@@ -182,7 +192,7 @@ describe("GajianShareCard (draft mode)", () => {
         pettycash="0"
         kasbonDeds={[]}
         totalRequest={0}
-      />,
+      />
     );
     expect(ref.current).not.toBeNull();
   });

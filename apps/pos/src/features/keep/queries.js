@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { cancelKeep, createKeepOrder, fetchKeepOrders, markKeepPaid, updateKeepOrder } from "./api";
+import { fetchKeepOrders, createKeepOrder, updateKeepOrder, markKeepPaid, cancelKeep, markKeepTerkirim } from "./api";
 
 export const keepKeys = { aktif: ["keep", "aktif"] };
 
@@ -9,14 +9,12 @@ export function useKeepOrdersQuery() {
 
 function useInvalidating(mutationFn) {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn,
-    onSuccess: () => qc.invalidateQueries({ queryKey: keepKeys.aktif }),
-  });
+  return useMutation({ mutationFn, onSuccess: () => qc.invalidateQueries({ queryKey: keepKeys.aktif }) });
 }
 
 export const useCreateKeepMutation = () => useInvalidating(createKeepOrder);
-export const useUpdateKeepMutation = () =>
-  useInvalidating(({ id, ...fields }) => updateKeepOrder(id, fields));
+export const useUpdateKeepMutation = () => useInvalidating(({ id, ...fields }) => updateKeepOrder(id, fields));
 export const useMarkKeepPaidMutation = () => useInvalidating(markKeepPaid);
 export const useCancelKeepMutation = () => useInvalidating(cancelKeep);
+export const useMarkKeepTerkirimMutation = () =>
+  useInvalidating(({ id, stokAdjustments }) => markKeepTerkirim(id, { stokAdjustments }));

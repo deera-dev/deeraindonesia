@@ -164,8 +164,9 @@ semua selesai difinishing).
 ## 9. "Beli Gas" & "Persiapan ATK" (Ringkasan Gaji)
 
 **File:** `utils.js` (`BELI_GAS_LABEL`, `BELI_GAS_AMOUNT`,
-`PERSIAPAN_ATK_LABEL`, `otherTambahan`, `buildTambahanPayload`) ·
-`TabRingkasan.jsx`
+`PERSIAPAN_ATK_LABEL`, `otherTambahan`, `buildTambahanPayload`,
+`attachGasAtkToPerKaryawan`, `buildPerKaryawanMap`) · `TabRingkasan.jsx` ·
+`ShareModal.jsx` · `GajianShareCard.jsx`
 
 Checkbox "Beli Gas" (nominal tetap Rp100.000) + input manual "Persiapan
 ATK" (placeholder, bukan default 0), selain "Uang Denny & Wulan Terpakai"
@@ -178,6 +179,31 @@ ada, dengan label baku, supaya otomatis ikut kehitung di
 (`generateWAText` sudah iterasi `tambahan` generik) — tanpa ubah skema atau
 logic totals. `otherTambahan()` memisahkan keduanya dari daftar "Tambahan
 Lain" freeform supaya tidak diedit dari dua tempat berbeda.
+
+**Atribusi ke rincian karyawan (2026-11-19):** selain tetap tampil di
+"Tambahan & Potongan" (ringkasan atas), Beli Gas & Persiapan ATK JUGA
+ditambahkan ke rincian karyawan di "Rincian Per Karyawan" pada ShareModal/
+GajianShareCard — supaya kelihatan uang itu dipegang siapa, bukan cuma
+angka ringkasan:
+- **Beli Gas** → karyawan Finishing periode itu (Finishing sudah wajib
+  pilih karyawan sejak commit `55dd64f`/migrasi
+  `20261109_add_karyawan_id_to_gaji_finishing.sql`).
+- **Persiapan ATK** → karyawan QC dengan total upah TERBESAR periode itu
+  (kalau ada >1 baris `gaji_qc` dengan karyawan berbeda).
+- `attachGasAtkToPerKaryawan()` murni post-process di atas hasil
+  `buildPerKaryawanMap()` — dipanggil SEKALI di `ShareModal.jsx` lalu hasil
+  yang sama dipakai baik oleh `generateWAText` maupun `GajianShareCard`,
+  supaya teks WA dan gambar share selalu konsisten. Butuh field `tim` dari
+  tabel `karyawan` ikut di-select di semua `fetch*ForRincian` (lihat
+  `api.js`) supaya tiap entri tahu tim-nya sendiri.
+- `buildPerKaryawanMap()` sekarang men-sort hasil per grup tim (Potong →
+  Jahit → Finishing → QC → lainnya) alih-alih murni total desc — dipakai
+  `GajianShareCard` untuk kasih border pemisah tiap pergantian grup di
+  "Rincian Per Karyawan". Urutan/atribusi ini SENGAJA hanya diterapkan di
+  ShareModal/GajianShareCard (hasil akhir yang dibagikan), bukan di panel
+  live `PerKaryawan.jsx` — supaya total yang tampil saat masih mengisi data
+  tidak dianggap final sebelum Beli Gas/ATK beneran ditentukan di tab
+  Tambahan.
 
 ## 10. "Uang Denny & Wulan Terpakai" (Reimburse Petty Cash)
 

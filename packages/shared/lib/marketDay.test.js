@@ -1,24 +1,33 @@
-import { describe, expect, it } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
-  DAY_NAMES,
-  getMarketLabel,
-  getMarketLocation,
-  getTodayInfo,
-  LOCATION_LABELS,
   LOCATIONS,
+  LOCATION_LABELS,
+  TRANSFER_LOCATIONS,
+  DAY_NAMES,
+  getMarketLocation,
+  getMarketLabel,
+  getTodayInfo,
 } from "./marketDay";
 
 describe("konstanta lokasi & label", () => {
-  it("LOCATIONS berisi gudang, cideng, tegalgubug", () => {
+  it("LOCATIONS berisi gudang, cideng, tegalgubug (lokasi pasar/jualan — TIDAK termasuk ngorder)", () => {
     expect(LOCATIONS).toEqual(["gudang", "cideng", "tegalgubug"]);
   });
 
-  it("LOCATION_LABELS memetakan setiap lokasi ke label tampilan", () => {
+  it("LOCATION_LABELS memetakan setiap lokasi ke label tampilan, termasuk ngorder", () => {
     expect(LOCATION_LABELS).toEqual({
       gudang: "Gudang",
       cideng: "Cideng",
       tegalgubug: "Tegalgubug",
+      ngorder: "Ngorder",
     });
+  });
+
+  // Stok ngorder (dibawa keliling toko) bukan lokasi pasar/jualan — tidak
+  // masuk LOCATIONS (dipakai getMarketLocation, laporan per pasar, BEP) —
+  // tapi tetap harus bisa jadi "dari"/"ke" di Transfer, lihat TRANSFER_LOCATIONS.
+  it("TRANSFER_LOCATIONS = LOCATIONS + ngorder", () => {
+    expect(TRANSFER_LOCATIONS).toEqual(["gudang", "cideng", "tegalgubug", "ngorder"]);
   });
 
   it("DAY_NAMES berisi 7 nama hari dimulai dari Minggu", () => {

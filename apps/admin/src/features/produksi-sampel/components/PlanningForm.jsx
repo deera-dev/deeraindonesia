@@ -122,8 +122,6 @@ function startSingleUpload(file, setFoto) {
     );
 }
 
-const MAX_MODEL_FOTO = 3;
-
 function mkBahanRow() {
   return { id: mkId(), bahan: null, foto: null };
 }
@@ -354,9 +352,7 @@ export default function PlanningForm({
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className={labelCls + " mb-0"}>
-              Foto Model Referensi <span className="text-skin-text4">(maks {MAX_MODEL_FOTO})</span>
-            </label>
+            <label className={labelCls + " mb-0"}>Foto Model Referensi</label>
             {modelFotos.some(isBusyFoto) && (
               <span className="text-[9px] text-skin-accent-text font-editorial animate-pulse">
                 Mengupload...
@@ -372,9 +368,7 @@ export default function PlanningForm({
                 onRemove={() => setModelFotos((prev) => prev.filter((x) => x.id !== f.id))}
               />
             ))}
-            {modelFotos.length < MAX_MODEL_FOTO && (
-              <FotoSlot foto={null} onAdd={addModelFoto} placeholder="Model" />
-            )}
+            <FotoSlot foto={null} onAdd={addModelFoto} placeholder="Model" />
           </div>
         </div>
       </div>

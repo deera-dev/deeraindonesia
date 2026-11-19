@@ -1,12 +1,8 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import React from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import WorkOrderModal, {
-  MAX_KESIMPULAN_CHARS,
-  MAX_KESIMPULAN_CHARS_P2,
-  MAX_WO_FOTOS,
-} from "./WorkOrderModal";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import WorkOrderModal, { MAX_WO_FOTOS } from "./WorkOrderModal";
 
 const mockPrintImageA4 = vi.fn();
 vi.mock("../utils", async (importOriginal) => ({
@@ -24,23 +20,29 @@ vi.mock("@deera/shared/lib/storeInfo", () => ({
   STORE_INFO: { wa: "0812-TEST-WA" },
 }));
 vi.mock("@deera/shared/features/auth/hooks", () => ({
-  useAuth: () => ({
-    user: { email: "admin@deera.id", user_metadata: { full_name: "Admin Toko" } },
-  }),
+  useAuth: () => ({ user: { email: "admin@deera.id", user_metadata: { full_name: "Admin Toko" } } }),
 }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+// useWoDraft TIDAK di-mock (tetap pakai store Zustand asli) supaya draft
+// autosave/clear sungguhan bisa diuji — lihat describe "draft tersimpan
+// otomatis" di bawah. Store direset di beforeEach global.
 const mockLogWorkOrder = vi.fn().mockResolvedValue(undefined);
-let commentsState = [];
-vi.mock("../hooks", () => ({
-  useLogWorkOrder: () => mockLogWorkOrder,
-  useComments: () => ({ comments: commentsState, loading: false }),
-}));
+const mockSaveWoDraft = vi.fn().mockResolvedValue(undefined);
+vi.mock("../hooks", async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, useLogWorkOrder: () => mockLogWorkOrder, useSaveWoDraft: () => mockSaveWoDraft };
+});
 
-import { toast } from "@deera/shared/features/toast/hooks";
 import { toPng } from "html-to-image";
+import { toast } from "@deera/shared/features/toast/hooks";
+import { useWoDraftStore } from "../store";
+
+beforeEach(() => {
+  useWoDraftStore.setState({ drafts: {} });
+});
 
 const approvedSampel = {
   id: "s1",
@@ -68,7 +70,7 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
     vi.clearAllMocks();
     toPng.mockResolvedValue("data:image/png;base64,TESTDATA");
     mockLogWorkOrder.mockResolvedValue(undefined);
-    commentsState = [];
+    mockSaveWoDraft.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -77,7 +79,8 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
       Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
       Object.defineProperty(navigator, "canShare", { configurable: true, value: undefined });
       Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
-    } catch (_) {}
+    } catch (_) {
+    }
   });
 
   it("returns null when sampel is null", () => {
@@ -90,24 +93,12 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
     expect(screen.getAllByText("SPL-20260902-ABC").length).toBeGreaterThan(0);
   });
 
-  it("prefills Kesimpulan Penting textarea dengan sampel.perubahan", () => {
-    setup();
-    expect(screen.getByDisplayValue("Kancing dipindah ke kiri")).toBeInTheDocument();
-  });
-
-  it("prefills size & Kesimpulan Penting dari wo_sizes/wo_catatan sampel (WO sebelumnya), bukan reset ke kosong (Denny 2026-10-20: size & catatan WO hilang kalau dibuka lagi)", () => {
-    setup({ wo_sizes: ["Midi", "Gamis Jumbo"], wo_catatan: "Catatan WO sebelumnya" });
+  it("prefills size dari wo_sizes sampel (WO sebelumnya), bukan reset ke kosong (Denny 2026-10-20: size WO hilang kalau dibuka lagi)", () => {
+    setup({ wo_sizes: ["Midi", "Gamis Jumbo"] });
     expect(screen.getByRole("button", { name: "Midi" })).toHaveClass("border-skin-accent");
     expect(screen.getByRole("button", { name: "Gamis Jumbo" })).toHaveClass("border-skin-accent");
     expect(screen.getByRole("button", { name: "Gamis" })).not.toHaveClass("border-skin-accent");
-    expect(screen.getByDisplayValue("Catatan WO sebelumnya")).toBeInTheDocument();
     expect(screen.getByText("Cetak A4")).not.toBeDisabled();
-  });
-
-  it("wo_catatan dipakai lebih dulu daripada sampel.perubahan kalau keduanya ada", () => {
-    setup({ wo_catatan: "Catatan WO terakhir", perubahan: "Kancing dipindah ke kiri" });
-    expect(screen.getByDisplayValue("Catatan WO terakhir")).toBeInTheDocument();
-    expect(screen.queryByDisplayValue("Kancing dipindah ke kiri")).not.toBeInTheDocument();
   });
 
   it("renders size checklist dari SIZE_PRESETS", () => {
@@ -153,7 +144,7 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
     await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(2));
     await waitFor(() =>
       expect(mockLogWorkOrder).toHaveBeenCalledWith(
-        expect.objectContaining({ sizes: ["Gamis"], catatanPenting: "Kancing dipindah ke kiri" }),
+        expect.objectContaining({ sizes: ["Gamis"] }),
       ),
     );
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
@@ -234,9 +225,7 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
 
     it("bahan dgn foto (field baru per-item) -> render <img> kecil dgn alt=nama_bahan", () => {
       setup({
-        bahan_items: [
-          { nama_bahan: "Wolfis", kode_bahan: "B-01", foto: "https://cloud/wolfis.jpg" },
-        ],
+        bahan_items: [{ nama_bahan: "Wolfis", kode_bahan: "B-01", foto: "https://cloud/wolfis.jpg" }],
       });
       expect(screen.getByAltText("Wolfis")).toHaveAttribute("src", "https://cloud/wolfis.jpg");
     });
@@ -246,10 +235,7 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
         bahan_foto: "https://cloud/legacy-bahan.jpg",
         bahan_items: [{ nama_bahan: "Wolfis", kode_bahan: "B-01" }],
       });
-      expect(screen.getByAltText("Wolfis")).toHaveAttribute(
-        "src",
-        "https://cloud/legacy-bahan.jpg",
-      );
+      expect(screen.getByAltText("Wolfis")).toHaveAttribute("src", "https://cloud/legacy-bahan.jpg");
     });
 
     it("2 bahan, hanya salah satu punya foto -> cuma 1 <img> yang muncul", () => {
@@ -269,7 +255,6 @@ describe("WorkOrderModal (permintaan Denny 2026-09: Work Order untuk tukang poto
 describe("WorkOrderModal — Foto yang Dicetak (permintaan Denny 2026-09: 'foto2nya bisa dipilih mana aja yang mau di cetak')", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    commentsState = [];
   });
 
   it("menampilkan section Foto yang Dicetak dengan semua foto ter-checklist (✓) secara default", () => {
@@ -294,12 +279,11 @@ describe("WorkOrderModal — Foto yang Dicetak (permintaan Denny 2026-09: 'foto2
   });
 });
 
-describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (permintaan Denny 2026-09: 'saya rangkum sendiri aja, kasih textnya aja ... ada tombol copy')", () => {
+describe("WorkOrderModal — Catatan Approve + tombol Salin (diskusi sudah dilakukan offline, tidak lagi dari komentar)", () => {
   const mockWriteText = vi.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
     vi.clearAllMocks();
-    commentsState = [];
     mockWriteText.mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -308,186 +292,66 @@ describe("WorkOrderModal — Kumpulan Catatan & Diskusi + tombol Salin (perminta
     });
   });
 
-  it("menampilkan catatan approve sebagai poin tanpa judul", () => {
+  it("menampilkan catatan approve (sampel.perubahan) sebagai poin tanpa judul, dengan tombol Salin", () => {
     setup();
-    expect(screen.queryByText(/Catatan saat approve:/)).not.toBeInTheDocument();
+    expect(screen.getByText("Catatan Approve")).toBeInTheDocument();
     expect(screen.getAllByText(/Kancing dipindah ke kiri/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Salin")).toBeInTheDocument();
   });
 
-  it("komentar diskusi tampil sebagai poin TANPA nama pengomentar", () => {
-    commentsState = [
-      {
-        id: "c1",
-        text: "Lengan tolong dipanjangkan 2cm",
-        user_name: "haikal",
-        user_email: "haikal@deera.id",
-      },
-    ];
-    setup();
-    expect(screen.queryByText(/Diskusi:/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Haikal:/)).not.toBeInTheDocument();
-    expect(screen.getByText(/- Lengan tolong dipanjangkan 2cm/)).toBeInTheDocument();
+  it("tanpa perubahan -> section Catatan Approve tidak dicetak", () => {
+    setup({ perubahan: null });
+    expect(screen.queryByText("Catatan Approve")).not.toBeInTheDocument();
+    expect(screen.queryByText("Salin")).not.toBeInTheDocument();
   });
 
-  it("foto komentar diberi label, dirujuk di catatan, dan dicetak sbg Foto Referensi", () => {
-    commentsState = [
-      { id: "c1", text: "tangannya ikut model kaya gini", image_url: "https://cloud/ref1.jpg" },
-    ];
-    setup();
-    expect(
-      screen.getAllByText(/tangannya ikut model kaya gini \(lihat Foto A\)/).length,
-    ).toBeGreaterThan(0);
-    const refs = screen.getByTestId("wo-photo-page");
-    expect(refs.querySelector('img[alt="Foto A"]')).toHaveAttribute(
-      "src",
-      "https://cloud/ref1.jpg",
-    );
-  });
-
-  it("admin bisa memilih foto referensi: yang tidak dicentang tidak dicetak & tidak dirujuk", () => {
-    commentsState = [
-      { id: "c1", text: "lengan ikut ini", image_url: "https://cloud/r1.jpg" },
-      { id: "c2", text: "kerah ikut ini", image_url: "https://cloud/r2.jpg" },
-    ];
-    setup();
+  it("foto model/bahan jadi kandidat referensi, otomatis terpilih & diberi label saat dicetak", () => {
+    setup({ model_foto: ["https://cloud/m1.jpg"] });
     const picker = screen.getByTestId("ref-picker");
-    expect(screen.getByText("2/6 dipilih")).toBeInTheDocument();
+    expect(picker.querySelectorAll("button")).toHaveLength(1);
+    const refs = screen.getByTestId("wo-photo-page");
+    expect(refs.querySelector('img[alt="Foto A"]')).toHaveAttribute("src", "https://cloud/m1.jpg");
+  });
+
+  it("klik foto referensi untuk un-centang menghapusnya dari cetakan", () => {
+    setup({ model_foto: ["https://cloud/m1.jpg", "https://cloud/m2.jpg"] });
+    const picker = screen.getByTestId("ref-picker");
     fireEvent.click(picker.querySelectorAll("button")[0]);
-    expect(screen.getByText("1/6 dipilih")).toBeInTheDocument();
     const refs = screen.getByTestId("wo-photo-page");
     expect(refs.querySelectorAll('img[alt^="Foto "]')).toHaveLength(1);
-    expect(refs.querySelector('img[alt^="Foto "]')).toHaveAttribute("src", "https://cloud/r2.jpg");
-    expect(screen.getAllByText(/kerah ikut ini \(lihat Foto A\)/).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/lengan ikut ini \(lihat/)).not.toBeInTheDocument();
-  });
-
-  it("foto model/bahan juga bisa dipilih sbg final atau referensi", () => {
-    commentsState = [];
-    setup({
-      foto: ["https://cloud/f1.jpg"],
-      model_foto: ["https://cloud/m1.jpg", "https://cloud/m2.jpg"],
-    });
-    expect(screen.getByText("1/2 dipilih")).toBeInTheDocument();
-    expect(screen.getByTestId("wo-photo-page").querySelector('img[alt^="Foto "]')).toBeNull();
-    const picker = screen.getByTestId("ref-picker");
-    expect(picker.querySelectorAll("button")).toHaveLength(2);
-    fireEvent.click(picker.querySelectorAll("button")[0]);
-    const refs = screen.getByTestId("wo-photo-page");
-    expect(refs.querySelector('img[alt^="Foto "]')).toHaveAttribute("src", "https://cloud/m1.jpg");
+    expect(refs.querySelector('img[alt^="Foto "]')).toHaveAttribute("src", "https://cloud/m2.jpg");
   });
 
   it.each([
     [1, "repeat(2, 1fr)", "repeat(2, 1fr)"],
     [4, "repeat(2, 1fr)", "repeat(3, 1fr)"],
-  ])(
-    "2 foto sampel + %i foto referensi di halaman 2 -> grid kolom %s, baris %s",
-    (n, cols, rows) => {
-      commentsState = Array.from({ length: n }, (_, i) => ({
-        id: `c${i}`,
-        text: `p${i}`,
-        image_url: `https://cloud/g${i}.jpg`,
-      }));
-      setup();
-      const grid = screen.getByTestId("wo-photo-page");
-      expect(grid.style.gridTemplateColumns).toBe(cols);
-      expect(grid.style.gridTemplateRows).toBe(rows);
-    },
-  );
-
-  it("tanpa foto di komentar -> bagian Foto Referensi tidak dicetak", () => {
-    commentsState = [{ id: "c1", text: "kancing diganti" }];
-    setup();
-    expect(screen.getByTestId("wo-photo-page").querySelector('img[alt^="Foto "]')).toBeNull();
+  ])("2 foto sampel + %i foto referensi di halaman 2 -> grid kolom %s, baris %s", (n, cols, rows) => {
+    const model_foto = Array.from({ length: n }, (_, i) => `https://cloud/g${i}.jpg`);
+    setup({ model_foto });
+    const grid = screen.getByTestId("wo-photo-page");
+    expect(grid.style.gridTemplateColumns).toBe(cols);
+    expect(grid.style.gridTemplateRows).toBe(rows);
   });
 
-  it("menampilkan pesan kosong & tidak ada tombol Salin kalau tidak ada perubahan maupun komentar", () => {
-    commentsState = [];
-    setup({ perubahan: null });
-    expect(screen.getByText("Belum ada catatan/diskusi untuk sampel ini.")).toBeInTheDocument();
-    expect(screen.queryByText("Salin")).not.toBeInTheDocument();
+  it("tanpa foto tambahan selain foto final -> bagian Foto Referensi tidak dicetak", () => {
+    setup();
+    expect(screen.queryByTestId("ref-picker")).not.toBeInTheDocument();
+    expect(screen.getByTestId("wo-photo-page").querySelector('img[alt^="Foto "]')).toBeNull();
   });
 
   it("klik Salin menyalin notesText ke clipboard dan label berubah jadi ✓ Tersalin", async () => {
     setup();
     fireEvent.click(screen.getByText("Salin"));
     await waitFor(() =>
-      expect(mockWriteText).toHaveBeenCalledWith(
-        expect.stringContaining("Kancing dipindah ke kiri"),
-      ),
+      expect(mockWriteText).toHaveBeenCalledWith(expect.stringContaining("Kancing dipindah ke kiri")),
     );
     await waitFor(() => expect(screen.getByText("✓ Tersalin")).toBeInTheDocument());
   });
-
-  it("mengabaikan komentar tanpa text (mis. cuma kirim foto) saat membangun notesText", () => {
-    commentsState = [
-      { id: "c1", text: null, user_name: "haikal", user_email: "haikal@deera.id" },
-      { id: "c2", text: "  ", user_name: "dika", user_email: "dika@deera.id" },
-    ];
-    setup({ perubahan: null });
-    expect(screen.getByText("Belum ada catatan/diskusi untuk sampel ini.")).toBeInTheDocument();
-  });
 });
 
-describe("WorkOrderModal — Kesimpulan Penting fixed 1 halaman (permintaan Denny 2026-09: 'dibuat 2 column aja ya, dan supaya ga lebih dari 1 page, dibuat maksimal text atau character aja ya, saya mau fixed 1 page ga boleh lebih')", () => {
+describe("WorkOrderModal — dokumen fixed 1 halaman (permintaan Denny 2026-09: 'saya mau fixed 1 page ga boleh lebih')", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    commentsState = [];
-  });
-
-  it("tanpa foto: batas tetap 500; dengan foto (halaman 2): 1500", () => {
-    const { unmount } = setup({ foto: [] });
-    expect(screen.getByPlaceholderText(/Baca\/salin dari Kumpulan Catatan/)).toHaveAttribute(
-      "maxLength",
-      String(MAX_KESIMPULAN_CHARS),
-    );
-    unmount();
-  });
-
-  it("textarea Kesimpulan Penting punya maxLength sesuai MAX_KESIMPULAN_CHARS_P2 (ada foto)", () => {
-    setup();
-    const textarea = screen.getByPlaceholderText(/Baca\/salin dari Kumpulan Catatan/);
-    expect(textarea).toHaveAttribute("maxLength", String(MAX_KESIMPULAN_CHARS_P2));
-  });
-
-  it("menampilkan counter karakter sesuai panjang teks saat ini", () => {
-    setup();
-    const counter = screen.getByText(
-      (_, el) => el?.textContent === `24/${MAX_KESIMPULAN_CHARS_P2}`,
-    );
-    expect(counter).toBeInTheDocument();
-  });
-
-  it("counter jadi merah saat mencapai batas maksimal", () => {
-    setup();
-    const textarea = screen.getByPlaceholderText(/Baca\/salin dari Kumpulan Catatan/);
-    fireEvent.change(textarea, { target: { value: "x".repeat(MAX_KESIMPULAN_CHARS_P2) } });
-    const counter = screen.getByText(
-      (_, el) => el?.textContent === `${MAX_KESIMPULAN_CHARS_P2}/${MAX_KESIMPULAN_CHARS_P2}`,
-    );
-    expect(counter).toHaveClass("text-red-500");
-  });
-
-  it("dokumen memotong teks Kesimpulan Penting maksimal MAX_KESIMPULAN_CHARS_P2 karakter + elipsis", () => {
-    const { container } = setup();
-    const textarea = screen.getByPlaceholderText(/Baca\/salin dari Kumpulan Catatan/);
-    const longText = "a".repeat(MAX_KESIMPULAN_CHARS_P2 + 100);
-    fireEvent.change(textarea, { target: { value: longText } });
-
-    const printed = container.querySelector('[data-testid="wo-kesimpulan-text"]');
-    expect(printed.textContent.length).toBe(MAX_KESIMPULAN_CHARS_P2 + 1);
-    expect(printed.textContent.endsWith("…")).toBe(true);
-  });
-
-  it("teks Kesimpulan memakai huruf kecil 2 kolom (tidak membesar walau teks pendek)", () => {
-    const { container } = setup();
-    const printed = container.querySelector('[data-testid="wo-kesimpulan-text"]');
-    expect(printed).toHaveStyle({ fontSize: "12.5px", columnCount: "2" });
-  });
-
-  it("dokumen TIDAK memotong/menambah elipsis kalau teks masih di bawah batas", () => {
-    const { container } = setup();
-    const printed = container.querySelector('[data-testid="wo-kesimpulan-text"]');
-    expect(printed.textContent).toBe("Kancing dipindah ke kiri");
   });
 
   it("kontainer dokumen A4 punya height tetap + overflow hidden (fixed 1 halaman)", () => {
@@ -498,15 +362,10 @@ describe("WorkOrderModal — Kesimpulan Penting fixed 1 halaman (permintaan Denn
 });
 
 describe("WorkOrderModal — Foto dibatasi maks 2 (permintaan Denny 2026-09: 'bisa pilih lebih dari 1 image yang mau di print, tapi kita set aja max 2 foto aja yang bisa di print')", () => {
-  const tigaFoto = [
-    "https://cloud/final1.jpg",
-    "https://cloud/final2.jpg",
-    "https://cloud/final3.jpg",
-  ];
+  const tigaFoto = ["https://cloud/final1.jpg", "https://cloud/final2.jpg", "https://cloud/final3.jpg"];
 
   beforeEach(() => {
     vi.clearAllMocks();
-    commentsState = [];
   });
 
   it("MAX_WO_FOTOS bernilai 2", () => {
@@ -524,9 +383,7 @@ describe("WorkOrderModal — Foto dibatasi maks 2 (permintaan Denny 2026-09: 'bi
 
   it("menampilkan counter '2/2 dipilih' saat sudah mencapai batas", () => {
     setup({ foto: tigaFoto });
-    const counter = screen.getByText(
-      (_, el) => el?.textContent === `${MAX_WO_FOTOS}/${MAX_WO_FOTOS} dipilih`,
-    );
+    const counter = screen.getByText((_, el) => el?.textContent === `${MAX_WO_FOTOS}/${MAX_WO_FOTOS} dipilih`);
     expect(counter).toBeInTheDocument();
   });
 
@@ -535,9 +392,7 @@ describe("WorkOrderModal — Foto dibatasi maks 2 (permintaan Denny 2026-09: 'bi
     const { container } = setup({ foto: tigaFoto });
     await user.click(screen.getByAltText("foto 3").closest("button"));
 
-    expect(toast.error).toHaveBeenCalledWith(
-      expect.stringContaining(`Maksimal ${MAX_WO_FOTOS} foto`),
-    );
+    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining(`Maksimal ${MAX_WO_FOTOS} foto`));
     expect(screen.getByAltText("foto 3").closest("button")).not.toHaveClass("border-skin-accent");
     const docImgs = container.querySelectorAll('img[alt^="sampel final"]');
     expect(docImgs).toHaveLength(2);
@@ -559,7 +414,6 @@ describe("WorkOrderModal — Foto dibatasi maks 2 (permintaan Denny 2026-09: 'bi
 describe("WorkOrderModal — Cetak A4 langsung (permintaan Denny 2026-10-08)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    commentsState = [];
     toPng.mockResolvedValue("data:image/png;base64,AAA");
     mockPrintImageA4.mockResolvedValue(undefined);
   });
@@ -574,12 +428,7 @@ describe("WorkOrderModal — Cetak A4 langsung (permintaan Denny 2026-10-08)", (
     render(<WorkOrderModal sampel={approvedSampel} onClose={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: "Midi" }));
     await user.click(screen.getByText("Cetak A4"));
-    await waitFor(() =>
-      expect(mockPrintImageA4).toHaveBeenCalledWith([
-        "data:image/png;base64,AAA",
-        "data:image/png;base64,AAA",
-      ]),
-    );
+    await waitFor(() => expect(mockPrintImageA4).toHaveBeenCalledWith(["data:image/png;base64,AAA", "data:image/png;base64,AAA"]));
     expect(mockLogWorkOrder).toHaveBeenCalled();
   });
 
@@ -589,9 +438,7 @@ describe("WorkOrderModal — Cetak A4 langsung (permintaan Denny 2026-10-08)", (
     render(<WorkOrderModal sampel={approvedSampel} onClose={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: "Midi" }));
     await user.click(screen.getByText("Cetak A4"));
-    await waitFor(() =>
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("printer off")),
-    );
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("printer off")));
     expect(screen.getByText("Cetak A4")).not.toBeDisabled();
   });
 
@@ -621,6 +468,222 @@ describe("WorkOrderModal — Cetak A4 langsung (permintaan Denny 2026-10-08)", (
       setup();
       expect(screen.getByText("Work Order — Potong")).toBeInTheDocument();
     });
+  });
+});
+
+describe("WorkOrderModal — Catatan Potong per Bagian (Denny 2026-11-01: tukang potong masih sering salah)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("menampilkan ZonaChecklist dengan 7 baris zona", () => {
+    setup();
+    expect(screen.getByText("Catatan Potong per Bagian")).toBeInTheDocument();
+    for (const label of ["Dada", "Bawah", "Lengan", "Manset", "Samping", "Belakang", "Pundak"]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+  });
+
+  it("ZonaPrintBlock TIDAK dicetak kalau semua zona kosong (default, WO lama tidak terpengaruh)", () => {
+    setup();
+    for (const key of ["dada", "bawah", "lengan", "tangan_depan", "samping", "belakang", "pundak"]) {
+      expect(screen.queryByTestId(`wo-zona-print-${key}`)).not.toBeInTheDocument();
+    }
+  });
+
+  it("isi catatan salah satu zona -> muncul di halaman cetak sebagai poin terpisah per koma, zona lain tetap 'Sama seperti foto patokan'", async () => {
+    const user = userEvent.setup();
+    setup();
+    const row = screen.getByTestId("zona-row-lengan");
+    await user.type(row.querySelector("textarea"), "manset kancing 2, polos");
+
+    const printed = screen.getByTestId("wo-zona-print-lengan");
+    const items = within(printed).getAllByRole("listitem");
+    expect(items.map((li) => li.textContent)).toEqual(["manset kancing 2", "polos"]);
+    expect(screen.getByTestId("wo-zona-print-dada")).toHaveTextContent("Sama seperti foto patokan");
+  });
+
+  it("prefill dari sampel.wo_catatan_zona (WO yang sudah pernah dibuat), tercetak sbg poin", () => {
+    setup({
+      wo_catatan_zona: {
+        dada: { catatan: "motif, bukan polos", crop: null },
+      },
+    });
+    const row = screen.getByTestId("zona-row-dada");
+    expect(row.querySelector("textarea")).toHaveValue("motif, bukan polos");
+    const printed = screen.getByTestId("wo-zona-print-dada");
+    const items = within(printed).getAllByRole("listitem");
+    expect(items.map((li) => li.textContent)).toEqual(["motif", "bukan polos"]);
+  });
+
+  it("pilih capsule Motif/Polos pada suatu zona -> capsule berwarna muncul di halaman cetak", async () => {
+    const user = userEvent.setup();
+    setup();
+    const capsule = screen.getByTestId("zona-motif-dada");
+    await user.click(capsule.querySelectorAll("button")[0]);
+
+    const printed = screen.getByTestId("wo-zona-motif-dada");
+    expect(printed).toHaveTextContent("MOTIF");
+    expect(printed).toHaveStyle({ background: "#d97706", color: "#fff" });
+    expect(screen.queryByTestId("wo-zona-motif-bawah")).not.toBeInTheDocument();
+  });
+
+  it("pilih Polos -> capsule POLOS warna berbeda dari MOTIF", async () => {
+    const user = userEvent.setup();
+    setup();
+    const capsule = screen.getByTestId("zona-motif-pundak");
+    await user.click(capsule.querySelectorAll("button")[1]);
+
+    const printed = screen.getByTestId("wo-zona-motif-pundak");
+    expect(printed).toHaveTextContent("POLOS");
+    expect(printed).toHaveStyle({ background: "#475569", color: "#fff" });
+  });
+
+  it("Unduh PNG meneruskan zonaCatatan terisi ke logWorkOrder", async () => {
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    const user = userEvent.setup();
+    setup();
+    const row = screen.getByTestId("zona-row-bawah");
+    await user.type(row.querySelector("textarea"), "polos");
+    await user.click(screen.getByRole("button", { name: "Gamis" }));
+    await user.click(screen.getByText("Unduh PNG"));
+
+    await waitFor(() =>
+      expect(mockLogWorkOrder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          zonaCatatan: expect.objectContaining({
+            bawah: { catatan: "polos", crop: null, motif: null, aktif: true },
+          }),
+        }),
+      ),
+    );
+    clickSpy.mockRestore();
+  });
+});
+
+describe("WorkOrderModal — toggle on/off per zona (Denny 2026-11-02: 'kalau off tidak muncul di print A4')", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("matikan switch suatu zona berisi -> zona itu hilang dari halaman cetak, zona lain tetap ada", async () => {
+    const user = userEvent.setup();
+    setup();
+    const row = screen.getByTestId("zona-row-dada");
+    await user.type(row.querySelector("textarea"), "renda ga dipake");
+    expect(screen.getByTestId("wo-zona-print-dada")).toBeInTheDocument();
+
+    await user.click(row.querySelector('[role="switch"]'));
+    expect(screen.queryByTestId("wo-zona-print-dada")).not.toBeInTheDocument();
+  });
+
+  it("semua zona berisi tapi di-off -> ZonaPrintBlock tidak dicetak sama sekali", async () => {
+    const user = userEvent.setup();
+    setup();
+    const row = screen.getByTestId("zona-row-lengan");
+    await user.type(row.querySelector("textarea"), "manset kancing 2");
+    await user.click(row.querySelector('[role="switch"]'));
+    expect(screen.queryByText("Catatan Potong per Bagian", { selector: "div" })).not.toBeInTheDocument();
+  });
+});
+
+describe("WorkOrderModal — draft tersimpan otomatis (Denny 2026-11-01: 'kalau di close dan buka ulang saat ini harus buat dari awal lagi')", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("ubah size & catatan zona tersimpan sbg draft; tutup (unmount) lalu buka lagi -> state tetap, tidak reset", async () => {
+    const user = userEvent.setup();
+    const { unmount } = setup();
+    await user.click(screen.getByRole("button", { name: "Gamis" }));
+    const row = screen.getByTestId("zona-row-dada");
+    await user.type(row.querySelector("textarea"), "motif besar");
+    unmount();
+
+    setup();
+    expect(screen.getByRole("button", { name: "Gamis" })).toHaveClass("border-skin-accent");
+    expect(screen.getByTestId("zona-row-dada").querySelector("textarea")).toHaveValue("motif besar");
+  });
+
+  it("setelah Unduh PNG berhasil, draft dihapus -> buka lagi balik ke default (size kosong lagi)", async () => {
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    const user = userEvent.setup();
+    const { unmount } = setup();
+    await user.click(screen.getByRole("button", { name: "Midi" }));
+    await user.click(screen.getByText("Unduh PNG"));
+    await waitFor(() => expect(mockLogWorkOrder).toHaveBeenCalled());
+    unmount();
+
+    setup();
+    expect(screen.getByRole("button", { name: "Midi" })).not.toHaveClass("border-skin-accent");
+    clickSpy.mockRestore();
+  });
+
+  it("draft antar sampel berbeda tidak saling tercampur", async () => {
+    const user = userEvent.setup();
+    const { unmount } = setup();
+    await user.click(screen.getByRole("button", { name: "Midi" }));
+    unmount();
+
+    setup({ id: "s9" });
+    expect(screen.getByRole("button", { name: "Midi" })).not.toHaveClass("border-skin-accent");
+  });
+});
+
+describe("WorkOrderModal — Simpan Draft (Denny 2026-11-02: 'ada simpan sebagai draft kalau belum mau diprint')", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSaveWoDraft.mockResolvedValue(undefined);
+  });
+
+  it("tombol Simpan Draft ada di header, aktif walau belum pilih size", () => {
+    setup();
+    expect(screen.getByText("Simpan Draft")).not.toBeDisabled();
+  });
+
+  it("klik Simpan Draft memanggil saveWoDraft dgn sizes & zonaCatatan saat ini, lalu toast sukses", async () => {
+    const user = userEvent.setup();
+    setup();
+    await user.click(screen.getByRole("button", { name: "Gamis" }));
+    const row = screen.getByTestId("zona-row-dada");
+    await user.type(row.querySelector("textarea"), "renda ga dipake");
+
+    await user.click(screen.getByText("Simpan Draft"));
+
+    await waitFor(() =>
+      expect(mockSaveWoDraft).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sizes: ["Gamis"],
+          zonaCatatan: expect.objectContaining({
+            dada: { catatan: "renda ga dipake", crop: null, motif: null, aktif: true },
+          }),
+        }),
+      ),
+    );
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Draft tersimpan ✓"));
+  });
+
+  it("Simpan Draft TIDAK memanggil logWorkOrder dan TIDAK menghapus draft lokal", async () => {
+    const user = userEvent.setup();
+    const { unmount } = setup();
+    await user.click(screen.getByRole("button", { name: "Midi" }));
+    await user.click(screen.getByText("Simpan Draft"));
+    await waitFor(() => expect(mockSaveWoDraft).toHaveBeenCalled());
+    expect(mockLogWorkOrder).not.toHaveBeenCalled();
+    unmount();
+
+    setup();
+    expect(screen.getByRole("button", { name: "Midi" })).toHaveClass("border-skin-accent");
+  });
+
+  it("toast.error kalau saveWoDraft gagal", async () => {
+    mockSaveWoDraft.mockRejectedValueOnce(new Error("network fail"));
+    const user = userEvent.setup();
+    setup();
+    await user.click(screen.getByText("Simpan Draft"));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("network fail")),
+    );
   });
 });
 

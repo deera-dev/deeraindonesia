@@ -1,8 +1,6 @@
-import { useAuth } from "@deera/shared/features/auth/hooks";
-import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useTotalUnreadCount } from "../../features/produksi-sampel/hooks";
+import { usePendingTransferCount } from "@deera/shared/features/transfers/hooks";
 import LainnyaSheet from "./LainnyaSheet";
 
 export function IconHome({ active }) {
@@ -179,6 +177,9 @@ export function IconRestock({ active }) {
   );
 }
 
+
+
+
 export function IconCalonCustomer({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
@@ -199,6 +200,7 @@ export function IconCalonCustomer({ active }) {
     </svg>
   );
 }
+
 
 export function IconNgorder({ active }) {
   const c = active ? "#CAB170" : "currentColor";
@@ -235,16 +237,7 @@ export function IconLainnya({ active }) {
 export function IconTrafik({ active }) {
   const c = active ? "#CAB170" : "currentColor";
   return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={c}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="9" />
       <path d="M3 12h18" />
       <path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z" />
@@ -276,10 +269,8 @@ const PRIMARY_TO = ["/", "/produksi", "/stok-opname", "/transfer", "/pasar-resto
 
 export default function AdminBottomNav() {
   const { pathname } = useLocation();
-  const { user } = useAuth();
   const pending = usePendingTransferCount();
-  const { total: unreadDiskusi } = useTotalUnreadCount(user?.email);
-  const badges = { transfer: pending, produksi: unreadDiskusi };
+  const badges = { transfer: pending };
   const [showMore, setShowMore] = useState(false);
 
   function isActive(to, exact) {
@@ -344,12 +335,7 @@ export default function AdminBottomNav() {
       </div>
 
       {showMore && (
-        <LainnyaSheet
-          items={secondaryItems}
-          badges={badges}
-          isActive={isActive}
-          onClose={() => setShowMore(false)}
-        />
+        <LainnyaSheet items={secondaryItems} badges={badges} isActive={isActive} onClose={() => setShowMore(false)} />
       )}
     </nav>
   );

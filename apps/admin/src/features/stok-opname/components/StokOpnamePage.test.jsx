@@ -16,6 +16,7 @@ const stokState = { stokRows: [], loading: false };
 const bukuState = { map: {} };
 const saveFn = vi.fn();
 const planFn = vi.fn();
+const checkSemuaFn = vi.fn();
 const session = {
   loc: null,
   counted: {},
@@ -31,7 +32,7 @@ vi.mock("../hooks", () => ({
   useJahitDikerjakan: () => ({ rows: [], loading: false }),
   useSaveStokOpname: () => saveFn,
   usePlanOpnameOverflow: () => planFn,
-  useCheckStokSemua: () => vi.fn().mockResolvedValue({ over: [] }),
+  useCheckStokSemua: () => checkSemuaFn,
   useStokOpnameSession: () => session,
   useBukuPotonganInfo: () => bukuState.map,
 }));
@@ -75,6 +76,7 @@ beforeEach(() => {
   Object.assign(session, { loc: null, counted: {}, guideDismissed: true });
   saveFn.mockResolvedValue({ count: 1 });
   planFn.mockResolvedValue({ overflow: false, sizes: [] });
+  checkSemuaFn.mockResolvedValue({ over: [] });
 });
 
 describe("StokOpnamePage (hitung per produk)", () => {
@@ -252,6 +254,20 @@ describe("StokOpnamePage (hitung per produk)", () => {
       await waitFor(() => expect(saveFn).toHaveBeenCalled());
       expect(planFn).not.toHaveBeenCalled();
     });
+
+    // Ngorder = stok tersendiri, sama seperti Gudang — TIDAK PERNAH minta
+    // rencana ambil dari lokasi lain ("stok gudang ya stok gudang").
+    it("di ngorder tidak pernah minta rencana kelebihan (sama seperti gudang)", async () => {
+      session.loc = "ngorder";
+      renderPage();
+      fireEvent.click(screen.getByText("D-01-OSK"));
+      fireEvent.change(screen.getByLabelText("HITAM, ukuran Midi"), { target: { value: "7" } });
+      fireEvent.click(screen.getByText("Periksa"));
+      fireEvent.click(screen.getByText("Simpan"));
+      await waitFor(() => expect(saveFn).toHaveBeenCalled());
+      expect(planFn).not.toHaveBeenCalled();
+      expect(saveFn.mock.calls[0][0].changed).toEqual({ r1: { ngorder: 7 } });
+    });
   });
 
   it("tanpa perubahan: tidak memanggil simpan ke database, tetap menandai sudah", async () => {
@@ -274,6 +290,91 @@ describe("StokOpnamePage (hitung per produk)", () => {
     fireEvent.click(screen.getByText("Simpan"));
     await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith("Gagal simpan: boom"));
     expect(session.markCounted).not.toHaveBeenCalled();
+  });
+
+  // Stok Opname (hitung per lokasi, termasuk Gudang) TIDAK PERNAH diblokir
+  // simpannya karena "melebihi produksi" — itu angka turunan (produksi_batch
+  // + buku potongan), sedangkan hitungan fisik admin adalah kebenaran
+  // lapangan. Hasil cek ulang di sini hanya dipakai utk peringatan.
+  it("hitung Gudang melebihi produksi: tetap tersimpan, hanya toast peringatan (bukan ditolak)", async () => {
+    session.loc = "gudang";
+    checkSemuaFn.mockResolvedValue({
+      over: [{ size: "Midi", produced: 5, sold: 2, total_after: 9, excess: 6 }],
+    });
+    renderPage();
+    fireEvent.click(screen.getByText("D-01-OSK"));
+    fireEvent.change(screen.getByLabelText("HITAM, ukuran Midi"), { target: { value: "7" } });
+    fireEvent.click(screen.getByText("Periksa"));
+    fireEvent.click(screen.getByText("Simpan"));
+    await waitFor(() =>
+      expect(toastMock.error).toHaveBeenCalledWith(
+        "Perhatian: Midi stok 9 + terjual 2 melebihi produksi 5 (lebih 6). Tetap disimpan — cek data produksi/buku potongan.",
+      ),
+    );
+    await waitFor(() => expect(saveFn).toHaveBeenCalled());
+    expect(session.markCounted).toHaveBeenCalledWith("gudang", "D-01-OSK", 2);
+    expect(toastMock.success).toHaveBeenCalled();
+  });
+
+  it("hitung Ngorder melebihi produksi: tetap tersimpan, hanya toast peringatan (sama seperti Gudang)", async () => {
+    session.loc = "ngorder";
+    checkSemuaFn.mockResolvedValue({
+      over: [{ size: "Midi", produced: 5, sold: 2, total_after: 9, excess: 6 }],
+    });
+    renderPage();
+    fireEvent.click(screen.getByText("D-01-OSK"));
+    fireEvent.change(screen.getByLabelText("HITAM, ukuran Midi"), { target: { value: "7" } });
+    fireEvent.click(screen.getByText("Periksa"));
+    fireEvent.click(screen.getByText("Simpan"));
+    await waitFor(() =>
+      expect(toastMock.error).toHaveBeenCalledWith(
+        "Perhatian: Midi stok 9 + terjual 2 melebihi produksi 5 (lebih 6). Tetap disimpan — cek data produksi/buku potongan.",
+      ),
+    );
+    await waitFor(() => expect(saveFn).toHaveBeenCalled());
+    // selisih 7 (bukan 2 spt tes Gudang) karena fixture STOK tidak punya
+    // nilai ngorder sebelumnya utk baris ini (default 0), beda dgn gudang:5.
+    expect(session.markCounted).toHaveBeenCalledWith("ngorder", "D-01-OSK", 7);
+    expect(toastMock.success).toHaveBeenCalled();
+  });
+
+  // Stok Opname TIDAK PERNAH diblokir simpannya oleh perbandingan ke
+  // produksi/buku potongan — itu angka turunan, bisa saja belum lengkap,
+  // sedangkan hasil hitung fisik admin adalah kebenaran lapangan. Kalau
+  // hasil cek fresh (sinkron, tepat sebelum nulis ke DB) bilang "melebihi
+  // produksi", admin cuma dikasih peringatan — data tetap disimpan.
+  describe("Semua Lokasi — cek ulang fresh sebelum simpan (tetap simpan, hanya peringatan)", () => {
+    it("melebihi produksi: tetap tersimpan, hanya toast peringatan (bukan ditolak)", async () => {
+      checkSemuaFn.mockResolvedValueOnce({ over: [] }).mockResolvedValueOnce({
+        over: [{ size: "Midi", produced: 5, sold: 2, total_after: 9, excess: 6 }],
+      });
+      session.loc = "semua";
+      renderPage();
+      fireEvent.click(screen.getByText("D-01-OSK"));
+      fireEvent.change(screen.getByLabelText("HITAM, Midi, Gudang"), { target: { value: "7" } });
+      await waitFor(() => expect(screen.getByText("Simpan")).not.toBeDisabled());
+      fireEvent.click(screen.getByText("Simpan"));
+      await waitFor(() =>
+        expect(toastMock.error).toHaveBeenCalledWith(
+          "Perhatian: Midi stok 9 + terjual 2 melebihi produksi 5 (lebih 6). Tetap disimpan — cek data produksi/buku potongan.",
+        ),
+      );
+      await waitFor(() => expect(saveFn).toHaveBeenCalled());
+      expect(session.markCounted).toHaveBeenCalledWith("semua", "D-01-OSK", 0);
+    });
+
+    it("lolos & tersimpan kalau hasil cek server terbaru TIDAK melebihi produksi", async () => {
+      checkSemuaFn.mockResolvedValue({ over: [] });
+      session.loc = "semua";
+      renderPage();
+      fireEvent.click(screen.getByText("D-01-OSK"));
+      fireEvent.change(screen.getByLabelText("HITAM, Midi, Gudang"), { target: { value: "7" } });
+      await waitFor(() => expect(screen.getByText("Simpan")).not.toBeDisabled());
+      fireEvent.click(screen.getByText("Simpan"));
+      await waitFor(() => expect(saveFn).toHaveBeenCalled());
+      expect(toastMock.success).toHaveBeenCalledWith("D-01-OSK tersimpan (semua lokasi)");
+      expect(session.markCounted).toHaveBeenCalledWith("semua", "D-01-OSK", 0);
+    });
   });
 
   it("panduan tampil sampai ditutup; tombol Cara pakai memunculkannya lagi", () => {
@@ -305,6 +406,30 @@ describe("StokOpnamePage (hitung per produk)", () => {
     ];
     renderPage();
     expect(screen.getByText("⚠ 4 pcs belum masukin warna")).toBeInTheDocument();
+  });
+
+  it("menampilkan foto produk kalau ada, placeholder kalau tidak", () => {
+    session.loc = "gudang";
+    useProductsMock.mockReturnValue({
+      products: [
+        {
+          ...PRODUCTS[0],
+          kode: "D-02-OSK",
+          image: "https://res.cloudinary.com/demo/image/upload/foo.jpg",
+        },
+        { ...PRODUCTS[1], kode: "D-01-OSK", image: null },
+      ],
+      loading: false,
+    });
+    renderPage();
+    const withImage = screen.getByText("D-02-OSK").closest("li");
+    const withoutImage = screen.getByText("D-01-OSK").closest("li");
+    expect(within(withImage).getByRole("img", { name: "D-02-OSK" })).toHaveAttribute(
+      "src",
+      expect.stringContaining("res.cloudinary.com"),
+    );
+    expect(within(withoutImage).queryByRole("img")).not.toBeInTheDocument();
+    expect(within(withoutImage).getByText("—")).toBeInTheDocument();
   });
 
   it("tombol lokasi menampilkan total pcs seluruh barang di lokasi itu", () => {

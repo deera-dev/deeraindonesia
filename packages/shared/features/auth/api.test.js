@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const signInWithPassword = vi.fn();
 const signOutMock = vi.fn();
@@ -17,8 +17,7 @@ vi.mock("../../lib/supabase", () => ({
   },
 }));
 
-const { signIn, signOut, getCurrentUser, displayName, upsertProfile, verifyPassword } =
-  await import("./api");
+const { signIn, signOut, getCurrentUser, displayName, upsertProfile, verifyPassword } = await import("./api");
 
 describe("signIn", () => {
   beforeEach(() => {
@@ -29,6 +28,23 @@ describe("signIn", () => {
     signInWithPassword.mockResolvedValue({ data: { user: {} }, error: null });
 
     await signIn("  Budi  ", "secret123");
+
+    expect(signInWithPassword).toHaveBeenCalledWith({
+      email: "budi@deera.id",
+      password: "secret123",
+    });
+  });
+
+  // BUG FIX (November 2026) — laporan admin: toggle "tampilkan password"
+  // di beberapa device/browser tetap bikin keyboard mobile kapital-in huruf
+  // pertama/setelah spasi walau autoCapitalize="none" sudah dipasang di
+  // input-nya. Semua password akun Deera memang selalu lowercase, jadi
+  // password dipaksa lowercase sebelum dikirim ke API, apa pun yang
+  // sebenarnya ditik/dikapitalkan keyboard.
+  it("memaksa password jadi lowercase sebelum dikirim ke API (fix bug capslock otomatis saat show password)", async () => {
+    signInWithPassword.mockResolvedValue({ data: { user: {} }, error: null });
+
+    await signIn("budi", "Secret123");
 
     expect(signInWithPassword).toHaveBeenCalledWith({
       email: "budi@deera.id",
@@ -56,10 +72,7 @@ describe("verifyPassword", () => {
 
     const result = await verifyPassword("budi@deera.id", "secret123");
 
-    expect(signInWithPassword).toHaveBeenCalledWith({
-      email: "budi@deera.id",
-      password: "secret123",
-    });
+    expect(signInWithPassword).toHaveBeenCalledWith({ email: "budi@deera.id", password: "secret123" });
     expect(result).toBe(true);
   });
 
@@ -69,6 +82,14 @@ describe("verifyPassword", () => {
     const result = await verifyPassword("budi@deera.id", "salah");
 
     expect(result).toBe(false);
+  });
+
+  it("memaksa password jadi lowercase sebelum dikirim ke API", async () => {
+    signInWithPassword.mockResolvedValue({ data: { user: { id: "u1" } }, error: null });
+
+    await verifyPassword("budi@deera.id", "Secret123");
+
+    expect(signInWithPassword).toHaveBeenCalledWith({ email: "budi@deera.id", password: "secret123" });
   });
 });
 
@@ -162,9 +183,10 @@ describe("upsertProfile", () => {
     const user = { id: "u2", email: "andi@deera.id", user_metadata: {} };
     await upsertProfile(user);
 
-    expect(upsertMock).toHaveBeenCalledWith(expect.objectContaining({ full_name: "andi" }), {
-      onConflict: "id",
-    });
+    expect(upsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({ full_name: "andi" }),
+      { onConflict: "id" },
+    );
   });
 
   it("tidak melakukan apa pun saat user tidak punya id", async () => {

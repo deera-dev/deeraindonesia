@@ -1,5 +1,5 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../../../../../test/utils";
 
 vi.mock("./api", () => ({
@@ -12,46 +12,25 @@ vi.mock("./api", () => ({
   saveBatchDecisions: vi.fn().mockResolvedValue([]),
   deleteSampel: vi.fn().mockResolvedValue(undefined),
   togglePinned: vi.fn().mockResolvedValue(undefined),
-  fetchComments: vi.fn().mockResolvedValue([{ id: "c1" }]),
-  addComment: vi.fn().mockResolvedValue({ id: "c2" }),
-  deleteComment: vi.fn().mockResolvedValue(undefined),
   logWorkOrder: vi.fn().mockResolvedValue(undefined),
-  fetchUnreadDiskusi: vi.fn().mockResolvedValue({ total: 1, per_sampel: { s1: 1 } }),
-  fetchReadsBySampel: vi
-    .fn()
-    .mockResolvedValue([{ user_email: "a@b.com", last_read_at: "2026-09-01" }]),
-  markSampelRead: vi.fn().mockResolvedValue(undefined),
+  saveWoDraft: vi.fn().mockResolvedValue(undefined),
 }));
 
 import {
-  addComment,
   createPlanning,
-  deleteComment,
-  logWorkOrder,
-  markSampelRead,
   reorderPlanning,
   togglePinned,
+  logWorkOrder,
+  saveWoDraft,
 } from "./api";
 import {
   produksiSampelKeys,
-  sampelCommentsKeys,
-  sampelReadsKeys,
-  useAddCommentMutation,
-  useCommentsQuery,
-  useCreatePlanningMutation,
-  useCreateSampelsMutation,
-  useDeleteCommentMutation,
-  useDeleteSampelMutation,
-  useLogWorkOrderMutation,
-  useMarkSampelDibuatMutation,
-  useMarkSampelReadMutation,
-  useReadsBySampelQuery,
-  useReorderPlanningMutation,
-  useSampelsQuery,
-  useSaveBatchDecisionsMutation,
+  useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
+  useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
+  useSaveBatchDecisionsMutation, useDeleteSampelMutation,
   useTogglePinnedMutation,
-  useUnreadDiskusiQuery,
-  useUpdateSampelMutation,
+  useLogWorkOrderMutation,
+  useSaveWoDraftMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -104,10 +83,14 @@ describe("useCreatePlanningMutation", () => {
       userEmail: "a@b.com",
       userName: "A",
     });
-    expect(createPlanning).toHaveBeenCalledWith(entry, "url-bahan", ["url-model"], bahanItems, 2, {
-      userEmail: "a@b.com",
-      userName: "A",
-    });
+    expect(createPlanning).toHaveBeenCalledWith(
+      entry,
+      "url-bahan",
+      ["url-model"],
+      bahanItems,
+      2,
+      { userEmail: "a@b.com", userName: "A" },
+    );
   });
 });
 
@@ -119,10 +102,7 @@ describe("useReorderPlanningMutation", () => {
 
   it("meneruskan updates ke reorderPlanning()", async () => {
     const { result } = renderHook(() => useReorderPlanningMutation(), { wrapper });
-    const updates = [
-      { id: "s1", urutan: 0 },
-      { id: "s2", urutan: 1 },
-    ];
+    const updates = [{ id: "s1", urutan: 0 }, { id: "s2", urutan: 1 }];
     await result.current.mutateAsync(updates);
     expect(reorderPlanning).toHaveBeenCalledWith(updates);
   });
@@ -149,47 +129,11 @@ describe("useDeleteSampelMutation", () => {
   });
 });
 
-describe("sampelCommentsKeys", () => {
-  it("bySampel menghasilkan key unik per sampelId", () => {
-    expect(sampelCommentsKeys.bySampel("s1")).toEqual(["sampel-comments", "s1"]);
-  });
-});
-
 describe("useTogglePinnedMutation", () => {
   it("meneruskan id & pinned ke togglePinned()", async () => {
     const { result } = renderHook(() => useTogglePinnedMutation(), { wrapper });
     await result.current.mutateAsync({ id: "s1", pinned: true });
     expect(togglePinned).toHaveBeenCalledWith("s1", true);
-  });
-});
-
-describe("useCommentsQuery", () => {
-  it("enabled hanya kalau sampelId ada", async () => {
-    const { result } = renderHook(() => useCommentsQuery("s1"), { wrapper });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual([{ id: "c1" }]);
-  });
-
-  it("tidak fetch kalau sampelId kosong", () => {
-    const { result } = renderHook(() => useCommentsQuery(undefined), { wrapper });
-    expect(result.current.fetchStatus).toBe("idle");
-  });
-});
-
-describe("useAddCommentMutation", () => {
-  it("meneruskan params ke addComment()", async () => {
-    const { result } = renderHook(() => useAddCommentMutation(), { wrapper });
-    const params = { sampelId: "s1", text: "halo" };
-    await result.current.mutateAsync(params);
-    expect(addComment.mock.calls[0][0]).toEqual(params);
-  });
-});
-
-describe("useDeleteCommentMutation", () => {
-  it("meneruskan id ke deleteComment()", async () => {
-    const { result } = renderHook(() => useDeleteCommentMutation(), { wrapper });
-    await result.current.mutateAsync({ id: "c1", sampelId: "s1" });
-    expect(deleteComment).toHaveBeenCalledWith("c1");
   });
 });
 
@@ -202,41 +146,12 @@ describe("useLogWorkOrderMutation (permintaan Denny 2026-09: Work Order tukang p
   });
 });
 
-describe("sampelReadsKeys (permintaan Denny 2026-09: read receipts Diskusi)", () => {
-  it("allCommentsMeta konstan", () => {
-    expect(sampelReadsKeys.unread).toEqual(["sampel-unread"]);
-  });
-  it("bySampel menghasilkan key unik", () => {
-    expect(sampelReadsKeys.bySampel("s1")).toEqual(["sampel-reads", "sampel", "s1"]);
-  });
-});
-
-describe("useReadsBySampelQuery", () => {
-  it("returns reads data kalau sampelId ada", async () => {
-    const { result } = renderHook(() => useReadsBySampelQuery("s1"), { wrapper });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual([{ user_email: "a@b.com", last_read_at: "2026-09-01" }]);
-  });
-
-  it("tidak fetch kalau sampelId kosong", () => {
-    const { result } = renderHook(() => useReadsBySampelQuery(undefined), { wrapper });
-    expect(result.current.fetchStatus).toBe("idle");
-  });
-});
-
-describe("useMarkSampelReadMutation", () => {
-  it("meneruskan params ke markSampelRead()", async () => {
-    const { result } = renderHook(() => useMarkSampelReadMutation(), { wrapper });
-    const params = { sampelId: "s1", userEmail: "a@b.com", userName: "A" };
+describe("useSaveWoDraftMutation (Denny 2026-11-02: 'ada simpan sebagai draft kalau belum mau diprint')", () => {
+  it("meneruskan params ke saveWoDraft()", async () => {
+    const { result } = renderHook(() => useSaveWoDraftMutation(), { wrapper });
+    const params = { sampel: { id: "s1", nomor: "SPL-001" }, sizes: ["Midi"], zonaCatatan: {} };
     await result.current.mutateAsync(params);
-    expect(markSampelRead.mock.calls[0][0]).toEqual(params);
+    expect(saveWoDraft.mock.calls[0][0]).toEqual(params);
   });
 });
 
-describe("useUnreadDiskusiQuery", () => {
-  it("mengambil hitungan unread dari backend", async () => {
-    const { result } = renderHook(() => useUnreadDiskusiQuery(), { wrapper });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual({ total: 1, per_sampel: { s1: 1 } });
-  });
-});

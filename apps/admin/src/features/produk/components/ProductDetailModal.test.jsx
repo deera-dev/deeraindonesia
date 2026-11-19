@@ -1,14 +1,12 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import ProductDetailModal from "./ProductDetailModal";
 
 vi.mock("@deera/shared/lib/cloudinary", () => ({
   cldUrl: (url) => `cld:${url}`,
 }));
 
-vi.mock("../../cetak-label", () => ({
-  CetakLabelModal: ({ kode }) => <div data-testid="cetak-label">{kode}</div>,
-}));
+vi.mock("../../cetak-label", () => ({ CetakLabelModal: ({ kode }) => <div data-testid="cetak-label">{kode}</div> }));
 
 vi.mock("../hooks", () => ({
   useProductBadgeHistory: vi.fn(() => []),
@@ -24,65 +22,51 @@ vi.mock("../hooks", () => ({
     },
     loading: false,
   })),
+  // data = { [size]: { gudang, cideng, tegalgubug, total } } -- per UKURAN
+  // (admin: "1 kode ada beberapa yang punya lebih dari 1 ukuran, jangan
+  // digabung, terpisah stoknya") -- default di sini taruh semua di "Midi"
+  // (ukuran pertama BASE_PRODUCT) persis sama nilainya dgn shape flat lama,
+  // supaya test "Stok & Penjualan" (gabungan semua ukuran per LOKASI, sumbu
+  // beda) tetap dapat angka yang sama via sumSalesByLocation().
   useSalesByKode: vi.fn(() => ({
-    data: { gudang: 10, cideng: 5, tegalgubug: 3, total: 18 },
+    data: { Midi: { gudang: 10, cideng: 5, tegalgubug: 3, total: 18 } },
+    isLoading: false,
+  })),
+  useDikirimByKode: vi.fn(() => ({
+    data: {},
     isLoading: false,
   })),
   useProducedByKode: vi.fn(() => ({
-    producedBySize: { "Midi Jumbo": 14, "Gamis Jumbo": 7 },
+    producedBySize: { Midi: 14, Gamis: 7 },
     isLoading: false,
   })),
   useSalesDetailByKode: vi.fn(() => ({
     data: [
-      {
-        id: "s1",
-        created_at: "2026-08-20T10:00:00Z",
-        buyer_name: "Alex",
-        buyer_hp: "0812",
-        location: "gudang",
-        qty: 2,
-      },
-      {
-        id: "s2",
-        created_at: "2026-08-21T10:00:00Z",
-        buyer_name: "Sari",
-        buyer_hp: "0813",
-        location: "cideng",
-        qty: 4,
-      },
+      { id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "gudang", qty: 2 },
+      { id: "s2", created_at: "2026-08-21T10:00:00Z", buyer_name: "Sari", buyer_hp: "0813", location: "cideng", qty: 4 },
     ],
     isLoading: false,
   })),
 }));
 
 beforeEach(async () => {
-  const { useSalesByKode, useProducedByKode, useSalesDetailByKode } = await import("../hooks");
+  const { useSalesByKode, useDikirimByKode, useProducedByKode, useSalesDetailByKode } = await import("../hooks");
   useSalesByKode.mockReturnValue({
-    data: { gudang: 10, cideng: 5, tegalgubug: 3, total: 18 },
+    data: { Midi: { gudang: 10, cideng: 5, tegalgubug: 3, total: 18 } },
+    isLoading: false,
+  });
+  useDikirimByKode.mockReturnValue({
+    data: {},
     isLoading: false,
   });
   useProducedByKode.mockReturnValue({
-    producedBySize: { "Midi Jumbo": 14, "Gamis Jumbo": 7 },
+    producedBySize: { Midi: 14, Gamis: 7 },
     isLoading: false,
   });
   useSalesDetailByKode.mockReturnValue({
     data: [
-      {
-        id: "s1",
-        created_at: "2026-08-20T10:00:00Z",
-        buyer_name: "Alex",
-        buyer_hp: "0812",
-        location: "gudang",
-        qty: 2,
-      },
-      {
-        id: "s2",
-        created_at: "2026-08-21T10:00:00Z",
-        buyer_name: "Sari",
-        buyer_hp: "0813",
-        location: "cideng",
-        qty: 4,
-      },
+      { id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "gudang", qty: 2 },
+      { id: "s2", created_at: "2026-08-21T10:00:00Z", buyer_name: "Sari", buyer_hp: "0813", location: "cideng", qty: 4 },
     ],
     isLoading: false,
   });
@@ -105,10 +89,7 @@ const BASE_PRODUCT = {
   nama: "Gamis Taqwa",
   bahan: "Ceruti",
   hpp: 150000,
-  variants: [
-    { size: "Midi", harga: 280000 },
-    { size: "Gamis", harga: 320000 },
-  ],
+  variants: [{ size: "Midi", harga: 280000 }, { size: "Gamis", harga: 320000 }],
   warna: ["HITAM", "MERAH"],
   image: "gamis.jpg",
 };
@@ -117,12 +98,20 @@ function renderModal(productOverrides = {}, otherProps = {}) {
   return render(
     <ProductDetailModal
       product={{ ...BASE_PRODUCT, ...productOverrides }}
-      stok={{ gudang: 5, cideng: 3, tegalgubug: 2 }}
+      stok={{ gudang: 5, cideng: 3, tegalgubug: 2, sizes: { Midi: { gudang: 5, cideng: 3, tegalgubug: 2 } } }}
       onClose={vi.fn()}
       onEdit={vi.fn()}
       {...otherProps}
-    />,
+    />
   );
+}
+
+// BASE_PRODUCT punya 2 ukuran (Midi+Gamis) -- dipakai utk test yang
+// memang soal diferensiasi antar ukuran. Test generik (StatCard, dll)
+// yang tidak soal itu pakai helper ini: 1 ukuran saja, biar hitungannya
+// sama persis dgn sebelum fitur "pisah per ukuran" ada.
+function renderSingleSize(otherProps = {}) {
+  return renderModal({ variants: [{ size: "Midi", harga: 280000 }] }, otherProps);
 }
 
 describe("ProductDetailModal", () => {
@@ -185,21 +174,21 @@ describe("ProductDetailModal", () => {
   describe("chip Ukuran & Harga (redesign 2026-09, bukan accordion lagi)", () => {
     it("menampilkan tiap varian (ukuran + harga) saat harga > 0", () => {
       renderModal();
-      expect(screen.getByText("Midi")).toBeInTheDocument();
-      expect(screen.getByText(/280\.000/)).toBeInTheDocument();
-      expect(screen.getByText("Gamis")).toBeInTheDocument();
-      expect(screen.getByText(/320\.000/)).toBeInTheDocument();
+      const chips = within(screen.getByTestId("variant-chips"));
+      expect(chips.getByText("Midi")).toBeInTheDocument();
+      expect(chips.getByText(/280\.000/)).toBeInTheDocument();
+      expect(chips.getByText("Gamis")).toBeInTheDocument();
+      expect(chips.getByText(/320\.000/)).toBeInTheDocument();
     });
 
     it("tidak menampilkan chip apa pun saat semua variant harga = 0", () => {
       renderModal({ variants: [{ size: "Midi", harga: 0 }] });
-      expect(screen.queryByText("Midi")).toBeNull();
+      expect(screen.queryByTestId("variant-chips")).toBeNull();
     });
 
     it("tidak menampilkan chip apa pun saat variants kosong", () => {
       renderModal({ variants: [] });
-      expect(screen.queryByText("Midi")).toBeNull();
-      expect(screen.queryByText("Gamis")).toBeNull();
+      expect(screen.queryByTestId("variant-chips")).toBeNull();
     });
   });
 
@@ -219,26 +208,157 @@ describe("ProductDetailModal", () => {
     expect(screen.getByText(/Stok per Warna \(2\)/)).toBeInTheDocument();
   });
 
-  describe("Ringkasan cepat (StatCard Stok/Terjual/Produksi, redesign 2026-09)", () => {
-    it("menampilkan total Stok, Terjual, dan Produksi", () => {
-      renderModal();
+  describe("Ringkasan cepat (StatCard Stok/Terjual/Dikirim/Produksi, redesign 2026-09)", () => {
+    // Test generik di sini pakai renderSingleSize() (1 ukuran) biar
+    // hitungannya persis sama dgn sebelum fitur "pisah per ukuran" admin
+    // minta ("1 kode ada beberapa yang punya lebih dari 1 ukuran, nah itu
+    // juga jangan digabung ya, terpisah stoknya") — diferensiasi antar
+    // ukuran dites terpisah di describe "per ukuran" di bawah.
+    it("menampilkan total Stok, Terjual, Dikirim, dan Produksi", () => {
+      renderSingleSize();
       expect(screen.getAllByText("Stok").length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText("10").length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText("Terjual").length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText("18").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText("Dikirim")).toBeInTheDocument();
       expect(screen.getByText("Produksi")).toBeInTheDocument();
-      expect(screen.getAllByText("21").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("14").length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("menampilkan angka Dikirim (keep terkirim, belum dibayar) dari useDikirimByKode", async () => {
+      const { useDikirimByKode } = await import("../hooks");
+      useDikirimByKode.mockReturnValue({
+        data: { Midi: { gudang: 6, cideng: 0, tegalgubug: 0, total: 6 } },
+        isLoading: false,
+      });
+      renderSingleSize();
+      expect(screen.getAllByText("6").length).toBeGreaterThanOrEqual(1);
     });
 
     it("stat Stok menampilkan 'HABIS' saat stok habis (hasStok default true)", () => {
-      renderModal({}, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 } });
+      renderSingleSize({ stok: { gudang: 0, cideng: 0, tegalgubug: 0 } });
       expect(screen.getAllByText("HABIS").length).toBeGreaterThanOrEqual(1);
     });
 
+    // Total Stok ikut menghitung ngorder (stok dibawa keliling toko) —
+    // produk yang sedang full dibawa ngorder TIDAK boleh kelihatan "HABIS".
+    it("stat Stok ikut menghitung ngorder, TIDAK 'HABIS' walau gudang/cideng/tegalgubug 0", () => {
+      renderSingleSize({
+        stok: { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 4, sizes: { Midi: { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 4 } } },
+      });
+      expect(screen.queryAllByText("HABIS").length).toBe(0);
+      expect(screen.getAllByText("4").length).toBeGreaterThanOrEqual(1);
+    });
+
     it("stat Stok menampilkan '–' netral saat hasStok=false + ada foto + total=0", () => {
-      renderModal({}, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: false });
+      renderSingleSize({ stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: false });
       expect(screen.queryByText("HABIS")).not.toBeInTheDocument();
       expect(screen.getAllByText("–").length).toBeGreaterThanOrEqual(1);
+    });
+
+    // BUG FIX (November 2026, laporan admin soal stok Keep bikin tim
+    // gudang/pasar bingung) — sub-label di bawah angka Stok, info saja.
+    it("stat Stok menampilkan sub-label 'N di-Keep' saat keepQty > 0", () => {
+      renderSingleSize({ keepQty: 3 });
+      expect(screen.getByText("3 di-Keep")).toBeInTheDocument();
+    });
+
+    it("tidak menampilkan sub-label keep saat keepQty 0 atau tidak di-pass (default)", () => {
+      renderSingleSize();
+      expect(screen.queryByText(/di-Keep/)).toBeNull();
+    });
+
+    // CATATAN (November 2026, laporan admin "stok+terjual melebihi
+    // produksi" di BAGHDAD/RANDY/TENCEL) — koreksi dari admin: Produksi
+    // (buku potongan) adalah batas PASTI, stok+terjual tidak akan pernah
+    // bisa lebih dari itu di dunia nyata. Kalau muncul, itu tanda ada
+    // kesalahan di data stok/penjualan — bukan "Produksi mungkin tidak
+    // lengkap" (framing lama, sudah direvisi).
+    //
+    // REVISI (sepaket dgn kategori "Dikirim" di Buku Potongan) — keep yang
+    // sudah "terkirim" (stok keluar, belum lunas) ikut ditambahkan ke
+    // perbandingan ini juga, supaya konsisten dgn get_buku_potongan().
+    //
+    // REVISI #2 (admin: "1 kode ada beberapa yang punya lebih dari 1
+    // ukuran, jangan digabung, terpisah stoknya") — perbandingan ini
+    // sekarang PER UKURAN (produksi antar ukuran independen), bukan
+    // dijumlah dulu lintas ukuran sebelum dibandingkan.
+    describe("catatan Stok + Dikirim + Terjual melebihi Produksi (indikasi data salah)", () => {
+      it("tampil saat Stok + Terjual melebihi Produksi tercatat utk ukuran itu (mock default: 10 + 0 + 18 > 14)", () => {
+        renderSingleSize();
+        expect(screen.getByText(/seharusnya tidak mungkin terjadi/)).toBeInTheDocument();
+      });
+
+      it("tidak tampil saat Stok + Dikirim + Terjual <= Produksi tercatat", async () => {
+        const { useSalesByKode } = await import("../hooks");
+        useSalesByKode.mockReturnValue({ data: { Midi: { total: 4 } }, isLoading: false }); // 10 + 0 + 4 = 14, pas
+        renderSingleSize();
+        expect(screen.queryByText(/seharusnya tidak mungkin terjadi/)).toBeNull();
+      });
+
+      it("tampil kalau Dikirim yang bikin Stok + Dikirim + Terjual melebihi Produksi (sebelumnya pas tanpa Dikirim)", async () => {
+        const { useSalesByKode, useDikirimByKode } = await import("../hooks");
+        useSalesByKode.mockReturnValue({ data: { Midi: { total: 4 } }, isLoading: false }); // 10 + 4 = 14, pas tanpa dikirim
+        useDikirimByKode.mockReturnValue({ data: { Midi: { total: 1 } }, isLoading: false }); // +1 keep terkirim -> 15 > 14
+        renderSingleSize();
+        expect(screen.getByText(/seharusnya tidak mungkin terjadi/)).toBeInTheDocument();
+      });
+
+      it("tidak tampil saat Produksi 0 (belum pernah tercatat sama sekali)", async () => {
+        const { useProducedByKode } = await import("../hooks");
+        useProducedByKode.mockReturnValue({ producedBySize: {}, isLoading: false });
+        renderSingleSize();
+        expect(screen.queryByText(/seharusnya tidak mungkin terjadi/)).toBeNull();
+      });
+
+      it("tidak tampil selagi data Produksi masih loading", async () => {
+        const { useProducedByKode } = await import("../hooks");
+        useProducedByKode.mockReturnValue({ producedBySize: {}, isLoading: true });
+        renderSingleSize();
+        expect(screen.queryByText(/seharusnya tidak mungkin terjadi/)).toBeNull();
+      });
+
+      it("ukuran lain yang TIDAK over tidak ikut kena warning (per ukuran, bukan gabungan)", () => {
+        // Default fixture: Midi over (10+0+18=28>14), Gamis tidak (0+0+0 vs
+        // produksi 7) -- warning cuma boleh sebut Midi.
+        renderModal();
+        const warning = screen.getByText(/seharusnya tidak mungkin terjadi/).closest("p");
+        expect(warning.textContent).toContain("Midi:");
+        expect(warning.textContent).not.toContain("Gamis:");
+      });
+    });
+
+    describe("per ukuran — tiap ukuran py kartu & cek sendiri, tidak digabung", () => {
+      it("kode dgn 2 ukuran (Midi+Gamis) menampilkan 2 blok stat terpisah dgn label ukurannya", () => {
+        const stok = {
+          gudang: 5, cideng: 0, tegalgubug: 0,
+          sizes: { Midi: { gudang: 5, cideng: 0, tegalgubug: 0 }, Gamis: { gudang: 0, cideng: 0, tegalgubug: 0 } },
+        };
+        renderModal({}, { stok });
+        expect(screen.getByTestId("sizestat-Midi")).toBeInTheDocument();
+        expect(screen.getByTestId("sizestat-Gamis")).toBeInTheDocument();
+
+        const midi = within(screen.getByTestId("sizestat-Midi"));
+        expect(midi.getByText("5")).toBeInTheDocument(); // stok Midi
+        expect(midi.getByText("18")).toBeInTheDocument(); // terjual Midi (mock default)
+        expect(midi.getByText("14")).toBeInTheDocument(); // produksi Midi
+
+        const gamis = within(screen.getByTestId("sizestat-Gamis"));
+        expect(gamis.getByText("HABIS")).toBeInTheDocument(); // stok Gamis = 0 — TIDAK ketularan stok Midi
+        expect(gamis.getByText("7")).toBeInTheDocument(); // produksi Gamis — independen dari Midi
+      });
+
+      it("stok Gamis = 0 tidak membuat Midi ikut kelihatan HABIS, dan sebaliknya", () => {
+        const stok = {
+          gudang: 5, cideng: 0, tegalgubug: 0,
+          sizes: { Midi: { gudang: 5, cideng: 0, tegalgubug: 0 }, Gamis: { gudang: 0, cideng: 0, tegalgubug: 0 } },
+        };
+        renderModal({}, { stok });
+        const midi = within(screen.getByTestId("sizestat-Midi"));
+        const gamis = within(screen.getByTestId("sizestat-Gamis"));
+        expect(midi.queryByText("HABIS")).toBeNull();
+        expect(gamis.getByText("HABIS")).toBeInTheDocument();
+      });
     });
   });
 
@@ -275,9 +395,7 @@ describe("ProductDetailModal", () => {
 
     it("multi-size: menampilkan kartu bertumpuk per ukuran (bukan <table>) DI ATAS tabel per lokasi", () => {
       const stok = {
-        gudang: 4,
-        cideng: 2,
-        tegalgubug: 1,
+        gudang: 4, cideng: 2, tegalgubug: 1,
         sizes: {
           Midi: { gudang: 2, cideng: 1, tegalgubug: 0 },
           Gamis: { gudang: 2, cideng: 1, tegalgubug: 1 },
@@ -296,25 +414,39 @@ describe("ProductDetailModal", () => {
       expect(screen.getByTestId("row-total-lokasi")).toBeInTheDocument();
     });
 
+    // Kartu per ukuran menampilkan label "Ngorder" (kolom ke-4) dan ikut
+    // menghitung subtotal ukuran itu.
+    it("kartu per ukuran menampilkan Ngorder dan ikut dihitung ke subtotal ukuran", () => {
+      const stok = {
+        gudang: 2, cideng: 1, tegalgubug: 0, ngorder: 1,
+        sizes: {
+          Midi: { gudang: 2, cideng: 1, tegalgubug: 0, ngorder: 1 },
+          Gamis: { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 },
+        },
+      };
+      const { container } = renderModal({}, { stok });
+      const sizeCards = container.querySelectorAll(".space-y-2 > .border.border-skin-bdr-lt.p-3");
+      expect(sizeCards[0].textContent).toContain("Ngorder");
+      expect(sizeCards[0].textContent).toContain("4");
+    });
+
     it("kartu per ukuran menampilkan 'HABIS' saat subtotal ukuran itu = 0", () => {
       const stok = {
-        gudang: 0,
-        cideng: 0,
-        tegalgubug: 0,
+        gudang: 0, cideng: 0, tegalgubug: 0,
         sizes: {
           Midi: { gudang: 0, cideng: 0, tegalgubug: 0 },
           Gamis: { gudang: 0, cideng: 0, tegalgubug: 0 },
         },
       };
       renderModal({}, { stok });
-      expect(screen.getAllByText("HABIS")).toHaveLength(4);
+      // 2 dari kartu per-ukuran StokPenjualanSection + 1 baris Total (lokasi,
+      // gabungan) + 2 dari StatCard per-ukuran baru di atas (Midi & Gamis).
+      expect(screen.getAllByText("HABIS")).toHaveLength(5);
     });
 
     it("hanya 1 size di stok.sizes: TIDAK menampilkan kartu per ukuran (dianggap single-size)", () => {
       const stok = {
-        gudang: 3,
-        cideng: 0,
-        tegalgubug: 0,
+        gudang: 3, cideng: 0, tegalgubug: 0,
         sizes: { Midi: { gudang: 3, cideng: 0, tegalgubug: 0 } },
       };
       const { container } = renderModal({}, { stok });
@@ -325,7 +457,10 @@ describe("ProductDetailModal", () => {
     it("baris Total mengikuti isBelumDiisi: hasStok=false + ada foto + total=0 -> '–' netral", () => {
       renderModal({}, { stok: { gudang: 0, cideng: 0, tegalgubug: 0 }, hasStok: false });
       expect(screen.queryByText("HABIS")).not.toBeInTheDocument();
-      expect(screen.getAllByText("–")).toHaveLength(2);
+      // 1 dari baris Total (lokasi, gabungan) + 2 dari StatCard per-ukuran
+      // baru (Midi & Gamis, tidak ada stok.sizes override jadi keduanya
+      // fallback ke 0/"belum diisi").
+      expect(screen.getAllByText("–")).toHaveLength(3);
     });
 
     it("menampilkan 'Memuat...' saat isLoading=true", async () => {
@@ -395,16 +530,7 @@ describe("ProductDetailModal", () => {
       it("menampilkan pesan kosong saat lokasi tsb belum ada transaksi", async () => {
         const { useSalesDetailByKode } = await import("../hooks");
         useSalesDetailByKode.mockReturnValue({
-          data: [
-            {
-              id: "s1",
-              created_at: "2026-08-20T10:00:00Z",
-              buyer_name: "Alex",
-              buyer_hp: "0812",
-              location: "cideng",
-              qty: 2,
-            },
-          ],
+          data: [{ id: "s1", created_at: "2026-08-20T10:00:00Z", buyer_name: "Alex", buyer_hp: "0812", location: "cideng", qty: 2 }],
           isLoading: false,
         });
         renderModal();
@@ -415,16 +541,7 @@ describe("ProductDetailModal", () => {
       it("menampilkan 'Tanpa nama' saat buyer_name kosong/null", async () => {
         const { useSalesDetailByKode } = await import("../hooks");
         useSalesDetailByKode.mockReturnValue({
-          data: [
-            {
-              id: "s2",
-              created_at: "2026-08-21T10:00:00Z",
-              buyer_name: null,
-              buyer_hp: "",
-              location: "gudang",
-              qty: 1,
-            },
-          ],
+          data: [{ id: "s2", created_at: "2026-08-21T10:00:00Z", buyer_name: null, buyer_hp: "", location: "gudang", qty: 1 }],
           isLoading: false,
         });
         renderModal();
@@ -437,19 +554,20 @@ describe("ProductDetailModal", () => {
   describe("Stok Sesuai Produksi", () => {
     it("bisa di-collapse via klik header", () => {
       renderModal();
-      expect(screen.getByText("Midi Jumbo")).toBeInTheDocument();
+      expect(screen.getByTestId("produksi-sesuai-list")).toBeInTheDocument();
       fireEvent.click(screen.getByText("Stok Sesuai Produksi"));
-      expect(screen.queryByText("Midi Jumbo")).toBeNull();
+      expect(screen.queryByTestId("produksi-sesuai-list")).toBeNull();
     });
 
     it("menampilkan seksi dengan data per ukuran dari useProducedByKode & Total", () => {
       renderModal();
       expect(screen.getByText("Stok Sesuai Produksi")).toBeInTheDocument();
-      expect(screen.getByText("Midi Jumbo")).toBeInTheDocument();
-      expect(screen.getAllByText("14").length).toBeGreaterThanOrEqual(1);
-      expect(screen.getByText("Gamis Jumbo")).toBeInTheDocument();
-      expect(screen.getAllByText("7").length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText("21").length).toBeGreaterThanOrEqual(1);
+      const list = within(screen.getByTestId("produksi-sesuai-list"));
+      expect(list.getByText("Midi")).toBeInTheDocument();
+      expect(list.getByText("14")).toBeInTheDocument();
+      expect(list.getByText("Gamis")).toBeInTheDocument();
+      expect(list.getByText("7")).toBeInTheDocument();
+      expect(list.getByText("21")).toBeInTheDocument(); // Total (produksi Midi+Gamis digabung di SINI sengaja -- beda dari StatCard per-ukuran di atas)
     });
 
     it("menampilkan 'Memuat...' saat isLoading=true", async () => {
@@ -475,6 +593,19 @@ describe("ProductDetailModal", () => {
       expect(screen.getAllByText("5").length).toBeGreaterThan(0);
       fireEvent.click(screen.getByText(/Stok per Warna/));
       expect(screen.queryByText("HITAM")).toBeNull();
+    });
+
+    // Kolom ke-4 (NG = ngorder) wajib ikut tampil & ikut dihitung ke
+    // Total per baris warna, sama seperti GD/CD/TG.
+    it("menampilkan kolom NG (ngorder) dan ikut dihitung ke Total per warna", async () => {
+      const { useStokWarnaByKode } = await import("../hooks");
+      useStokWarnaByKode.mockReturnValue({
+        stokWarnaMap: { Midi: { HITAM: { gudang: 3, cideng: 2, tegalgubug: 0, ngorder: 1 } } },
+        loading: false,
+      });
+      renderModal();
+      expect(screen.getByText("NG")).toBeInTheDocument();
+      expect(screen.getAllByText("6").length).toBeGreaterThan(0);
     });
   });
 
@@ -540,17 +671,10 @@ describe("ProductDetailModal", () => {
     it("menampilkan juara bulan lalu walau tidak lagi berlencana", async () => {
       const { useProductAchievements } = await import("../hooks");
       useProductAchievements.mockReturnValue([
-        {
-          month: "2026-02-01",
-          label: "Februari 2026",
-          badge: "terlaris",
-          detail: "Terjual 83 pcs sepanjang bulan",
-        },
+        { month: "2026-02-01", label: "Februari 2026", badge: "terlaris", detail: "Terjual 83 pcs sepanjang bulan" },
       ]);
       render(<ProductDetailModal product={BASE_PRODUCT} onClose={() => {}} onEdit={() => {}} />);
-      expect(screen.getByTestId("achievements")).toHaveTextContent(
-        "Mythic · Terlaris — Februari 2026",
-      );
+      expect(screen.getByTestId("achievements")).toHaveTextContent("Mythic · Terlaris — Februari 2026");
       expect(screen.getByTestId("achievements")).toHaveTextContent("Terjual 83 pcs");
       expect(screen.queryByTestId("rarity-banner")).toBeNull();
       useProductAchievements.mockReturnValue([]);
@@ -561,21 +685,10 @@ describe("ProductDetailModal", () => {
     it("menampilkan banner rarity, bingkai, dan riwayat lencana", async () => {
       const { useProductBadgeHistory } = await import("../hooks");
       useProductBadgeHistory.mockReturnValue([
-        {
-          badge: "terlaris",
-          first_seen: "2026-10-10T00:00:00Z",
-          last_seen: "2026-10-16T00:00:00Z",
-        },
+        { badge: "terlaris", first_seen: "2026-10-10T00:00:00Z", last_seen: "2026-10-16T00:00:00Z" },
         { badge: "terbaru", first_seen: "2026-10-01T00:00:00Z", last_seen: "2026-10-05T00:00:00Z" },
       ]);
-      const { container } = render(
-        <ProductDetailModal
-          product={BASE_PRODUCT}
-          badge="terlaris"
-          onClose={() => {}}
-          onEdit={() => {}}
-        />,
-      );
+      const { container } = render(<ProductDetailModal product={BASE_PRODUCT} badge="terlaris" onClose={() => {}} onEdit={() => {}} />);
       expect(screen.getByTestId("rarity-banner")).toHaveTextContent("Mythic");
       expect(container.querySelector("[data-badge='terlaris']").className).toContain("rar-mythic");
       expect(screen.getByTestId("badge-reason")).toHaveTextContent("Rp 3.012.556");
@@ -591,13 +704,7 @@ describe("ProductDetailModal", () => {
   });
 
   it("tombol Cetak Label membuka modal cetak label untuk kode produk", () => {
-    render(
-      <ProductDetailModal
-        product={{ kode: "D-1", nama: "A", image: "x.jpg", variants: [] }}
-        onClose={() => {}}
-        onEdit={() => {}}
-      />,
-    );
+    render(<ProductDetailModal product={{ kode: "D-1", nama: "A", image: "x.jpg", variants: [] }} onClose={() => {}} onEdit={() => {}} />);
     expect(screen.queryByTestId("cetak-label")).not.toBeInTheDocument();
     fireEvent.click(screen.getByText(/Cetak Label/));
     expect(screen.getByTestId("cetak-label")).toHaveTextContent("D-1");

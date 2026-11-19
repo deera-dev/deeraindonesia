@@ -91,19 +91,20 @@ describe("fetchStokWarnaByKode", () => {
     expect(await fetchStokWarnaByKode("D-01-OSK")).toEqual({});
   });
 
-  it("membangun map size->warna->stok dari data", async () => {
+  it("membangun map size->warna->stok dari data, termasuk ngorder", async () => {
     const rows = [
-      { size: "Midi", warna: "HITAM", gudang: 1, cideng: 2, tegalgubug: 3 },
-      { size: "Midi", warna: "MERAH", gudang: 4, cideng: 5, tegalgubug: 6 },
+      { size: "Midi", warna: "HITAM", gudang: 1, cideng: 2, tegalgubug: 3, ngorder: 1 },
+      { size: "Midi", warna: "MERAH", gudang: 4, cideng: 5, tegalgubug: 6, ngorder: 0 },
     ];
     const builder = makeBuilder({ data: rows, error: null });
     setupFromMock({ stok_warna: builder });
 
     const map = await fetchStokWarnaByKode("D-01-OSK");
 
+    expect(builder.select).toHaveBeenCalledWith(expect.stringContaining("ngorder"));
     expect(builder.eq).toHaveBeenCalledWith("kode", "D-01-OSK");
-    expect(map.Midi.HITAM).toEqual({ gudang: 1, cideng: 2, tegalgubug: 3 });
-    expect(map.Midi.MERAH).toEqual({ gudang: 4, cideng: 5, tegalgubug: 6 });
+    expect(map.Midi.HITAM).toEqual({ gudang: 1, cideng: 2, tegalgubug: 3, ngorder: 1 });
+    expect(map.Midi.MERAH).toEqual({ gudang: 4, cideng: 5, tegalgubug: 6, ngorder: 0 });
   });
 });
 
@@ -354,7 +355,12 @@ describe("saveProduct", () => {
   it("update produk (isEdit=true): tanpa kombinasi stok baru, hapus orphan warna, mainImage null & tanpa detail", async () => {
     const productsBuilder = makeBuilder({ data: null, error: null });
     const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+    const expectedStokBuilder = makeBuilder({ data: null, error: null });
+    setupFromMock({
+      products: productsBuilder,
+      stok_warna: stokWarnaBuilder,
+      expected_stok: expectedStokBuilder,
+    });
     const productBefore = { kode: "D-10-OSK", nama: "Old" };
 
     const result = await saveProduct({
@@ -383,6 +389,50 @@ describe("saveProduct", () => {
     expect(stokWarnaBuilder.insert).not.toHaveBeenCalled();
     expect(stokWarnaBuilder.delete).toHaveBeenCalledTimes(1);
     expect(stokWarnaBuilder.eq).toHaveBeenCalledWith("warna", "MERAH");
+    // BUG FIX (November 2026) — warna yang dihapus dari produk juga harus
+    // ikut dibersihkan dari expected_stok (termasuk baseline_* seharusnya
+    // per lokasi), supaya tidak jadi "hantu" yang tetap kehitung walau
+    // warnanya sudah tidak ada lagi di produk (lihat D-075-TEN/HITAM).
+    expect(expectedStokBuilder.delete).toHaveBeenCalledTimes(1);
+    expect(expectedStokBuilder.eq).toHaveBeenCalledWith("kode", "D-10-OSK");
+    expect(expectedStokBuilder.eq).toHaveBeenCalledWith("warna", "MERAH");
+  });
+
+  // Baris warna "_" (belum dibagi warna) cuma dihapus kalau SEMUA lokasi
+  // 0 — termasuk ngorder. Tanpa cek ngorder=0 ini, baris yang masih punya
+  // stok ngorder bisa kehapus diam2 (data hilang) padahal belum kosong.
+  it("orphan warna '_' cuma dihapus kalau gudang+cideng+tegalgubug+ngorder semua 0", async () => {
+    const productsBuilder = makeBuilder({ data: null, error: null });
+    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
+    const expectedStokBuilder = makeBuilder({ data: null, error: null });
+    setupFromMock({
+      products: productsBuilder,
+      stok_warna: stokWarnaBuilder,
+      expected_stok: expectedStokBuilder,
+    });
+
+    await saveProduct({
+      isEdit: true,
+      originalKode: "D-10-OSK",
+      finalKode: "D-10-OSK",
+      fields: { nama: "New Name", bahan: "Bahan", hpp: "100000" },
+      mainImage: null,
+      detailImages: [],
+      warna: ["HITAM"],
+      activeSet: new Set(["Midi"]),
+      hargaMap: { Midi: "150000" },
+      stokWarnaMap: { Midi: { HITAM: {}, _: { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 } } },
+      productBefore: { kode: "D-10-OSK", nama: "Old" },
+    });
+
+    expect(stokWarnaBuilder.delete).toHaveBeenCalledTimes(1);
+    expect(stokWarnaBuilder.eq).toHaveBeenCalledWith("warna", "_");
+    expect(stokWarnaBuilder.eq).toHaveBeenCalledWith("ngorder", 0);
+    // expected_stok dibersihkan tanpa syarat (bukan pending bucket stok
+    // fisik seperti stok_warna "_" — kalau warna-nya sudah orphan, angka
+    // expected/baseline lama buat warna itu tidak relevan lagi).
+    expect(expectedStokBuilder.delete).toHaveBeenCalledTimes(1);
+    expect(expectedStokBuilder.eq).toHaveBeenCalledWith("warna", "_");
   });
 
   it("insert gagal saat simpan products -> melempar error, tidak lanjut ke logHistory/stok_warna", async () => {
@@ -658,11 +708,15 @@ describe("saveProduct", () => {
   });
 });
 
+// RPC mengembalikan per UKURAN -- { [size]: { gudang, cideng, tegalgubug,
+// total } } -- admin: "1 kode ada beberapa yang punya lebih dari 1 ukuran,
+// jangan digabung, terpisah stoknya". fetchSalesByKode/fetchDikirimByKode
+// meneruskan apa adanya, TIDAK menjumlahkan ukuran jadi 1 angka lagi.
 describe("fetchSalesByKode", () => {
   it("memanggil rpc('get_sales_summary_by_product', { p_kode }) dengan kode yang benar", async () => {
     const { fetchSalesByKode } = await import("./api");
     supabaseMock.rpc.mockResolvedValueOnce({
-      data: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 },
+      data: { Midi: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 } },
       error: null,
     });
 
@@ -673,49 +727,88 @@ describe("fetchSalesByKode", () => {
     });
   });
 
-  it("meneruskan hasil agregasi dari RPC apa adanya", async () => {
+  it("meneruskan hasil agregasi per ukuran dari RPC apa adanya", async () => {
     const { fetchSalesByKode } = await import("./api");
-    supabaseMock.rpc.mockResolvedValueOnce({
-      data: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 },
-      error: null,
-    });
+    const data = {
+      Midi: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 },
+      Gamis: { gudang: 1, cideng: 0, tegalgubug: 0, total: 1 },
+    };
+    supabaseMock.rpc.mockResolvedValueOnce({ data, error: null });
 
     const result = await fetchSalesByKode("D-01-OSK");
 
-    expect(result).toEqual({ gudang: 4, cideng: 2, tegalgubug: 0, total: 6 });
+    expect(result).toEqual(data);
   });
 
-  it("data null (tanpa error) -> fallback ke zeros per field", async () => {
+  it("data null (tanpa error) -> fallback ke {} (bukan zeros)", async () => {
     const { fetchSalesByKode } = await import("./api");
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: null });
 
     const result = await fetchSalesByKode("D-01-OSK");
 
-    expect(result).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, total: 0 });
+    expect(result).toEqual({});
   });
 
-  it("RPC error -> log console.error & mengembalikan zeros, tidak melempar", async () => {
+  it("RPC error -> log console.error & mengembalikan {}, tidak melempar", async () => {
     const { fetchSalesByKode } = await import("./api");
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("rpc gagal") });
 
     const result = await fetchSalesByKode("D-01-OSK");
 
-    expect(result).toEqual({ gudang: 0, cideng: 0, tegalgubug: 0, total: 0 });
+    expect(result).toEqual({});
     expect(errorSpy).toHaveBeenCalledWith("[fetchSalesByKode] error:", expect.any(Error));
     errorSpy.mockRestore();
   });
+});
 
-  it("field parsial dari RPC -> field yang hilang fallback ke 0", async () => {
-    const { fetchSalesByKode } = await import("./api");
+describe("fetchDikirimByKode", () => {
+  it("memanggil rpc('get_keep_terkirim_summary_by_product', { p_kode }) dengan kode yang benar", async () => {
+    const { fetchDikirimByKode } = await import("./api");
     supabaseMock.rpc.mockResolvedValueOnce({
-      data: { gudang: 3, total: 3 },
+      data: { Midi: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 } },
       error: null,
     });
 
-    const result = await fetchSalesByKode("D-01-OSK");
+    await fetchDikirimByKode("D-01-OSK");
 
-    expect(result).toEqual({ gudang: 3, cideng: 0, tegalgubug: 0, total: 3 });
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_keep_terkirim_summary_by_product", {
+      p_kode: "D-01-OSK",
+    });
+  });
+
+  it("meneruskan hasil agregasi per ukuran dari RPC apa adanya", async () => {
+    const { fetchDikirimByKode } = await import("./api");
+    const data = {
+      Midi: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 },
+      Gamis: { gudang: 1, cideng: 0, tegalgubug: 0, total: 1 },
+    };
+    supabaseMock.rpc.mockResolvedValueOnce({ data, error: null });
+
+    const result = await fetchDikirimByKode("D-01-OSK");
+
+    expect(result).toEqual(data);
+  });
+
+  it("data null (tanpa error) -> fallback ke {} (bukan zeros)", async () => {
+    const { fetchDikirimByKode } = await import("./api");
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: null });
+
+    const result = await fetchDikirimByKode("D-01-OSK");
+
+    expect(result).toEqual({});
+  });
+
+  it("RPC error -> log console.error & mengembalikan {}, tidak melempar", async () => {
+    const { fetchDikirimByKode } = await import("./api");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("rpc gagal") });
+
+    const result = await fetchDikirimByKode("D-01-OSK");
+
+    expect(result).toEqual({});
+    expect(errorSpy).toHaveBeenCalledWith("[fetchDikirimByKode] error:", expect.any(Error));
+    errorSpy.mockRestore();
   });
 });
 

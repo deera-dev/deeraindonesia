@@ -1,33 +1,21 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { describe, it, expect, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 vi.mock("./queries", () => ({
-  useKasbonAllQuery: vi.fn(() => ({
-    data: [{ id: "kb1", status: "belum", sisa: 50000 }],
-    isLoading: false,
-    error: null,
-  })),
-  useKasbonBelumLunasByKaryawanIdsQuery: vi.fn(() => ({ data: [{ id: "kb1" }], isLoading: false })),
-  useCreateOrAccumulateKasbonMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useUpdateKasbonJumlahMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useDeleteKasbonMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
-  usePayCicilanMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useApplyKasbonDeductionMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
-  useUpdateKasbonRiwayatItemMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useKasbonAllQuery:                       vi.fn(() => ({ data: [{ id: "kb1", status: "belum", sisa: 50000 }], isLoading: false, error: null })),
+  useKasbonBelumLunasByKaryawanIdsQuery:   vi.fn(() => ({ data: [{ id: "kb1" }], isLoading: false })),
+  useCreateOrAccumulateKasbonMutation:      vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useUpdateKasbonJumlahMutation:            vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useDeleteKasbonMutation:                 vi.fn(() => ({ mutateAsync: vi.fn() })),
+  usePayCicilanMutation:                   vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useApplyKasbonDeductionMutation:         vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useUpdateKasbonRiwayatItemMutation:      vi.fn(() => ({ mutateAsync: vi.fn() })),
 }));
 
-import {
-  useApplyKasbonDeduction,
-  useCreateOrAccumulateKasbon,
-  useDeleteKasbon,
-  useKasbonBelumLunasByKaryawanIds,
-  useKasbonList,
-  usePayCicilan,
-  useUpdateKasbonJumlah,
-  useUpdateKasbonRiwayatItem,
-} from "./hooks";
+import { useKasbonList, useKasbonBelumLunasByKaryawanIds, useCreateOrAccumulateKasbon,
+  useUpdateKasbonJumlah, useDeleteKasbon, usePayCicilan, useApplyKasbonDeduction, useUpdateKasbonRiwayatItem } from "./hooks";
 import { useKasbonAllQuery, useKasbonBelumLunasByKaryawanIdsQuery } from "./queries";
 
 const w = () => {
@@ -85,11 +73,7 @@ describe("useKasbonList — null data ?? [] branch", () => {
   });
 
   it("loadError is set when error has message", () => {
-    useKasbonAllQuery.mockReturnValueOnce({
-      data: null,
-      isLoading: false,
-      error: { message: "fail" },
-    });
+    useKasbonAllQuery.mockReturnValueOnce({ data: null, isLoading: false, error: { message: "fail" } });
     const { result } = renderHook(() => useKasbonList(), { wrapper: w() });
     expect(result.current.loadError).toBe("fail");
   });

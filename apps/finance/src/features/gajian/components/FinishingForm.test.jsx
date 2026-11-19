@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const mockToast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
@@ -19,12 +19,8 @@ vi.mock("./Modal", () => ({
   ),
   ModalFooter: ({ onCancel, saving, saveLabel = "Simpan" }) => (
     <div>
-      <button type="button" onClick={onCancel} disabled={saving}>
-        Batal
-      </button>
-      <button type="submit" disabled={saving}>
-        {saving ? "Menyimpan..." : saveLabel}
-      </button>
+      <button type="button" onClick={onCancel} disabled={saving}>Batal</button>
+      <button type="submit" disabled={saving}>{saving ? "Menyimpan..." : saveLabel}</button>
     </div>
   ),
 }));
@@ -34,14 +30,9 @@ vi.mock("./TotalBar", () => ({
 vi.mock("../../pengaturan/hooks", () => ({
   useFinanceConfig: vi.fn(() => ({
     config: {
-      tarif_gosok: 500,
-      tarif_lipat: 300,
-      tarif_buang_benang: 200,
-      tarif_pasang_pin: 100,
-      tarif_hangtag: 150,
-      tarif_seri: 250,
-      tarif_kancing: 50,
-      tarif_lubang: 75,
+      tarif_gosok: 500, tarif_lipat: 300, tarif_buang_benang: 200,
+      tarif_pasang_pin: 100, tarif_hangtag: 150, tarif_seri: 250,
+      tarif_kancing: 50, tarif_lubang: 75,
     },
   })),
 }));
@@ -57,34 +48,17 @@ import FinishingForm from "./FinishingForm";
 
 const financeKaryawanList = [{ id: "k1", nama: "Siti Finishing", tim: "finishing" }];
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  mockSaveFinishing.mockResolvedValue(undefined);
-});
+beforeEach(() => { vi.clearAllMocks(); mockSaveFinishing.mockResolvedValue(undefined); });
 
 describe("FinishingForm", () => {
   it("renders Finishing modal", () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     expect(screen.getByTestId("modal")).toBeInTheDocument();
   });
 
   it("calls saveFinishing on submit", async () => {
     const onSave = vi.fn();
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={onSave}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={onSave} onClose={vi.fn()} />);
     fireEvent.change(document.querySelector("select"), { target: { value: "k1" } });
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
@@ -94,14 +68,7 @@ describe("FinishingForm", () => {
   it("meneruskan items yang disimpan + id record ke onSave (utk buka rekonsiliasi stok, permintaan Denny 2026-09)", async () => {
     mockSaveFinishing.mockResolvedValue("gf-123");
     const onSave = vi.fn();
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={onSave}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={onSave} onClose={vi.fn()} />);
     fireEvent.change(document.querySelector("select"), { target: { value: "k1" } });
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() =>
@@ -112,14 +79,7 @@ describe("FinishingForm", () => {
   });
 
   it("shows success toast", async () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     fireEvent.change(document.querySelector("select"), { target: { value: "k1" } });
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockToast.success).toHaveBeenCalledWith("Data Finishing disimpan."));
@@ -127,30 +87,50 @@ describe("FinishingForm", () => {
 
   it("shows error toast when save throws", async () => {
     mockSaveFinishing.mockRejectedValueOnce(new Error("err"));
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     fireEvent.change(document.querySelector("select"), { target: { value: "k1" } });
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith("Gagal: err"));
   });
 });
 
+describe("FinishingForm — wajib pilih karyawan (finishing = 1 orang tetap)", () => {
+  it("submit tanpa pilih karyawan -> toast error, tidak memanggil saveFinishing", async () => {
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.submit(document.querySelector("form"));
+    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith("Pilih karyawan."));
+    expect(mockSaveFinishing).not.toHaveBeenCalled();
+  });
+
+  it("menyertakan karyawan_id terpilih di payload yang disimpan", async () => {
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
+    fireEvent.change(document.querySelector("select"), { target: { value: "k1" } });
+    fireEvent.submit(document.querySelector("form"));
+    await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
+    const { payload } = mockSaveFinishing.mock.calls[0][0];
+    expect(payload.karyawan_id).toBe("k1");
+  });
+
+  it("dropdown hanya menampilkan karyawan tim finishing", () => {
+    const mixedList = [
+      { id: "k1", nama: "Siti Finishing", tim: "finishing" },
+      { id: "k2", nama: "Budi Jahit", tim: "jahit" },
+    ];
+    render(<FinishingForm gajianId="g1" karyawanList={mixedList} onSave={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.getByText("Siti Finishing")).toBeInTheDocument();
+    expect(screen.queryByText("Budi Jahit")).not.toBeInTheDocument();
+  });
+
+  it("record LAMA dgn karyawan_id tersimpan -> select otomatis terisi nilai itu", () => {
+    const initial = { id: "f1", karyawan_id: "k1", items: [] };
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} initial={initial} onSave={vi.fn()} onClose={vi.fn()} />);
+    expect(document.querySelector("select").value).toBe("k1");
+  });
+});
+
 describe("FinishingForm — pilih produk by kode", () => {
   it("selects produk by kode and derives nama_produk for payload", async () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     fireEvent.change(screen.getByTestId("produk-input-0"), { target: { value: "D-07-OSK" } });
     const jumlahInput = document.querySelectorAll('input[type="number"]')[0];
     fireEvent.change(jumlahInput, { target: { value: "5" } });
@@ -163,14 +143,7 @@ describe("FinishingForm — pilih produk by kode", () => {
   });
 
   it("shows kode — nama sbg label opsi datalist utk produk", () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     const option = document.querySelector("datalist option[value='D-07-OSK']");
     expect(option).not.toBeNull();
     expect(option.getAttribute("label")).toBe("D-07-OSK — Gamis");
@@ -179,26 +152,12 @@ describe("FinishingForm — pilih produk by kode", () => {
 
 describe("FinishingForm — acuan Produksi & HPP saat pilih produk", () => {
   it("tidak menampilkan acuan sebelum produk dipilih", () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     expect(screen.queryByText(/Acuan:/)).not.toBeInTheDocument();
   });
 
   it("menampilkan acuan Produksi (pcs) & HPP Kancing (/pcs) setelah kode dipilih", () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     fireEvent.change(screen.getByTestId("produk-input-0"), { target: { value: "D-07-OSK" } });
     expect(screen.getByText(/Acuan:/)).toBeInTheDocument();
     expect(screen.getByText("67 pcs")).toBeInTheDocument();
@@ -206,14 +165,7 @@ describe("FinishingForm — acuan Produksi & HPP saat pilih produk", () => {
   });
 
   it("acuan HPP disembunyikan kalau kode belum punya Template HPP (beda dari HPP kancing_qty=0)", () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     fireEvent.change(screen.getByTestId("produk-input-0"), { target: { value: "D-99-XXX" } });
     expect(screen.getByText(/Acuan:/)).toBeInTheDocument();
     expect(screen.getByText("0 pcs")).toBeInTheDocument();
@@ -223,14 +175,7 @@ describe("FinishingForm — acuan Produksi & HPP saat pilih produk", () => {
 
 describe("FinishingForm — Kancing per pcs (auto-kalkulasi, bukan total manual)", () => {
   it("menghitung kancing_qty = jumlah x kancing per pcs, tidak perlu kalkulasi manual lagi", async () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     const jumlahInput = document.querySelectorAll('input[type="number"]')[0];
     const kancingPerPcsInput = screen.getByTestId("kancing-per-pcs-0");
     fireEvent.change(jumlahInput, { target: { value: "42" } });
@@ -249,15 +194,7 @@ describe("FinishingForm — Kancing per pcs (auto-kalkulasi, bukan total manual)
       id: "f1",
       items: [{ kode_produk: "D-07-OSK", nama_produk: "Gamis", jumlah: 42, kancing_qty: 336 }],
     };
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        initial={initial}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} initial={initial} onSave={vi.fn()} onClose={vi.fn()} />);
     fireEvent.change(document.querySelector("select"), { target: { value: "k1" } });
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
@@ -268,14 +205,7 @@ describe("FinishingForm — Kancing per pcs (auto-kalkulasi, bukan total manual)
 
 describe("FinishingForm — Kancing per pcs otomatis dari Template HPP (permintaan Denny 2026-09, kancing saling terhubung)", () => {
   it("entri BARU, kode dipilih, field Kancing/pcs dibiarkan kosong -> placeholder & payload pakai nilai HPP (5)", async () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     fireEvent.change(screen.getByTestId("produk-input-0"), { target: { value: "D-07-OSK" } });
     const jumlahInput = document.querySelectorAll('input[type="number"]')[0];
     fireEvent.change(jumlahInput, { target: { value: "10" } });
@@ -291,27 +221,13 @@ describe("FinishingForm — Kancing per pcs otomatis dari Template HPP (perminta
   });
 
   it("kode belum punya Template HPP sama sekali -> placeholder tetap 0, TIDAK error", () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     fireEvent.change(screen.getByTestId("produk-input-0"), { target: { value: "D-99-XXX" } });
     expect(screen.getByTestId("kancing-per-pcs-0").placeholder).toBe("0");
   });
 
   it("admin ketik manual -> nilai manual MENANG, bukan fallback HPP", async () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     fireEvent.change(screen.getByTestId("produk-input-0"), { target: { value: "D-07-OSK" } });
     const jumlahInput = document.querySelectorAll('input[type="number"]')[0];
     fireEvent.change(jumlahInput, { target: { value: "10" } });
@@ -329,15 +245,7 @@ describe("FinishingForm — Kancing per pcs otomatis dari Template HPP (perminta
       id: "f1",
       items: [{ kode_produk: "D-07-OSK", nama_produk: "Gamis", jumlah: 42, kancing_qty: 84 }],
     };
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        initial={initial}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} initial={initial} onSave={vi.fn()} onClose={vi.fn()} />);
     fireEvent.change(document.querySelector("select"), { target: { value: "k1" } });
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
@@ -348,26 +256,12 @@ describe("FinishingForm — Kancing per pcs otomatis dari Template HPP (perminta
 
 describe("FinishingForm — opsi Lubang (toggle per produk, qty terpisah dari Kancing)", () => {
   it("input Lubang/pcs tersembunyi sebelum toggle 'Pakai Lubang?' dicentang", () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     expect(screen.queryByTestId("lubang-per-pcs-0")).not.toBeInTheDocument();
   });
 
   it("centang 'Pakai Lubang?' menampilkan input Lubang/pcs, hitung lubang_qty = jumlah x lubang/pcs", async () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     const jumlahInput = document.querySelectorAll('input[type="number"]')[0];
     fireEvent.change(jumlahInput, { target: { value: "42" } });
 
@@ -380,22 +274,11 @@ describe("FinishingForm — opsi Lubang (toggle per produk, qty terpisah dari Ka
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
     const { payload } = mockSaveFinishing.mock.calls[0][0];
-    expect(payload.items[0]).toMatchObject({
-      pakai_lubang: true,
-      lubang_per_pcs: 3,
-      lubang_qty: 126,
-    });
+    expect(payload.items[0]).toMatchObject({ pakai_lubang: true, lubang_per_pcs: 3, lubang_qty: 126 });
   });
 
   it("TIDAK menghitung biaya/qty lubang kalau toggle tidak dicentang, walau field sempat diisi lalu di-uncheck", async () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     const jumlahInput = document.querySelectorAll('input[type="number"]')[0];
     fireEvent.change(jumlahInput, { target: { value: "42" } });
 
@@ -408,24 +291,13 @@ describe("FinishingForm — opsi Lubang (toggle per produk, qty terpisah dari Ka
     fireEvent.submit(document.querySelector("form"));
     await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
     const { payload } = mockSaveFinishing.mock.calls[0][0];
-    expect(payload.items[0]).toMatchObject({
-      pakai_lubang: false,
-      lubang_per_pcs: 0,
-      lubang_qty: 0,
-    });
+    expect(payload.items[0]).toMatchObject({ pakai_lubang: false, lubang_per_pcs: 0, lubang_qty: 0 });
   });
 });
 
 describe("FinishingForm — breakdown Total Finishing/Kancing/Lubang", () => {
   it("menampilkan breakdown total per komponen sesuai input", () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<FinishingForm gajianId="g1" karyawanList={financeKaryawanList} onSave={vi.fn()} onClose={vi.fn()} />);
     const jumlahInput = document.querySelectorAll('input[type="number"]')[0];
     fireEvent.change(jumlahInput, { target: { value: "10" } });
     fireEvent.change(screen.getByTestId("kancing-per-pcs-0"), { target: { value: "2" } });
@@ -438,63 +310,5 @@ describe("FinishingForm — breakdown Total Finishing/Kancing/Lubang", () => {
     expect(screen.getByText("Rp1000")).toBeInTheDocument();
     expect(screen.getByText("Total Lubang (10 buah)")).toBeInTheDocument();
     expect(screen.getByText("Rp750")).toBeInTheDocument();
-  });
-});
-
-describe("FinishingForm — wajib pilih karyawan (finishing = 1 orang tetap)", () => {
-  it("submit tanpa pilih karyawan -> toast error, tidak memanggil saveFinishing", async () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
-    fireEvent.submit(document.querySelector("form"));
-    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith("Pilih karyawan."));
-    expect(mockSaveFinishing).not.toHaveBeenCalled();
-  });
-
-  it("menyertakan karyawan_id terpilih di payload yang disimpan", async () => {
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
-    fireEvent.change(document.querySelector("select"), { target: { value: "k1" } });
-    fireEvent.submit(document.querySelector("form"));
-    await waitFor(() => expect(mockSaveFinishing).toHaveBeenCalled());
-    const { payload } = mockSaveFinishing.mock.calls[0][0];
-    expect(payload.karyawan_id).toBe("k1");
-  });
-
-  it("dropdown hanya menampilkan karyawan tim finishing", () => {
-    const mixedList = [
-      { id: "k1", nama: "Siti Finishing", tim: "finishing" },
-      { id: "k2", nama: "Budi Jahit", tim: "jahit" },
-    ];
-    render(
-      <FinishingForm gajianId="g1" karyawanList={mixedList} onSave={vi.fn()} onClose={vi.fn()} />,
-    );
-    expect(screen.getByText("Siti Finishing")).toBeInTheDocument();
-    expect(screen.queryByText("Budi Jahit")).not.toBeInTheDocument();
-  });
-
-  it("record LAMA dgn karyawan_id tersimpan -> select otomatis terisi nilai itu", () => {
-    const initial = { id: "f1", karyawan_id: "k1", items: [] };
-    render(
-      <FinishingForm
-        gajianId="g1"
-        karyawanList={financeKaryawanList}
-        initial={initial}
-        onSave={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
-    expect(document.querySelector("select").value).toBe("k1");
   });
 });

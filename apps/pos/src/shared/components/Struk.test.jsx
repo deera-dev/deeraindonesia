@@ -23,6 +23,20 @@ vi.mock("../hooks/useTsplPrinter", () => ({
     100: { label: "100mm", dots: 800 },
     78: { label: "78mm (Bawaan)", dots: 623 },
   },
+  ESCPOS_PAPER_WIDTHS: {
+    58: { label: "58mm", dots: 384 },
+    80: { label: "80mm (Bawaan)", dots: 576 },
+  },
+  PRINTER_PROTOCOLS: {
+    tspl: { label: "TSPL (printer label)" },
+    escpos: { label: "ESC/POS (printer struk)" },
+  },
+  paperWidthsFor: (protocol) =>
+    protocol === "escpos"
+      ? { 58: { label: "58mm", dots: 384 }, 80: { label: "80mm (Bawaan)", dots: 576 } }
+      : { 100: { label: "100mm", dots: 800 }, 78: { label: "78mm (Bawaan)", dots: 623 } },
+  defaultPaperWidthFor: (protocol) => (protocol === "escpos" ? "80" : "78"),
+  CROP_COLUMNS_DEFAULT: false,
 }));
 vi.mock("./StrukContent", () => ({
   default: ({ sale }) => <div data-testid="struk-content">{sale.buyer_name}</div>,
@@ -304,6 +318,7 @@ describe("Struk — Print = cetak gambar langsung (permintaan Denny 2026-10-08, 
         labelType: "continuous",
         paperWidthMm: "78",
         algorithm: "dither",
+        protocol: "tspl",
       }),
     );
     expect(printBle).not.toHaveBeenCalled();
@@ -323,6 +338,143 @@ describe("Struk — Print = cetak gambar langsung (permintaan Denny 2026-10-08, 
       ),
     );
     expect(localStorage.getItem("deera-img-algo")).toBe("binary");
+  });
+
+  it("pilihan protokol ESC/POS diteruskan & tersimpan, sembunyikan opsi Jenis label (khusus TSPL)", async () => {
+    const { printImageBle } = await mockPrinter();
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+    expect(screen.getByRole("group", { name: "Jenis label" })).toBeInTheDocument();
+    fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
+    expect(screen.queryByRole("group", { name: "Jenis label" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() =>
+      expect(printImageBle).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ protocol: "escpos" }),
+      ),
+    );
+    expect(localStorage.getItem("deera-printer-protocol")).toBe("escpos");
+  });
+
+  // BUG FIX (November 2026, laporan admin: struk ESC/POS kepotong di kanan
+  // walau "lebar kertas" yang dipilih katanya sudah sama dgn printer TSPL
+  // sebelumnya) — opsi "Lebar kertas" skrg beda per protokol: TSPL tetap
+  // 78mm/100mm (preset lama, terbukti pas di printer label), ESC/POS pakai
+  // preset KHUSUS 58mm/80mm (spek standar printer struk, lihat
+  // ESCPOS_PAPER_WIDTHS) — bukan ikut angka TSPL yang kepotong di printer
+  // struk.
+  it("ganti protokol ke ESC/POS -> opsi Lebar kertas berubah jadi 58mm/80mm (bukan 78mm/100mm milik TSPL)", async () => {
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+    expect(screen.getByText("78mm (Bawaan)")).toBeInTheDocument();
+    expect(screen.getByText("100mm")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
+
+    expect(screen.queryByText("78mm (Bawaan)")).not.toBeInTheDocument();
+    expect(screen.queryByText("100mm")).not.toBeInTheDocument();
+    expect(screen.getByText("58mm")).toBeInTheDocument();
+    expect(screen.getByText("80mm (Bawaan)")).toBeInTheDocument();
+    expect(screen.getByText("80mm (Bawaan)").className).toContain("skin-accent");
+  });
+
+  it("pilih ESC/POS lalu Print -> paperWidthMm defaultnya '80' (bukan ketinggalan '78' punya TSPL)", async () => {
+    const { printImageBle } = await mockPrinter();
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+    fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() =>
+      expect(printImageBle).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ protocol: "escpos", paperWidthMm: "80" }),
+      ),
+    );
+  });
+
+  it("pilih 58mm di ESC/POS lalu balik ke TSPL -> Lebar kertas kembali ke default 78mm (bukan nyangkut di key '58' milik ESC/POS)", async () => {
+    const { printImageBle } = await mockPrinter();
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+    fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
+    fireEvent.click(screen.getByText("58mm"));
+    fireEvent.click(screen.getByText("TSPL (printer label)"));
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() =>
+      expect(printImageBle).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ protocol: "tspl", paperWidthMm: "78" }),
+      ),
+    );
+  });
+
+  // Eksperimen kecepatan ESC/POS selesai (November 2026) — admin sudah
+  // menentukan setting teraman & tercepat (ackEvery 128, paket 180B)
+  // lewat uji coba langsung di printer fisik, lihat catatan di
+  // useTsplPrinter.js. UI pemilihnya sengaja dicabut supaya tidak ada
+  // yang tidak sengaja pilih kombinasi yang terbukti bikin struk rusak
+  // (admin: "set default itu aja ya, gausah kasih opsi lagi").
+  it("tidak ada lagi kontrol eksperimen 'Ack tiap N paket' atau 'Ukuran paket' — settingnya sudah dipatok, bukan dipilih admin", async () => {
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+    fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
+    expect(screen.queryByRole("group", { name: "Ack tiap N paket" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Ukuran paket" })).not.toBeInTheDocument();
+  });
+
+  it("print lewat ESC/POS -> ackEvery & chunkSize TIDAK ikut dikirim (hook pakai default ACK_EVERY_DEFAULT/CHUNK_SIZE_DEFAULT-nya sendiri)", async () => {
+    const { printImageBle } = await mockPrinter();
+    render(<Struk sale={saleMock} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+    fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
+    fireEvent.click(screen.getByText("Print"));
+    await waitFor(() =>
+      expect(printImageBle).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ protocol: "escpos" }),
+      ),
+    );
+    expect(printImageBle.mock.calls[0][1]).not.toHaveProperty("ackEvery");
+    expect(printImageBle.mock.calls[0][1]).not.toHaveProperty("chunkSize");
+  });
+
+  // Eksperimen "diakali kayak TSPL" (November 2026, admin: BITMAP TSPL
+  // bisa pangkas kiri-kanan per bagian konten, GS v 0 ESC/POS belum) —
+  // toggle on/off, default OFF (lihat catatan risiko di useTsplPrinter.js).
+  describe("eksperimen pangkas kolom kosong / cropColumns (khusus ESC/POS)", () => {
+    it("tombol toggle hanya tampil saat protokol ESC/POS, bukan TSPL, default Nonaktif", async () => {
+      render(<Struk sale={saleMock} onClose={vi.fn()} />);
+      fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+      expect(screen.queryByText(/Pangkas kolom kosong/i)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
+      expect(screen.getByText("Pangkas kolom kosong: Nonaktif")).toBeInTheDocument();
+    });
+
+    it("klik toggle -> aktif, diteruskan ke printImageBle sbg cropColumns:true, dan tersimpan", async () => {
+      const { printImageBle } = await mockPrinter();
+      render(<Struk sale={saleMock} onClose={vi.fn()} />);
+      fireEvent.click(screen.getByLabelText("Pengaturan cetak"));
+      fireEvent.click(screen.getByText("ESC/POS (printer struk)"));
+      fireEvent.click(screen.getByText("Pangkas kolom kosong: Nonaktif"));
+      expect(screen.getByText("Pangkas kolom kosong: Aktif")).toBeInTheDocument();
+      fireEvent.click(screen.getByText("Print"));
+      await waitFor(() =>
+        expect(printImageBle).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.objectContaining({ protocol: "escpos", cropColumns: true }),
+        ),
+      );
+      expect(localStorage.getItem("deera-printer-crop-columns")).toBe("1");
+    });
+
+    it("print lewat TSPL -> opsi cropColumns TIDAK ikut dikirim sama sekali", async () => {
+      const { printImageBle } = await mockPrinter();
+      render(<Struk sale={saleMock} onClose={vi.fn()} />);
+      fireEvent.click(screen.getByText("Print"));
+      await waitFor(() => expect(printImageBle).toHaveBeenCalled());
+      expect(printImageBle.mock.calls[0][1]).not.toHaveProperty("cropColumns");
+    });
   });
 
   it("overlay progres menutupi struk (tombol Print tetap berlabel Print) saat mengirim", async () => {

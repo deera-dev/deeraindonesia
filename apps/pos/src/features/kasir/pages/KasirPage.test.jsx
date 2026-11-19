@@ -1,6 +1,6 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 
 vi.mock("@deera/shared/lib/constants", () => ({
   formatHarga: (n) => String(n),
@@ -16,40 +16,17 @@ vi.mock("../../../hooks/useProducts", () => ({
 }));
 vi.mock("../hooks", () => ({
   useCart: vi.fn(() => ({
-    cart: [],
-    totalItems: 0,
-    subtotal: 0,
-    diskon: 0,
-    total: 0,
-    editingPrice: null,
-    showCart: false,
-    showDiskon: false,
-    diskonInput: "",
-    diskonMode: "rp",
-    warnaPanel: null,
-    selectedWarna: {},
-    gabungan: false,
-    selectedBreakdown: {},
-    setEditingPrice: vi.fn(),
-    setShowCart: vi.fn(),
-    setShowDiskon: vi.fn(),
-    setDiskonInput: vi.fn(),
-    setDiskonMode: vi.fn(),
-    setSelectedWarna: vi.fn(),
-    openWarnaPanel: vi.fn(),
-    closeWarnaPanel: vi.fn(),
-    selectFullSeri: vi.fn(),
-    confirmWarna: vi.fn(),
-    editWarnaItem: vi.fn(),
-    updateQty: vi.fn(),
-    setItemHarga: vi.fn(),
-    removeItem: vi.fn(),
-    resetCart: vi.fn(),
-    removeDiskon: vi.fn(),
-    getPayloadItems: vi.fn(() => []),
-    setGabungan: vi.fn(),
-    toggleGabungan: vi.fn(),
-    setWarnaLoc: vi.fn(),
+    cart: [], totalItems: 0, subtotal: 0, diskon: 0, total: 0,
+    editingPrice: null, showCart: false, showDiskon: false,
+    diskonInput: "", diskonMode: "rp", warnaPanel: null, selectedWarna: {},
+    gabungan: false, selectedBreakdown: {},
+    setEditingPrice: vi.fn(), setShowCart: vi.fn(), setShowDiskon: vi.fn(),
+    setDiskonInput: vi.fn(), setDiskonMode: vi.fn(), setSelectedWarna: vi.fn(),
+    openWarnaPanel: vi.fn(), closeWarnaPanel: vi.fn(), selectFullSeri: vi.fn(),
+    confirmWarna: vi.fn(), editWarnaItem: vi.fn(), updateQty: vi.fn(),
+    setItemHarga: vi.fn(), removeItem: vi.fn(), resetCart: vi.fn(),
+    removeDiskon: vi.fn(), getPayloadItems: vi.fn(() => []),
+    setGabungan: vi.fn(), toggleGabungan: vi.fn(), setWarnaLoc: vi.fn(),
   })),
   useCheckout: vi.fn(() => ({
     bayar: vi.fn().mockResolvedValue(null),
@@ -58,44 +35,33 @@ vi.mock("../hooks", () => ({
 }));
 const simpanKeepMock = vi.fn();
 const tandaiKeepLunasMock = vi.fn();
-const editKeepRow = {
-  id: "k1",
-  buyer_name: "BUDI",
-  buyer_hp: "0812",
-  pelanggan_id: "p1",
-  location: "cideng",
-  discount: 0,
-  items: [{ kode: "A", size: "Midi", qty: 2 }],
-};
+const editKeepRow = { id: "k1", buyer_name: "BUDI", buyer_hp: "0812", pelanggan_id: "p1", location: "cideng", discount: 0, items: [{ kode: "A", size: "Midi", qty: 2 }] };
 vi.mock("../../keep", () => ({
-  useKeepCheckout: vi.fn(() => ({
-    simpanKeep: simpanKeepMock,
-    tandaiKeepLunas: tandaiKeepLunasMock,
-    saving: false,
-  })),
+  useKeepCheckout: vi.fn(() => ({ simpanKeep: simpanKeepMock, tandaiKeepLunas: tandaiKeepLunasMock, saving: false })),
   useKeepOrdersQuery: vi.fn(() => ({ data: [{ id: "k1" }, { id: "k2" }] })),
   keepToCartItems: vi.fn((items) => items.map((i) => ({ ...i, key: `${i.kode}-${i.size}` }))),
   keepUsesOtherLocations: vi.fn(() => false),
   KeepListModal: ({ onClose, onPaid, onEdit }) => (
     <div data-testid="keep-list-modal">
-      <button data-testid="keep-edit-btn" onClick={() => onEdit?.(editKeepRow)}>
-        edit
+      <button data-testid="keep-edit-btn" onClick={() => onEdit?.(editKeepRow)}>edit</button>
+      <button data-testid="keep-paid-btn" onClick={() => onPaid?.()}>paid</button>
+      <button data-testid="keep-close-btn" onClick={onClose}>close</button>
+    </div>
+  ),
+  KeepLocationModal: ({ currentLocation, onConfirm, onCancel }) => (
+    <div data-testid="keep-location-modal">
+      <span data-testid="keep-location-current">{currentLocation}</span>
+      <button data-testid="keep-location-confirm-tegalgubug" onClick={() => onConfirm("tegalgubug")}>
+        Tegalgubug
       </button>
-      <button data-testid="keep-paid-btn" onClick={() => onPaid?.()}>
-        paid
-      </button>
-      <button data-testid="keep-close-btn" onClick={onClose}>
-        close
-      </button>
+      <button data-testid="keep-location-cancel" onClick={onCancel}>Batal</button>
     </div>
   ),
 }));
 vi.mock("../components/ProductList", () => ({
   default: ({ onAddItem }) => (
     <div data-testid="product-list">
-      <button
-        onClick={() => onAddItem({ kode: "D-01", warna: [] }, { size: "Midi", harga: 100000 })}
-      >
+      <button onClick={() => onAddItem({ kode: "D-01", warna: [] }, { size: "Midi", harga: 100000 })}>
         Add D-01
       </button>
     </div>
@@ -106,26 +72,14 @@ vi.mock("../components/CartPanel", () => ({
   default: (props) => {
     lastCartPanelProps = props;
     const {
-      onBayar,
-      onBuyerSelect,
-      onBuyerNameChange,
-      onToggleDiskon,
-      onEditWarnaItem,
-      onClose,
-      onUpdateQty,
+      onBayar, onBuyerSelect, onBuyerNameChange, onToggleDiskon, onEditWarnaItem, onClose, onUpdateQty,
     } = props;
     return (
       <div data-testid="cart-panel">
-        <button onClick={onBayar} data-testid="bayar-btn">
-          Bayar
-        </button>
-        <button onClick={props.onKeep} data-testid="keep-btn">
-          {props.keepLabel}
-        </button>
-        <button
-          data-testid="select-buyer-btn"
-          onClick={() => onBuyerSelect?.({ nama: "Ani", no_hp: "081234", id: "p1" })}
-        >
+        <button onClick={onBayar} data-testid="bayar-btn">Bayar</button>
+        <button onClick={props.onKeep} data-testid="keep-btn">{props.keepLabel}</button>
+        <button data-testid="select-buyer-btn"
+          onClick={() => onBuyerSelect?.({ nama: "Ani", no_hp: "081234", id: "p1" })}>
           Pilih Pelanggan
         </button>
         <button data-testid="change-name-btn" onClick={() => onBuyerNameChange?.("Budi Baru")}>
@@ -162,30 +116,22 @@ vi.mock("../components/TukarTambahModal", () => ({
       >
         Konfirmasi Retur
       </button>
-      <button data-testid="tukar-tambah-close-btn" onClick={onClose}>
-        Tutup
-      </button>
+      <button data-testid="tukar-tambah-close-btn" onClick={onClose}>Tutup</button>
     </div>
   ),
 }));
 vi.mock("../components/WarnaPanel", () => ({
   default: ({ onReset, onSetWarna, onClose }) => (
     <div data-testid="warna-panel">
-      <button data-testid="warna-reset-btn" onClick={() => onReset?.()}>
-        Reset Warna
-      </button>
-      <button data-testid="warna-set-btn" onClick={() => onSetWarna?.("HITAM", 2)}>
-        Set Warna
-      </button>
+      <button data-testid="warna-reset-btn" onClick={() => onReset?.()}>Reset Warna</button>
+      <button data-testid="warna-set-btn" onClick={() => onSetWarna?.("HITAM", 2)}>Set Warna</button>
     </div>
   ),
 }));
 vi.mock("../../../shared/components/Struk", () => ({
   default: ({ struk, onClose }) => (
     <div data-testid="struk">
-      <button onClick={onClose} data-testid="close-struk">
-        Tutup
-      </button>
+      <button onClick={onClose} data-testid="close-struk">Tutup</button>
     </div>
   ),
 }));
@@ -193,8 +139,8 @@ vi.mock("@deera/shared/components/BackToTop", () => ({
   default: () => null,
 }));
 
-import { useCheckout } from "../hooks";
 import KasirPage from "./KasirPage";
+import { useCheckout } from "../hooks";
 
 describe("KasirPage", () => {
   beforeEach(() => {
@@ -214,19 +160,13 @@ describe("KasirPage", () => {
 
   it("calls onLocationChange when select changes", () => {
     const onLocationChange = vi.fn();
-    render(
-      <KasirPage location="gudang" onLocationChange={onLocationChange} onSaleCreated={vi.fn()} />,
-    );
+    render(<KasirPage location="gudang" onLocationChange={onLocationChange} onSaleCreated={vi.fn()} />);
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "cideng" } });
     expect(onLocationChange).toHaveBeenCalledWith("cideng");
   });
 
   it("shows offline banner when navigator.onLine=false", () => {
-    Object.defineProperty(navigator, "onLine", {
-      value: false,
-      writable: true,
-      configurable: true,
-    });
+    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
     expect(screen.getByText(/Mode Offline/)).toBeInTheDocument();
     Object.defineProperty(navigator, "onLine", { value: true, writable: true, configurable: true });
@@ -255,13 +195,9 @@ describe("KasirPage", () => {
 
   it("calls onSaleCreated after successful bayar", async () => {
     const onSaleCreated = vi.fn();
-    const mockBayar = vi
-      .fn()
-      .mockResolvedValue({ date: "2026-07-04", type: "sale", total: 0, items: [] });
+    const mockBayar = vi.fn().mockResolvedValue({ date: "2026-07-04", type: "sale", total: 0, items: [] });
     useCheckout.mockReturnValue({ bayar: mockBayar, saving: false });
-    render(
-      <KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={onSaleCreated} />,
-    );
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={onSaleCreated} />);
     await act(async () => {
       fireEvent.click(screen.getByTestId("bayar-btn"));
     });
@@ -269,14 +205,10 @@ describe("KasirPage", () => {
   });
 
   it("closing struk hides it", async () => {
-    const mockBayar = vi
-      .fn()
-      .mockResolvedValue({ date: "2026-07-04", type: "sale", total: 0, items: [] });
+    const mockBayar = vi.fn().mockResolvedValue({ date: "2026-07-04", type: "sale", total: 0, items: [] });
     useCheckout.mockReturnValue({ bayar: mockBayar, saving: false });
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
-    await act(async () => {
-      fireEvent.click(screen.getByTestId("bayar-btn"));
-    });
+    await act(async () => { fireEvent.click(screen.getByTestId("bayar-btn")); });
     await waitFor(() => screen.getByTestId("struk"));
     fireEvent.click(screen.getByTestId("close-struk"));
     await waitFor(() => expect(screen.queryByTestId("struk")).not.toBeInTheDocument());
@@ -286,9 +218,7 @@ describe("KasirPage", () => {
     const mockBayar = vi.fn().mockResolvedValue(null);
     useCheckout.mockReturnValue({ bayar: mockBayar, saving: false });
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
-    await act(async () => {
-      fireEvent.click(screen.getByTestId("bayar-btn"));
-    });
+    await act(async () => { fireEvent.click(screen.getByTestId("bayar-btn")); });
     expect(screen.queryByTestId("struk")).not.toBeInTheDocument();
   });
 });
@@ -297,40 +227,17 @@ import { useProducts } from "../../../hooks/useProducts";
 import { useCart } from "../hooks";
 
 const baseCart = {
-  cart: [],
-  totalItems: 0,
-  subtotal: 0,
-  diskon: 0,
-  total: 0,
-  editingPrice: null,
-  showCart: false,
-  showDiskon: false,
-  diskonInput: "",
-  diskonMode: "rp",
-  warnaPanel: null,
-  selectedWarna: {},
-  gabungan: false,
-  selectedBreakdown: {},
-  setEditingPrice: vi.fn(),
-  setShowCart: vi.fn(),
-  setShowDiskon: vi.fn(),
-  setDiskonInput: vi.fn(),
-  setDiskonMode: vi.fn(),
-  setSelectedWarna: vi.fn(),
-  openWarnaPanel: vi.fn(),
-  closeWarnaPanel: vi.fn(),
-  selectFullSeri: vi.fn(),
-  confirmWarna: vi.fn(),
-  editWarnaItem: vi.fn(),
-  updateQty: vi.fn(),
-  setItemHarga: vi.fn(),
-  removeItem: vi.fn(),
-  resetCart: vi.fn(),
-  removeDiskon: vi.fn(),
-  getPayloadItems: vi.fn(() => []),
-  setGabungan: vi.fn(),
-  toggleGabungan: vi.fn(),
-  setWarnaLoc: vi.fn(),
+  cart: [], totalItems: 0, subtotal: 0, diskon: 0, total: 0,
+  editingPrice: null, showCart: false, showDiskon: false,
+  diskonInput: "", diskonMode: "rp", warnaPanel: null, selectedWarna: {},
+  gabungan: false, selectedBreakdown: {},
+  setEditingPrice: vi.fn(), setShowCart: vi.fn(), setShowDiskon: vi.fn(),
+  setDiskonInput: vi.fn(), setDiskonMode: vi.fn(), setSelectedWarna: vi.fn(),
+  openWarnaPanel: vi.fn(), closeWarnaPanel: vi.fn(), selectFullSeri: vi.fn(),
+  confirmWarna: vi.fn(), editWarnaItem: vi.fn(), updateQty: vi.fn(),
+  setItemHarga: vi.fn(), removeItem: vi.fn(), resetCart: vi.fn(),
+  removeDiskon: vi.fn(), getPayloadItems: vi.fn(() => []),
+  setGabungan: vi.fn(), toggleGabungan: vi.fn(), setWarnaLoc: vi.fn(),
 };
 
 describe("KasirPage — additional coverage", () => {
@@ -349,9 +256,7 @@ describe("KasirPage — additional coverage", () => {
 
   it("Reset button calls onLocationChange with autoLocation", () => {
     const onLocationChange = vi.fn();
-    render(
-      <KasirPage location="cideng" onLocationChange={onLocationChange} onSaleCreated={vi.fn()} />,
-    );
+    render(<KasirPage location="cideng" onLocationChange={onLocationChange} onSaleCreated={vi.fn()} />);
     fireEvent.click(screen.getByText("Reset"));
     expect(onLocationChange).toHaveBeenCalledWith("gudang");
   });
@@ -411,9 +316,7 @@ describe("KasirPage — additional coverage", () => {
     const resetCart = vi.fn();
     useCart.mockReturnValue({ ...baseCart, resetCart });
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
-    act(() => {
-      lastCartPanelProps.onReset();
-    });
+    act(() => { lastCartPanelProps.onReset(); });
     expect(resetCart).not.toHaveBeenCalled();
     expect(screen.getByText("Kosongkan Pesanan?")).toBeInTheDocument();
   });
@@ -422,9 +325,7 @@ describe("KasirPage — additional coverage", () => {
     const resetCart = vi.fn();
     useCart.mockReturnValue({ ...baseCart, resetCart });
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
-    act(() => {
-      lastCartPanelProps.onReset();
-    });
+    act(() => { lastCartPanelProps.onReset(); });
     fireEvent.click(screen.getByText("Ya, Kosongkan"));
     expect(resetCart).toHaveBeenCalled();
     expect(screen.queryByText("Kosongkan Pesanan?")).toBeNull();
@@ -434,9 +335,7 @@ describe("KasirPage — additional coverage", () => {
     const resetCart = vi.fn();
     useCart.mockReturnValue({ ...baseCart, resetCart });
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
-    act(() => {
-      lastCartPanelProps.onReset();
-    });
+    act(() => { lastCartPanelProps.onReset(); });
     fireEvent.click(screen.getByText("Batal"));
     expect(resetCart).not.toHaveBeenCalled();
     expect(screen.queryByText("Kosongkan Pesanan?")).toBeNull();
@@ -460,13 +359,10 @@ describe("KasirPage — additional coverage", () => {
   it("search filter covers products matching bahan query", () => {
     useProducts.mockReturnValueOnce({
       products: [{ kode: "D-01-OSK", bahan: "Organsa", warna: [], created_at: "2024-01-01" }],
-      loading: false,
-      syncError: null,
+      loading: false, syncError: null,
     });
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
-    fireEvent.change(screen.getByPlaceholderText(/kode|bahan|warna/i), {
-      target: { value: "organsa" },
-    });
+    fireEvent.change(screen.getByPlaceholderText(/kode|bahan|warna/i), { target: { value: "organsa" } });
     expect(true).toBe(true);
   });
 
@@ -491,13 +387,7 @@ describe("KasirPage — additional coverage", () => {
 
   it("clicking floating cart button calls setShowCart(true)", () => {
     const setShowCart = vi.fn();
-    useCart.mockReturnValueOnce({
-      ...baseCart,
-      totalItems: 1,
-      total: 100000,
-      showCart: false,
-      setShowCart,
-    });
+    useCart.mockReturnValueOnce({ ...baseCart, totalItems: 1, total: 100000, showCart: false, setShowCart });
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
     fireEvent.click(screen.getByText("Pesanan"));
     expect(setShowCart).toHaveBeenCalledWith(true);
@@ -640,9 +530,7 @@ describe("KasirPage — additional coverage", () => {
       fireEvent.click(screen.getByTestId("start-tukar-tambah-btn"));
       fireEvent.click(screen.getByTestId("tukar-tambah-confirm-btn"));
       expect(lastCartPanelProps.exchange).not.toBeNull();
-      act(() => {
-        capturedOnExchangeApplied();
-      });
+      act(() => { capturedOnExchangeApplied(); });
       expect(lastCartPanelProps.exchange).toBeNull();
     });
   });
@@ -654,33 +542,52 @@ describe("KasirPage — Keep (belum bayar)", () => {
     simpanKeepMock.mockReset();
   });
 
-  it("Keep berhasil -> struk BELUM LUNAS tampil, onSaleCreated TIDAK dipanggil (bukan penjualan)", async () => {
-    simpanKeepMock.mockResolvedValue({ type: "sale", belum_lunas: true, total: 100000, items: [] });
-    const onSaleCreated = vi.fn();
-    render(
-      <KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={onSaleCreated} />,
-    );
-    await act(async () => {
-      fireEvent.click(screen.getByTestId("keep-btn"));
-    });
-    await waitFor(() => expect(screen.getByTestId("struk")).toBeInTheDocument());
-    expect(onSaleCreated).not.toHaveBeenCalled();
+  // Saran admin (November 2026): keep BARU wajib konfirmasi lokasi
+  // tujuannya dulu (KeepLocationModal) supaya tidak diam2 kebawa `location`
+  // yang kebetulan masih nyangkut dari aksi sebelumnya.
+  it("Keep: klik tombol Keep -> muncul dialog konfirmasi lokasi dulu, simpanKeep belum dipanggil", () => {
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("keep-btn"));
+    expect(screen.getByTestId("keep-location-modal")).toBeInTheDocument();
+    expect(screen.getByTestId("keep-location-current")).toHaveTextContent("gudang");
+    expect(simpanKeepMock).not.toHaveBeenCalled();
   });
 
-  it("Keep gagal (null) -> tidak ada struk", async () => {
+  it("Keep: konfirmasi lokasi lain -> simpanKeep dipanggil dgn override lokasi itu, dialog tertutup", async () => {
+    simpanKeepMock.mockResolvedValue({ type: "sale", belum_lunas: true, total: 100000, items: [] });
+    const onSaleCreated = vi.fn();
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={onSaleCreated} />);
+    fireEvent.click(screen.getByTestId("keep-btn"));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("keep-location-confirm-tegalgubug"));
+    });
+    expect(simpanKeepMock).toHaveBeenCalledWith({ location: "tegalgubug" });
+    expect(screen.queryByTestId("keep-location-modal")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("struk")).toBeInTheDocument());
+    expect(onSaleCreated).not.toHaveBeenCalled(); // keep bukan penjualan
+  });
+
+  it("Keep: Batal di dialog lokasi -> dialog tertutup, simpanKeep TIDAK dipanggil sama sekali", () => {
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("keep-btn"));
+    fireEvent.click(screen.getByTestId("keep-location-cancel"));
+    expect(screen.queryByTestId("keep-location-modal")).not.toBeInTheDocument();
+    expect(simpanKeepMock).not.toHaveBeenCalled();
+  });
+
+  it("Keep gagal (null) setelah konfirmasi lokasi -> tidak ada struk", async () => {
     simpanKeepMock.mockResolvedValue(null);
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("keep-btn"));
     await act(async () => {
-      fireEvent.click(screen.getByTestId("keep-btn"));
+      fireEvent.click(screen.getByTestId("keep-location-confirm-tegalgubug"));
     });
     expect(screen.queryByTestId("struk")).not.toBeInTheDocument();
   });
 
   it("tombol 'Keep (n)' membuka daftar keep; bayar dari daftar memanggil onSaleCreated", () => {
     const onSaleCreated = vi.fn();
-    render(
-      <KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={onSaleCreated} />,
-    );
+    render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={onSaleCreated} />);
     const open = screen.getByTestId("open-keep-btn");
     expect(open).toHaveTextContent("Keep (2)");
     fireEvent.click(open);
@@ -702,27 +609,31 @@ describe("KasirPage — Edit Keep", () => {
     const loadKeep = vi.fn();
     const onLocationChange = vi.fn();
     useCart.mockReturnValue({ ...baseCart, loadKeep });
-    render(
-      <KasirPage location="gudang" onLocationChange={onLocationChange} onSaleCreated={vi.fn()} />,
-    );
+    render(<KasirPage location="gudang" onLocationChange={onLocationChange} onSaleCreated={vi.fn()} />);
     fireEvent.click(screen.getByTestId("open-keep-btn"));
     fireEvent.click(screen.getByTestId("keep-edit-btn"));
-    expect(loadKeep).toHaveBeenCalledWith({
-      keep: editKeepRow,
-      items: [{ ...editKeepRow.items[0], key: "A-Midi" }],
-      gabungan: false,
-    });
+    expect(loadKeep).toHaveBeenCalledWith({ keep: editKeepRow, items: [{ ...editKeepRow.items[0], key: "A-Midi" }], gabungan: false });
     expect(onLocationChange).toHaveBeenCalledWith("cideng");
     expect(screen.queryByTestId("keep-list-modal")).not.toBeInTheDocument();
   });
 
+  // Mode edit TIDAK perlu dialog konfirmasi lokasi — lokasinya sudah
+  // disinkronkan saat keep dimuat ke cart (onLocationChange di atas).
+  it("mode edit: klik 'Simpan Keep' langsung panggil simpanKeep tanpa override, TIDAK munculkan dialog lokasi", async () => {
+    simpanKeepMock.mockResolvedValue({ type: "sale", belum_lunas: true, total: 300000, items: [] });
+    useCart.mockReturnValue({ ...baseCart, editingKeep: { id: "k1", buyer_name: "BUDI" } });
+    render(<KasirPage location="cideng" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("keep-btn"));
+    });
+    expect(screen.queryByTestId("keep-location-modal")).not.toBeInTheDocument();
+    expect(simpanKeepMock).toHaveBeenCalledWith(undefined);
+    await waitFor(() => expect(screen.getByTestId("struk")).toBeInTheDocument());
+  });
+
   it("mode edit: banner + label Simpan Keep; Batal Edit mengosongkan cart", () => {
     const resetCart = vi.fn();
-    useCart.mockReturnValue({
-      ...baseCart,
-      resetCart,
-      editingKeep: { id: "k1", buyer_name: "BUDI" },
-    });
+    useCart.mockReturnValue({ ...baseCart, resetCart, editingKeep: { id: "k1", buyer_name: "BUDI" } });
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
     expect(screen.getByText(/Edit keep BUDI/)).toBeInTheDocument();
     expect(screen.getByTestId("keep-btn")).toHaveTextContent("Simpan Keep");
@@ -733,23 +644,16 @@ describe("KasirPage — Edit Keep", () => {
 
   it("Bayar saat mengedit keep: keep ditandai lunas setelah transaksi tercatat", async () => {
     useCart.mockReturnValue({ ...baseCart, editingKeep: { id: "k1", buyer_name: "BUDI" } });
-    useCheckout.mockReturnValue({
-      bayar: vi.fn().mockResolvedValue({ type: "sale", total: 1, items: [] }),
-      saving: false,
-    });
+    useCheckout.mockReturnValue({ bayar: vi.fn().mockResolvedValue({ type: "sale", total: 1, items: [] }), saving: false });
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
-    await act(async () => {
-      fireEvent.click(screen.getByTestId("bayar-btn"));
-    });
+    await act(async () => { fireEvent.click(screen.getByTestId("bayar-btn")); });
     expect(tandaiKeepLunasMock).toHaveBeenCalledWith("k1");
   });
 
   it("Bayar gagal saat mengedit keep: keep TIDAK ditandai lunas", async () => {
     useCart.mockReturnValue({ ...baseCart, editingKeep: { id: "k1" } });
     render(<KasirPage location="gudang" onLocationChange={vi.fn()} onSaleCreated={vi.fn()} />);
-    await act(async () => {
-      fireEvent.click(screen.getByTestId("bayar-btn"));
-    });
+    await act(async () => { fireEvent.click(screen.getByTestId("bayar-btn")); });
     expect(tandaiKeepLunasMock).not.toHaveBeenCalled();
   });
 });

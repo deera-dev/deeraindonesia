@@ -1,26 +1,22 @@
 import {
-  useAddCommentMutation,
   useApproveRepeatMutation,
-  useCommentsQuery,
+  useLanjutWorkOrderMutation,
   useCreatePlanningMutation,
   useCreateSampelsMutation,
-  useDeleteCommentMutation,
   useDeleteSampelMutation,
-  useLanjutWorkOrderMutation,
   useLogWorkOrderMutation,
   useMarkSampelDibuatMutation,
-  useMarkSampelReadMutation,
   useMundurStepMutation,
-  useReadsBySampelQuery,
   useReorderPlanningMutation,
   useSampelsQuery,
   useSaveBatchDecisionsMutation,
+  useSaveWoDraftMutation,
   useSetWoSelesaiMutation,
   useTogglePinnedMutation,
-  useUnreadDiskusiQuery,
-  useUpdatePlanningMutation,
   useUpdateSampelMutation,
+  useUpdatePlanningMutation,
 } from "./queries";
+import { useWoDraftStore } from "./store";
 
 export function useSampels() {
   const { data, isLoading } = useSampelsQuery();
@@ -60,8 +56,7 @@ export function useMarkSampelDibuat() {
 
 export function useApproveRepeat() {
   const { mutateAsync } = useApproveRepeatMutation();
-  return ({ sampel, foto, catatan, userEmail }) =>
-    mutateAsync({ sampel, foto, catatan, userEmail });
+  return ({ sampel, foto, catatan, userEmail }) => mutateAsync({ sampel, foto, catatan, userEmail });
 }
 
 export function useLanjutWorkOrder() {
@@ -82,7 +77,8 @@ export function useCreateSampels() {
 
 export function useSaveBatchDecisions() {
   const { mutateAsync } = useSaveBatchDecisionsMutation();
-  return (decisions, sampelMap, userEmail) => mutateAsync({ decisions, sampelMap, userEmail });
+  return (decisions, sampelMap, userEmail) =>
+    mutateAsync({ decisions, sampelMap, userEmail });
 }
 
 export function useDeleteSampel() {
@@ -95,42 +91,23 @@ export function useTogglePinned() {
   return (id, pinned) => mutateAsync({ id, pinned });
 }
 
-export function useComments(sampelId) {
-  const { data, isLoading } = useCommentsQuery(sampelId);
-  return { comments: data ?? [], loading: isLoading };
-}
-
-export function useAddComment() {
-  const { mutateAsync, isPending } = useAddCommentMutation();
-  return { addComment: (params) => mutateAsync(params), adding: isPending };
-}
-
-export function useDeleteComment() {
-  const { mutateAsync } = useDeleteCommentMutation();
-  return (id, sampelId) => mutateAsync({ id, sampelId });
-}
-
 export function useLogWorkOrder() {
   const { mutateAsync } = useLogWorkOrderMutation();
   return (params) => mutateAsync(params);
 }
 
-export function useUnreadCounts() {
-  const { data, isLoading } = useUnreadDiskusiQuery();
-  return { unreadCounts: data?.per_sampel ?? {}, loading: isLoading };
+export function useSaveWoDraft() {
+  const { mutateAsync } = useSaveWoDraftMutation();
+  return (params) => mutateAsync(params);
 }
 
-export function useTotalUnreadCount() {
-  const { data, isLoading } = useUnreadDiskusiQuery();
-  return { total: Number(data?.total ?? 0), loading: isLoading };
-}
-
-export function useReadsBySampel(sampelId) {
-  const { data, isLoading } = useReadsBySampelQuery(sampelId);
-  return { reads: data ?? [], loading: isLoading };
-}
-
-export function useMarkSampelRead() {
-  const { mutateAsync } = useMarkSampelReadMutation();
-  return ({ sampelId, userEmail, userName }) => mutateAsync({ sampelId, userEmail, userName });
+export function useWoDraft(sampelId) {
+  const draft = useWoDraftStore((s) => (sampelId ? s.drafts[sampelId] : undefined));
+  const saveDraftFn = useWoDraftStore((s) => s.saveDraft);
+  const clearDraftFn = useWoDraftStore((s) => s.clearDraft);
+  return {
+    draft,
+    saveDraft: (patch) => sampelId && saveDraftFn(sampelId, patch),
+    clearDraft: () => sampelId && clearDraftFn(sampelId),
+  };
 }

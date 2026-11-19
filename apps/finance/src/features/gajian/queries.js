@@ -22,16 +22,17 @@ import {
   fetchKaryawanIdsInGajian,
   fetchKreatif,
   fetchKreatifForRincian,
+  fetchPendingCmtSetoran,
   fetchPotong,
   fetchPotongForRincian,
-  fetchProdukList,
   fetchProduksiTotalByKode,
+  fetchProdukList,
+  loadFinishingReconciliation,
   fetchQC,
   fetchQCForRincian,
   fetchUpahJahitByKode,
   fetchUpahJahitHistoryByKode,
   finalizeGajian,
-  loadFinishingReconciliation,
   saveCmt,
   saveFinishing,
   saveGajianRequest,
@@ -41,6 +42,7 @@ import {
   saveQC,
   syncJahitCardsFromGajian,
   syncKancingHppFromFinishing,
+  syncPendingCmtIntoGajian,
 } from "./api";
 
 export const gajianKeys = {
@@ -55,6 +57,7 @@ export const gajianKeys = {
   qc: (id) => ["gajian", "qc", id],
   kreatif: (id) => ["gajian", "kreatif", id],
   cmt: (id) => ["gajian", "cmt", id],
+  pendingCmtSetoran: () => ["gajian", "pending-cmt-setoran"],
   produk: () => ["gajian", "produk"],
   upahJahitByKode: () => ["gajian", "upah-jahit-by-kode"],
   upahJahitHistoryByKode: () => ["gajian", "upah-jahit-history-by-kode"],
@@ -319,6 +322,20 @@ export function useDeleteCmtMutation() {
   return useMutation({
     mutationFn: (id) => deleteCmt(id),
     onSuccess: () => invalidateGajian(queryClient),
+  });
+}
+
+export function usePendingCmtSetoranQuery() {
+  return useQuery({ queryKey: gajianKeys.pendingCmtSetoran(), queryFn: fetchPendingCmtSetoran });
+}
+export function useSyncPendingCmtIntoGajianMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (args) => syncPendingCmtIntoGajian(args),
+    onSuccess: () => {
+      invalidateGajian(queryClient);
+      queryClient.invalidateQueries({ queryKey: gajianKeys.pendingCmtSetoran() });
+    },
   });
 }
 

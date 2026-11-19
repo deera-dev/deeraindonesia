@@ -1,15 +1,11 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor, act, within } from "@testing-library/react";
 
 vi.mock("./SizeSection", () => ({
   default: ({ activeSet, onToggle, onHarga, saving }) => (
     <div data-testid="size-section">
-      <button onClick={() => onToggle("Midi")} disabled={saving}>
-        toggle-Midi
-      </button>
-      <button onClick={() => onToggle("Gamis")} disabled={saving}>
-        toggle-Gamis
-      </button>
+      <button onClick={() => onToggle("Midi")} disabled={saving}>toggle-Midi</button>
+      <button onClick={() => onToggle("Gamis")} disabled={saving}>toggle-Gamis</button>
       <input
         data-testid="harga-Midi"
         onChange={(e) => onHarga("Midi", e.target.value)}
@@ -35,11 +31,7 @@ vi.mock("./ImageSection", () => ({
       <button onClick={() => setMainImage({ type: "url", url: "new.jpg" })} disabled={saving}>
         set-main
       </button>
-      <button
-        type="button"
-        onClick={() => setSeriWarnaImage({ type: "url", url: "new-seri.jpg" })}
-        disabled={saving}
-      >
+      <button type="button" onClick={() => setSeriWarnaImage({ type: "url", url: "new-seri.jpg" })} disabled={saving}>
         set-seri-warna
       </button>
       <button onClick={() => setDetailImages([{ type: "url", url: "d1.jpg" }])} disabled={saving}>
@@ -52,18 +44,10 @@ vi.mock("./ImageSection", () => ({
 vi.mock("./WarnaSection", () => ({
   default: ({ warna, onAdd, onRemove, onRename, warnaHasStok, saving }) => (
     <div data-testid="warna-section">
-      <button type="button" onClick={() => onAdd("BIRU")} disabled={saving}>
-        add-warna
-      </button>
-      <button type="button" onClick={() => onRemove("HITAM")} disabled={saving}>
-        remove-warna
-      </button>
-      <button type="button" onClick={() => onRename("HITAM", "NAVY")} disabled={saving}>
-        rename-hitam-navy
-      </button>
-      <button type="button" onClick={() => onRename("NAVY", "BIRU_TUA")} disabled={saving}>
-        rename-navy-birutua
-      </button>
+      <button type="button" onClick={() => onAdd("BIRU")} disabled={saving}>add-warna</button>
+      <button type="button" onClick={() => onRemove("HITAM")} disabled={saving}>remove-warna</button>
+      <button type="button" onClick={() => onRename("HITAM", "NAVY")} disabled={saving}>rename-hitam-navy</button>
+      <button type="button" onClick={() => onRename("NAVY", "BIRU_TUA")} disabled={saving}>rename-navy-birutua</button>
       <span data-testid="warna-list">{warna.join(",")}</span>
       <span data-testid="has-stok-hitam">{String(warnaHasStok("HITAM"))}</span>
       <span data-testid="has-stok-navy">{String(warnaHasStok("NAVY"))}</span>
@@ -74,12 +58,7 @@ vi.mock("./WarnaSection", () => ({
 vi.mock("./HppSection", () => ({
   default: ({ hpp, onHpp, saving }) => (
     <div data-testid="hpp-section">
-      <input
-        data-testid="hpp-input"
-        value={hpp}
-        onChange={(e) => onHpp(e.target.value)}
-        disabled={saving}
-      />
+      <input data-testid="hpp-input" value={hpp} onChange={(e) => onHpp(e.target.value)} disabled={saving} />
     </div>
   ),
 }));
@@ -99,10 +78,7 @@ const EDIT_PRODUCT = {
   nama: "Gamis Lama",
   bahan: "Ceruti",
   hpp: 100000,
-  variants: [
-    { size: "Midi", harga: 200000 },
-    { size: "Gamis", harga: 250000 },
-  ],
+  variants: [{ size: "Midi", harga: 200000 }, { size: "Gamis", harga: 250000 }],
   warna: ["HITAM", "MERAH"],
   image: "old.jpg",
   seri_warna: "old-seri.jpg",
@@ -117,7 +93,7 @@ function renderForm(props = {}) {
       onSaved={vi.fn()}
       onDelete={undefined}
       {...props}
-    />,
+    />
   );
 }
 
@@ -131,8 +107,7 @@ describe("ProductForm", () => {
   describe("mode tambah (product=null)", () => {
     it("menampilkan heading 'Tambah Produk'", () => {
       renderForm();
-      const headings = screen.getAllByText("Tambah Produk");
-      expect(headings.length).toBeGreaterThanOrEqual(1);
+      const headings = screen.getAllByText("Tambah Produk"); expect(headings.length).toBeGreaterThanOrEqual(1);
     });
 
     it("tombol submit menampilkan 'Tambah Produk'", () => {
@@ -143,11 +118,9 @@ describe("ProductForm", () => {
     it("field kode kosong, nama kosong, bahan kosong", () => {
       const { container } = renderForm();
       const inputs = container.querySelectorAll('input[type="text"]');
-      Array.from(inputs)
-        .slice(0, 4)
-        .forEach((inp) => {
-          if (inp.placeholder !== "150000") expect(inp.value).toBe("");
-        });
+      Array.from(inputs).slice(0, 4).forEach((inp) => {
+        if (inp.placeholder !== "150000") expect(inp.value).toBe("");
+      });
     });
 
     it("tidak memanggil useStokWarnaByKode saat isEdit=false (enabled=false)", () => {
@@ -164,8 +137,7 @@ describe("ProductForm", () => {
   describe("mode edit (product tersedia)", () => {
     it("menampilkan heading 'Edit Produk'", () => {
       renderForm({ product: EDIT_PRODUCT });
-      const editHeadings = screen.getAllByText("Edit Produk");
-      expect(editHeadings.length).toBeGreaterThanOrEqual(1);
+      const editHeadings = screen.getAllByText("Edit Produk"); expect(editHeadings.length).toBeGreaterThanOrEqual(1);
     });
 
     it("tombol submit menampilkan 'Simpan'", () => {
@@ -180,12 +152,8 @@ describe("ProductForm", () => {
 
     it("mengisi field nama & bahan dari product", () => {
       const { container } = renderForm({ product: EDIT_PRODUCT });
-      expect(container.querySelector('input[placeholder="Bahan x Style"]').value).toBe(
-        "Gamis Lama",
-      );
-      expect(container.querySelector('input[placeholder="Aurora burkat mix jasmin"]').value).toBe(
-        "Ceruti",
-      );
+      expect(container.querySelector('input[placeholder="Bahan x Style"]').value).toBe("Gamis Lama");
+      expect(container.querySelector('input[placeholder="Aurora burkat mix jasmin"]').value).toBe("Ceruti");
     });
 
     it("tombol hapus produk MUNCUL saat onDelete tersedia", () => {
@@ -218,20 +186,14 @@ describe("ProductForm", () => {
 
     it("menampilkan generatedKode saat kodeAngka & kodeBahan diisi", () => {
       const { container } = renderForm();
-      fireEvent.change(container.querySelector('input[placeholder="72"]'), {
-        target: { value: "07" },
-      });
-      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), {
-        target: { value: "OSK" },
-      });
+      fireEvent.change(container.querySelector('input[placeholder="72"]'), { target: { value: "07" } });
+      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), { target: { value: "OSK" } });
       expect(screen.getByText(/D-07-OSK/)).toBeInTheDocument();
     });
 
     it("menampilkan peringatan perubahan kode saat isEdit & kode berbeda dari original", () => {
       const { container } = renderForm({ product: EDIT_PRODUCT });
-      fireEvent.change(container.querySelector('input[placeholder="72"]'), {
-        target: { value: "09" },
-      });
+      fireEvent.change(container.querySelector('input[placeholder="72"]'), { target: { value: "09" } });
       expect(screen.getByText(/Berubah dari D-07-OSK/)).toBeInTheDocument();
     });
   });
@@ -381,6 +343,81 @@ describe("ProductForm", () => {
     });
   });
 
+  // BUG FIX (November 2026) — laporan "stok+terjual melebihi produksi" di
+  // BAGHDAD: saveProduct() menghapus stok_warna warna yang dihapus dari
+  // daftar TANPA PEDULI masih ada stok atau tidak. Submit sekarang wajib
+  // ditahan dulu lewat modal konfirmasi eksplisit kalau ada warna begitu.
+  describe("konfirmasi hapus stok orphan sebelum simpan", () => {
+    it("submit ditahan (saveProduct belum dipanggil) & modal konfirmasi muncul saat ada orphan warna yang masih punya stok", async () => {
+      useStokWarnaByKodeMock.mockReturnValue({
+        stokWarnaMap: { Midi: { BIRU: { gudang: 8, cideng: 0, tegalgubug: 0 } } },
+        loading: false,
+      });
+      renderForm({ product: EDIT_PRODUCT });
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: "Simpan" }).closest("form"));
+      });
+
+      const modal = screen.getByText("Stok Akan Hilang").closest(".relative");
+      expect(within(modal).getByText("BIRU")).toBeInTheDocument();
+      expect(within(modal).getAllByText(/8 pcs/).length).toBeGreaterThan(0);
+      expect(useSaveProductMock).not.toHaveBeenCalled();
+    });
+
+    it("klik 'Ya, Hapus & Simpan' di modal baru benar-benar memanggil saveProduct", async () => {
+      useSaveProductMock.mockResolvedValue({});
+      useStokWarnaByKodeMock.mockReturnValue({
+        stokWarnaMap: { Midi: { BIRU: { gudang: 8, cideng: 0, tegalgubug: 0 } } },
+        loading: false,
+      });
+      renderForm({ product: EDIT_PRODUCT });
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: "Simpan" }).closest("form"));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText("Ya, Hapus & Simpan"));
+      });
+
+      expect(useSaveProductMock).toHaveBeenCalled();
+      expect(screen.queryByText("Stok Akan Hilang")).toBeNull();
+    });
+
+    it("klik Batal di modal menutup modal tanpa memanggil saveProduct", async () => {
+      useStokWarnaByKodeMock.mockReturnValue({
+        stokWarnaMap: { Midi: { BIRU: { gudang: 8, cideng: 0, tegalgubug: 0 } } },
+        loading: false,
+      });
+      renderForm({ product: EDIT_PRODUCT });
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: "Simpan" }).closest("form"));
+      });
+      const modal = screen.getByText("Stok Akan Hilang").closest(".relative");
+      fireEvent.click(within(modal).getByText("Batal"));
+
+      expect(screen.queryByText("Stok Akan Hilang")).toBeNull();
+      expect(useSaveProductMock).not.toHaveBeenCalled();
+    });
+
+    it("orphan warna dgn stok 0 TIDAK memunculkan modal — submit langsung jalan (pembersihan diam2 tetap aman)", async () => {
+      useSaveProductMock.mockResolvedValue({});
+      useStokWarnaByKodeMock.mockReturnValue({
+        stokWarnaMap: { Midi: { BIRU: { gudang: 0, cideng: 0, tegalgubug: 0 } } },
+        loading: false,
+      });
+      renderForm({ product: EDIT_PRODUCT });
+
+      await act(async () => {
+        fireEvent.submit(screen.getByRole("button", { name: "Simpan" }).closest("form"));
+      });
+
+      expect(screen.queryByText("Stok Akan Hilang")).toBeNull();
+      expect(useSaveProductMock).toHaveBeenCalled();
+    });
+  });
+
   describe("validasi submit", () => {
     it("menampilkan error saat kode kosong (kodeAngka & kodeBahan tidak diisi)", async () => {
       renderForm();
@@ -393,12 +430,8 @@ describe("ProductForm", () => {
 
     it("menampilkan error saat nama kosong", async () => {
       const { container } = renderForm();
-      fireEvent.change(container.querySelector('input[placeholder="72"]'), {
-        target: { value: "07" },
-      });
-      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), {
-        target: { value: "OSK" },
-      });
+      fireEvent.change(container.querySelector('input[placeholder="72"]'), { target: { value: "07" } });
+      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), { target: { value: "OSK" } });
       fireEvent.submit(container.querySelector("form"));
       await waitFor(() => {
         expect(screen.getByText(/Nama wajib diisi/)).toBeInTheDocument();
@@ -407,15 +440,9 @@ describe("ProductForm", () => {
 
     it("menampilkan error saat tidak ada ukuran aktif", async () => {
       const { container } = renderForm();
-      fireEvent.change(container.querySelector('input[placeholder="72"]'), {
-        target: { value: "07" },
-      });
-      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), {
-        target: { value: "OSK" },
-      });
-      fireEvent.change(container.querySelector('input[placeholder="Bahan x Style"]'), {
-        target: { value: "Produk A" },
-      });
+      fireEvent.change(container.querySelector('input[placeholder="72"]'), { target: { value: "07" } });
+      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), { target: { value: "OSK" } });
+      fireEvent.change(container.querySelector('input[placeholder="Bahan x Style"]'), { target: { value: "Produk A" } });
       fireEvent.submit(container.querySelector("form"));
       await waitFor(() => {
         expect(screen.getByText(/Pilih minimal 1 ukuran/)).toBeInTheDocument();
@@ -429,15 +456,9 @@ describe("ProductForm", () => {
       const onSaved = vi.fn();
       const { container } = renderForm({ onSaved });
 
-      fireEvent.change(container.querySelector('input[placeholder="72"]'), {
-        target: { value: "07" },
-      });
-      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), {
-        target: { value: "OSK" },
-      });
-      fireEvent.change(container.querySelector('input[placeholder="Bahan x Style"]'), {
-        target: { value: "Gamis X" },
-      });
+      fireEvent.change(container.querySelector('input[placeholder="72"]'), { target: { value: "07" } });
+      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), { target: { value: "OSK" } });
+      fireEvent.change(container.querySelector('input[placeholder="Bahan x Style"]'), { target: { value: "Gamis X" } });
       fireEvent.click(screen.getByText("toggle-Midi"));
 
       await act(async () => {
@@ -450,7 +471,7 @@ describe("ProductForm", () => {
             isEdit: false,
             finalKode: "D-07-OSK",
             fields: expect.objectContaining({ nama: "Gamis X" }),
-          }),
+          })
         );
       });
       expect(onSaved).toHaveBeenCalledWith("D-07-OSK berhasil ditambahkan.");
@@ -476,15 +497,9 @@ describe("ProductForm", () => {
 
       expect(screen.getByTestId("seri-warna-image").textContent).toBe("null");
 
-      fireEvent.change(container.querySelector('input[placeholder="72"]'), {
-        target: { value: "08" },
-      });
-      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), {
-        target: { value: "OSK" },
-      });
-      fireEvent.change(container.querySelector('input[placeholder="Bahan x Style"]'), {
-        target: { value: "Gamis Y" },
-      });
+      fireEvent.change(container.querySelector('input[placeholder="72"]'), { target: { value: "08" } });
+      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), { target: { value: "OSK" } });
+      fireEvent.change(container.querySelector('input[placeholder="Bahan x Style"]'), { target: { value: "Gamis Y" } });
       fireEvent.click(screen.getByText("toggle-Midi"));
 
       await act(async () => {
@@ -549,15 +564,9 @@ describe("ProductForm", () => {
       const onSaved = vi.fn();
       const { container } = renderForm({ onSaved });
 
-      fireEvent.change(container.querySelector('input[placeholder="72"]'), {
-        target: { value: "07" },
-      });
-      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), {
-        target: { value: "OSK" },
-      });
-      fireEvent.change(container.querySelector('input[placeholder="Bahan x Style"]'), {
-        target: { value: "Gamis X" },
-      });
+      fireEvent.change(container.querySelector('input[placeholder="72"]'), { target: { value: "07" } });
+      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), { target: { value: "OSK" } });
+      fireEvent.change(container.querySelector('input[placeholder="Bahan x Style"]'), { target: { value: "Gamis X" } });
       fireEvent.click(screen.getByText("toggle-Midi"));
 
       await act(async () => {
@@ -598,22 +607,13 @@ describe("ProductForm", () => {
     it("saat saving=true: tombol submit menampilkan 'Menyimpan...' & disabled", async () => {
       let resolvePromise;
       useSaveProductMock.mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            resolvePromise = resolve;
-          }),
+        () => new Promise((resolve) => { resolvePromise = resolve; })
       );
       const { container } = renderForm();
 
-      fireEvent.change(container.querySelector('input[placeholder="72"]'), {
-        target: { value: "07" },
-      });
-      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), {
-        target: { value: "OSK" },
-      });
-      fireEvent.change(container.querySelector('input[placeholder="Bahan x Style"]'), {
-        target: { value: "X" },
-      });
+      fireEvent.change(container.querySelector('input[placeholder="72"]'), { target: { value: "07" } });
+      fireEvent.change(container.querySelector('input[placeholder="JTB"]'), { target: { value: "OSK" } });
+      fireEvent.change(container.querySelector('input[placeholder="Bahan x Style"]'), { target: { value: "X" } });
       fireEvent.click(screen.getByText("toggle-Midi"));
 
       fireEvent.submit(container.querySelector("form"));
@@ -623,9 +623,7 @@ describe("ProductForm", () => {
       });
 
       expect(typeof resolvePromise).toBe("function");
-      await act(async () => {
-        resolvePromise({});
-      });
+      await act(async () => { resolvePromise({}); });
     });
   });
 
@@ -637,7 +635,9 @@ describe("ProductForm", () => {
       Object.defineProperty(bigFile, "size", { value: 150 * 1024 * 1024 });
       fireEvent.change(videoInput, { target: { files: [bigFile] } });
 
-      expect(screen.getByText(/Ukuran video melebihi batas maksimum 100 MB/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Ukuran video melebihi batas maksimum 100 MB/),
+      ).toBeInTheDocument();
       expect(screen.getByText("Upload Video")).toBeInTheDocument();
     });
 

@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef } from "react";
+import { useRingkasanDraftStore } from "./store";
 import { useApplyKasbonDeduction, useKasbonBelumLunasByKaryawanIds } from "../kasbon/hooks";
 import { useFinanceConfig } from "../pengaturan/hooks";
 import { usePettycashAll, useSavePettycash } from "../pettycash/hooks";
@@ -10,6 +11,7 @@ import {
   useDeleteFinishingMutation,
   useDeleteGajianPeriodeMutation,
   useDeleteJahitMutation,
+  useLookupJahitCardMutation,
   useDeleteKreatifMutation,
   useDeletePotongMutation,
   useDeleteQCMutation,
@@ -21,16 +23,16 @@ import {
   useGajianTotalsQuery,
   useJahitForRincianQuery,
   useJahitQuery,
-  useKancingHppMapQuery,
   useKaryawanIdsInGajianQuery,
   useKreatifForRincianQuery,
   useKreatifQuery,
   useLoadFinishingReconciliationMutation,
-  useLookupJahitCardMutation,
+  usePendingCmtSetoranQuery,
   usePotongForRincianQuery,
   usePotongQuery,
-  useProdukListQuery,
   useProduksiTotalMapQuery,
+  useKancingHppMapQuery,
+  useProdukListQuery,
   useQCForRincianQuery,
   useQCQuery,
   useSaveCmtMutation,
@@ -42,19 +44,20 @@ import {
   useSaveQCMutation,
   useSyncJahitCardsFromGajianMutation,
   useSyncKancingHppFromFinishingMutation,
-  useUpahJahitHistoryMapQuery,
+  useSyncPendingCmtIntoGajianMutation,
   useUpahJahitMapQuery,
+  useUpahJahitHistoryMapQuery,
 } from "./queries";
-import { useRingkasanDraftStore } from "./store";
 import {
   BELI_GAS_LABEL,
+  PERSIAPAN_ATK_LABEL,
   buildKasbonDeductionsPayload,
   buildPerKaryawanMap,
   buildTambahanPayload,
   calcTotalRequest,
   findTambahanByLabel,
+  groupPendingCmtByVendor,
   otherTambahan,
-  PERSIAPAN_ATK_LABEL,
   pettycashTerpakaiFromSaldo,
   sumKasbonDeduction,
   sumTambahan,
@@ -268,6 +271,19 @@ export function useSaveCmt() {
 export function useDeleteCmt() {
   const { mutateAsync } = useDeleteCmtMutation();
   return (id) => mutateAsync(id);
+}
+
+export function usePendingCmtSetoran() {
+  const { data, isLoading } = usePendingCmtSetoranQuery();
+  const groups = useMemo(
+    () => groupPendingCmtByVendor(data?.jahitRows ?? [], data?.fullRows ?? []),
+    [data],
+  );
+  return { groups, loading: isLoading };
+}
+export function useSyncPendingCmtIntoGajian() {
+  const { mutateAsync, isPending } = useSyncPendingCmtIntoGajianMutation();
+  return { syncPendingCmt: (args) => mutateAsync(args), syncing: isPending };
 }
 
 export function useProdukList() {

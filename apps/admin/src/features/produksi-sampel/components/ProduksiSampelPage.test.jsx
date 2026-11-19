@@ -1,7 +1,7 @@
+import React from "react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import React from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../shared/components/ProduksiLayout", () => ({
   default: ({ children, title, headerAction }) => (
@@ -38,8 +38,6 @@ const mockUseProducts = vi.fn(() => ({ products: [] }));
 const mockSaveBatchDecisions = vi.fn();
 const mockDeleteSampel = vi.fn();
 
-const mockUseUnreadCounts = vi.fn(() => ({ unreadCounts: {}, loading: false }));
-
 vi.mock("../hooks", () => ({
   useSampels: vi.fn(),
   useUpdateSampel: () => mockUpdateSampel,
@@ -52,28 +50,12 @@ vi.mock("../hooks", () => ({
   useUpdatePlanning: () => mockUpdatePlanning,
   useSaveBatchDecisions: () => mockSaveBatchDecisions,
   useDeleteSampel: () => mockDeleteSampel,
-  useUnreadCounts: (...args) => mockUseUnreadCounts(...args),
 }));
 
 vi.mock("./SampelCard", () => ({
-  default: ({
-    sampel,
-    onEdit,
-    onDelete,
-    onReview,
-    onWoSampel,
-    onSampelJadi,
-    onMundur,
-    onApproveRepeat,
-    onOpenDiscussion,
-    onWorkOrder,
-    onWoSelesai,
-    onEditPlan,
-    unreadCount,
-  }) => (
+  default: ({ sampel, onEdit, onDelete, onReview, onWoSampel, onSampelJadi, onMundur, onApproveRepeat, onOpenRiwayat, onWorkOrder, onWoSelesai, onEditPlan }) => (
     <div data-testid="sampel-card">
       <span>{sampel.nama}</span>
-      <span data-testid={`unread-${sampel.id}`}>{unreadCount ?? 0}</span>
       <button onClick={() => onEdit(sampel)}>Edit</button>
       <button onClick={() => onDelete(sampel)}>Hapus</button>
       <button onClick={() => onReview(sampel)}>Review</button>
@@ -81,7 +63,7 @@ vi.mock("./SampelCard", () => ({
       <button onClick={() => onSampelJadi(sampel)}>SampelJadi</button>
       <button onClick={() => onMundur?.(sampel)}>Mundur</button>
       <button onClick={() => onApproveRepeat?.(sampel)}>ApproveRepeat</button>
-      <button onClick={() => onOpenDiscussion(sampel)}>Diskusi</button>
+      <button onClick={() => onOpenRiwayat(sampel)}>Riwayat</button>
       <button onClick={() => onWorkOrder(sampel)}>BukaWorkOrder</button>
       <button onClick={() => onWoSelesai?.(sampel, true)}>WoSelesai</button>
       <button onClick={() => onEditPlan?.(sampel)}>EditPlan</button>
@@ -92,9 +74,7 @@ vi.mock("./SampelCard", () => ({
 vi.mock("./SampelForm", () => ({
   default: ({ onSave, onCancel }) => (
     <div>
-      <button onClick={() => onSave({ nama: "Test", tanggal: "2024-01-01" }, [])}>
-        SaveSampel
-      </button>
+      <button onClick={() => onSave({ nama: "Test", tanggal: "2024-01-01" }, [])}>SaveSampel</button>
       <button onClick={onCancel}>CancelSampel</button>
     </div>
   ),
@@ -122,28 +102,17 @@ vi.mock("./PlanningForm", () => ({
 }));
 
 vi.mock("./PlanningQueueList", () => ({
-  default: ({
-    items,
-    onReorder,
-    onEdit,
-    onReview,
-    onDelete,
-    onWoSampel,
-    onSampelJadi,
-    onOpenDiscussion,
-    unreadCounts,
-  }) => (
+  default: ({ items, onReorder, onEdit, onReview, onDelete, onWoSampel, onSampelJadi, onOpenRiwayat }) => (
     <div data-testid="planning-queue-list">
       {items.map((s) => (
         <div key={s.id} data-testid="planning-queue-item">
           <span>{s.nama}</span>
-          <span data-testid={`queue-unread-${s.id}`}>{unreadCounts?.[s.id] ?? 0}</span>
           <button onClick={() => onEdit(s)}>QueueEdit</button>
           <button onClick={() => onReview(s)}>QueueReview</button>
           <button onClick={() => onDelete(s)}>QueueHapus</button>
           <button onClick={() => onWoSampel(s)}>QueueWoSampel</button>
           <button onClick={() => onSampelJadi(s)}>QueueSampelJadi</button>
-          <button onClick={() => onOpenDiscussion(s)}>QueueDiskusi</button>
+          <button onClick={() => onOpenRiwayat(s)}>QueueRiwayat</button>
         </div>
       ))}
       <button onClick={() => onReorder(items.map((s) => s.id).reverse())}>QueueReorder</button>
@@ -151,13 +120,11 @@ vi.mock("./PlanningQueueList", () => ({
   ),
 }));
 
-vi.mock("./PlanningDetailModal", () => ({
+vi.mock("./RiwayatModal", () => ({
   default: ({ sampel, onClose }) => (
     <div>
-      <span>
-        PlanningDetailModal:{sampel.nama}:pinned={String(!!sampel.pinned)}
-      </span>
-      <button onClick={onClose}>ClosePlanningDetail</button>
+      <span>RiwayatModal:{sampel.nama}:pinned={String(!!sampel.pinned)}</span>
+      <button onClick={onClose}>CloseRiwayat</button>
     </div>
   ),
 }));
@@ -171,48 +138,18 @@ vi.mock("./WorkOrderModal", () => ({
   ),
 }));
 
-import { toast } from "@deera/shared/features/toast/hooks";
-import { useSampels } from "../hooks";
 import ProduksiSampelPage from "./ProduksiSampelPage";
+import { useSampels } from "../hooks";
+import { toast } from "@deera/shared/features/toast/hooks";
 
 const fakeSampels = [
-  {
-    id: "s1",
-    nama: "Gamis Arkana",
-    status: "draft",
-    nomor: "SPL-001",
-    tanggal: "2024-01-15",
-    foto: [],
-  },
-  {
-    id: "s2",
-    nama: "Gamis Bruna",
-    status: "approved",
-    nomor: "SPL-002",
-    tanggal: "2024-01-16",
-    foto: [],
-  },
+  { id: "s1", nama: "Gamis Arkana", status: "draft", nomor: "SPL-001", tanggal: "2024-01-15", foto: [] },
+  { id: "s2", nama: "Gamis Bruna", status: "approved", nomor: "SPL-002", tanggal: "2024-01-16", foto: [] },
 ];
 
 const planningSampels = [
-  {
-    id: "p1",
-    nama: "Planning Satu",
-    status: "planning",
-    nomor: "SPL-010",
-    tanggal: "2026-08-01",
-    urutan: 0,
-    bahan_items: [],
-  },
-  {
-    id: "p2",
-    nama: "Planning Dua",
-    status: "planning",
-    nomor: "SPL-011",
-    tanggal: "2026-08-02",
-    urutan: 1,
-    bahan_items: [],
-  },
+  { id: "p1", nama: "Planning Satu", status: "planning", nomor: "SPL-010", tanggal: "2026-08-01", urutan: 0, bahan_items: [] },
+  { id: "p2", nama: "Planning Dua", status: "planning", nomor: "SPL-011", tanggal: "2026-08-02", urutan: 1, bahan_items: [] },
 ];
 
 beforeEach(() => {
@@ -220,15 +157,11 @@ beforeEach(() => {
   mockUpdateSampel.mockResolvedValue(undefined);
   mockCreatePlanning.mockResolvedValue({ nomor: "SPL-003" });
   mockReorderPlanning.mockResolvedValue(undefined);
-  mockMarkSampelDibuat.mockResolvedValue({
-    approved_by: "admin@deera.id",
-    approved_at: "2026-10-15T00:00:00Z",
-  });
+  mockMarkSampelDibuat.mockResolvedValue({ approved_by: "admin@deera.id", approved_at: "2026-10-15T00:00:00Z" });
   mockApproveRepeat.mockResolvedValue(undefined);
   mockSaveBatchDecisions.mockResolvedValue([]);
   mockDeleteSampel.mockResolvedValue(undefined);
   useSampels.mockReturnValue({ sampels: fakeSampels, loading: false });
-  mockUseUnreadCounts.mockReturnValue({ unreadCounts: {}, loading: false });
 });
 
 describe("ProduksiSampelPage", () => {
@@ -240,13 +173,6 @@ describe("ProduksiSampelPage", () => {
   it("shows SampelCards in All tab", () => {
     render(<ProduksiSampelPage />);
     expect(screen.getAllByTestId("sampel-card")).toHaveLength(2);
-  });
-
-  it("?diskusi=<id> dari Notifikasi langsung membuka diskusi planning itu", () => {
-    window.history.pushState(null, "", "/produksi/sampel?diskusi=s1");
-    render(<ProduksiSampelPage />);
-    expect(screen.getByText(/PlanningDetailModal:Gamis Arkana/)).toBeInTheDocument();
-    expect(window.location.search).toBe("");
   });
 
   it("shows loading state", () => {
@@ -342,9 +268,7 @@ describe("ProduksiSampelPage", () => {
     await user.click(screen.getAllByText("SampelJadi")[0]);
     await user.click(screen.getByText("SaveSampel"));
     await waitFor(() =>
-      expect(mockMarkSampelDibuat).toHaveBeenCalledWith(
-        expect.objectContaining({ id: "s1", foto: [] }),
-      ),
+      expect(mockMarkSampelDibuat).toHaveBeenCalledWith(expect.objectContaining({ id: "s1", foto: [] })),
     );
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
     expect(screen.queryByText("SaveSampel")).not.toBeInTheDocument();
@@ -355,15 +279,11 @@ describe("ProduksiSampelPage", () => {
     mockMundurStep.mockResolvedValueOnce("planning");
     render(<ProduksiSampelPage />);
     await user.click(screen.getAllByText("Mundur")[0]);
-    await waitFor(() =>
-      expect(mockMundurStep).toHaveBeenCalledWith(expect.objectContaining({ id: "s1" })),
-    );
+    await waitFor(() => expect(mockMundurStep).toHaveBeenCalledWith(expect.objectContaining({ id: "s1" })));
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
     mockMundurStep.mockRejectedValueOnce(new Error("mundur fail"));
     await user.click(screen.getAllByText("Mundur")[0]);
-    await waitFor(() =>
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("mundur fail")),
-    );
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("mundur fail")));
   });
 
   it("shows delete confirm modal when Hapus clicked", async () => {
@@ -391,9 +311,7 @@ describe("ProduksiSampelPage — error paths", () => {
     render(<ProduksiSampelPage />);
     await user.click(screen.getByText("+ Planning"));
     await user.click(screen.getByText("SavePlanning"));
-    await waitFor(() =>
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("network fail")),
-    );
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("network fail")));
   });
 
   it("shows toast.error when updateSampel throws", async () => {
@@ -402,9 +320,7 @@ describe("ProduksiSampelPage — error paths", () => {
     render(<ProduksiSampelPage />);
     await user.click(screen.getAllByText("Edit")[0]);
     await user.click(screen.getByText("SaveSampel"));
-    await waitFor(() =>
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("update fail")),
-    );
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("update fail")));
   });
 
   it("shows toast.error when markSampelDibuat throws", async () => {
@@ -413,9 +329,7 @@ describe("ProduksiSampelPage — error paths", () => {
     render(<ProduksiSampelPage />);
     await user.click(screen.getAllByText("SampelJadi")[0]);
     await user.click(screen.getByText("SaveSampel"));
-    await waitFor(() =>
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("jadi fail")),
-    );
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("jadi fail")));
   });
 
   it("shows toast.error when deleteSampel throws", async () => {
@@ -425,9 +339,7 @@ describe("ProduksiSampelPage — error paths", () => {
     await user.click(screen.getAllByText("Hapus")[0]);
     const confirmBtn = document.querySelector("button.bg-red-500");
     await user.click(confirmBtn);
-    await waitFor(() =>
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("delete fail")),
-    );
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("delete fail")));
   });
 });
 
@@ -547,9 +459,7 @@ describe("ProduksiSampelPage — batch review modal", () => {
     await user.click(screen.getAllByText("Review")[0]);
     await user.click(screen.getByText("✓ Terima"));
     await user.click(screen.getByText(/Simpan 1 Keputusan/));
-    await waitFor(() =>
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("batch error")),
-    );
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("batch error")));
   });
 
   it("shows warning when reject decision has no alasan on save", async () => {
@@ -558,9 +468,7 @@ describe("ProduksiSampelPage — batch review modal", () => {
     await user.click(screen.getAllByText("Review")[0]);
     await user.click(screen.getByText("✗ Tolak"));
     await user.click(screen.getByText(/Simpan 1 Keputusan/));
-    await waitFor(() =>
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("alasan")),
-    );
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("alasan")));
     expect(mockSaveBatchDecisions).not.toHaveBeenCalled();
   });
 
@@ -711,24 +619,8 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
     const user = userEvent.setup();
     useSampels.mockReturnValue({
       sampels: [
-        {
-          id: "a",
-          nama: "Pakai Katun",
-          status: "planning",
-          nomor: "N1",
-          tanggal: "2026-10-01",
-          urutan: 0,
-          bahan_items: [{ nama_bahan: "Katun" }],
-        },
-        {
-          id: "b",
-          nama: "Pakai Satin",
-          status: "planning",
-          nomor: "N2",
-          tanggal: "2026-10-02",
-          urutan: 1,
-          bahan_items: [{ nama_bahan: "Satin" }],
-        },
+        { id: "a", nama: "Pakai Katun", status: "planning", nomor: "N1", tanggal: "2026-10-01", urutan: 0, bahan_items: [{ nama_bahan: "Katun" }] },
+        { id: "b", nama: "Pakai Satin", status: "planning", nomor: "N2", tanggal: "2026-10-02", urutan: 1, bahan_items: [{ nama_bahan: "Satin" }] },
       ],
       loading: false,
     });
@@ -742,30 +634,30 @@ describe("ProduksiSampelPage — tab Planning (drag & drop, permintaan Denny 202
     expect(screen.getByText("Pakai Satin")).toBeInTheDocument();
   });
 
-  it("QueueDiskusi membuka PlanningDetailModal dari PlanningQueueList", async () => {
+  it("QueueRiwayat membuka RiwayatModal dari PlanningQueueList", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
     await user.click(screen.getByText("Rencana"));
-    await user.click(screen.getAllByText("QueueDiskusi")[0]);
-    expect(screen.getByText(/PlanningDetailModal:Planning Satu/)).toBeInTheDocument();
+    await user.click(screen.getAllByText("QueueRiwayat")[0]);
+    expect(screen.getByText(/RiwayatModal:Planning Satu/)).toBeInTheDocument();
   });
 });
 
-describe("ProduksiSampelPage — Diskusi & Pin modal (permintaan Denny 2026-09)", () => {
-  it("klik Diskusi pada SampelCard membuka PlanningDetailModal dengan sampel yang benar", async () => {
+describe("ProduksiSampelPage — Riwayat & Pin modal (permintaan Denny 2026-09)", () => {
+  it("klik Riwayat pada SampelCard membuka RiwayatModal dengan sampel yang benar", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("Diskusi")[0]);
-    expect(screen.getByText(/PlanningDetailModal:Gamis Arkana/)).toBeInTheDocument();
+    await user.click(screen.getAllByText("Riwayat")[0]);
+    expect(screen.getByText(/RiwayatModal:Gamis Arkana/)).toBeInTheDocument();
   });
 
-  it("menutup PlanningDetailModal mengembalikan discussionTarget ke null", async () => {
+  it("menutup RiwayatModal mengembalikan historyTarget ke null", async () => {
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
-    await user.click(screen.getAllByText("Diskusi")[0]);
-    expect(screen.getByText(/PlanningDetailModal:/)).toBeInTheDocument();
-    await user.click(screen.getByText("ClosePlanningDetail"));
-    expect(screen.queryByText(/PlanningDetailModal:/)).not.toBeInTheDocument();
+    await user.click(screen.getAllByText("Riwayat")[0]);
+    expect(screen.getByText(/RiwayatModal:/)).toBeInTheDocument();
+    await user.click(screen.getByText("CloseRiwayat"));
+    expect(screen.queryByText(/RiwayatModal:/)).not.toBeInTheDocument();
   });
 
   it("klik BukaWorkOrder pada SampelCard membuka WorkOrderModal dengan sampel yang benar (permintaan Denny 2026-09)", async () => {
@@ -787,24 +679,8 @@ describe("ProduksiSampelPage — Diskusi & Pin modal (permintaan Denny 2026-09)"
   it("sampel yang pinned=true ditampilkan lebih dulu di grid (bukan tab Planning)", () => {
     useSampels.mockReturnValue({
       sampels: [
-        {
-          id: "s1",
-          nama: "Tidak Pinned",
-          status: "draft",
-          nomor: "SPL-001",
-          tanggal: "2024-01-15",
-          foto: [],
-          pinned: false,
-        },
-        {
-          id: "s2",
-          nama: "Yang Dipin",
-          status: "draft",
-          nomor: "SPL-002",
-          tanggal: "2024-01-16",
-          foto: [],
-          pinned: true,
-        },
+        { id: "s1", nama: "Tidak Pinned", status: "draft", nomor: "SPL-001", tanggal: "2024-01-15", foto: [], pinned: false },
+        { id: "s2", nama: "Yang Dipin", status: "draft", nomor: "SPL-002", tanggal: "2024-01-16", foto: [], pinned: true },
       ],
       loading: false,
     });
@@ -814,22 +690,6 @@ describe("ProduksiSampelPage — Diskusi & Pin modal (permintaan Denny 2026-09)"
     expect(cards[1]).toHaveTextContent("Tidak Pinned");
   });
 
-  it("meneruskan unreadCounts[id] ke SampelCard di grid masonry (permintaan Denny 2026-09)", () => {
-    mockUseUnreadCounts.mockReturnValue({ unreadCounts: { s1: 2 }, loading: false });
-    render(<ProduksiSampelPage />);
-    expect(screen.getByTestId("unread-s1")).toHaveTextContent("2");
-    expect(screen.getByTestId("unread-s2")).toHaveTextContent("0");
-  });
-
-  it("meneruskan unreadCounts ke PlanningQueueList di tab Planning", async () => {
-    const user = userEvent.setup();
-    useSampels.mockReturnValue({ sampels: planningSampels, loading: false });
-    mockUseUnreadCounts.mockReturnValue({ unreadCounts: { p1: 5 }, loading: false });
-    render(<ProduksiSampelPage />);
-    await user.click(screen.getByText("Rencana"));
-    expect(screen.getByTestId("queue-unread-p1")).toHaveTextContent("5");
-    expect(screen.getByTestId("queue-unread-p2")).toHaveTextContent("0");
-  });
 
   it("tab Planning TIDAK ikut disortir pinned-first (urutan queue tetap dipakai)", async () => {
     const user = userEvent.setup();
@@ -850,23 +710,8 @@ describe("ProduksiSampelPage — Diskusi & Pin modal (permintaan Denny 2026-09)"
 
 describe("ProduksiSampelPage — Approve Repeat (acuan produk jadi, permintaan Denny 2026-10-08)", () => {
   it("planning repeat disetujui tanpa foto baru: foto produk jadi dipakai", async () => {
-    const rep = {
-      id: "r1",
-      nama: "Repeat Gamis Lama",
-      status: "planning",
-      nomor: "SPL-2",
-      tanggal: "2026-10-08",
-      urutan: 0,
-      is_repeat: true,
-      repeat_dari_id: "p1",
-      repeat_dari_kode: "D-07-OSK",
-      bahan_items: [],
-    };
-    mockUseProducts.mockReturnValue({
-      products: [
-        { id: "p1", kode: "D-07-OSK", nama: "Gamis Lama", image: "produk.jpg", detail: ["d1.jpg"] },
-      ],
-    });
+    const rep = { id: "r1", nama: "Repeat Gamis Lama", status: "planning", nomor: "SPL-2", tanggal: "2026-10-08", urutan: 0, is_repeat: true, repeat_dari_id: "p1", repeat_dari_kode: "D-07-OSK", bahan_items: [] };
+    mockUseProducts.mockReturnValue({ products: [{ id: "p1", kode: "D-07-OSK", nama: "Gamis Lama", image: "produk.jpg", detail: ["d1.jpg"] }] });
     useSampels.mockReturnValue({ sampels: [rep], loading: false });
     const user = userEvent.setup();
     render(<ProduksiSampelPage />);
@@ -874,11 +719,7 @@ describe("ProduksiSampelPage — Approve Repeat (acuan produk jadi, permintaan D
     await user.click(await screen.findByText("Approve Repeat", { selector: "button" }));
     await waitFor(() =>
       expect(mockApproveRepeat).toHaveBeenCalledWith(
-        expect.objectContaining({
-          sampel: expect.objectContaining({ id: "r1" }),
-          foto: ["produk.jpg", "d1.jpg"],
-          userEmail: "admin@deera.id",
-        }),
+        expect.objectContaining({ sampel: expect.objectContaining({ id: "r1" }), foto: ["produk.jpg", "d1.jpg"], userEmail: "admin@deera.id" }),
       ),
     );
   });
@@ -887,13 +728,7 @@ describe("ProduksiSampelPage — Approve Repeat (acuan produk jadi, permintaan D
 describe("ProduksiSampelPage — tab Selesai (Denny 2026-10-14)", () => {
   const sampels = [
     { id: "a", nama: "Aktif", status: "approved", wo_selesai_at: null, foto: [] },
-    {
-      id: "b",
-      nama: "Sudah Beres",
-      status: "approved",
-      wo_selesai_at: "2026-10-14T00:00:00Z",
-      foto: [],
-    },
+    { id: "b", nama: "Sudah Beres", status: "approved", wo_selesai_at: "2026-10-14T00:00:00Z", foto: [] },
   ];
   it("WO selesai tidak tampil di Semua, hanya di tab Selesai", async () => {
     const user = userEvent.setup();
@@ -927,12 +762,7 @@ describe("ProduksiSampelPage — Edit Planning (Denny 2026-10-14)", () => {
     await user.click(screen.getByText("SavePlanning"));
     await waitFor(() =>
       expect(mockUpdatePlanning).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: "e1",
-          nomor: "N1",
-          nama: "Planning Baru",
-          modelFotoUrls: ["model1.jpg"],
-        }),
+        expect.objectContaining({ id: "e1", nomor: "N1", nama: "Planning Baru", modelFotoUrls: ["model1.jpg"] }),
       ),
     );
   });

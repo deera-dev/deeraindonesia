@@ -2,6 +2,7 @@ import { useInvalidateProducts } from "@deera/shared/features/products/hooks";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   deleteProductCascade,
+  fetchDikirimByKode,
   fetchProducedByKode,
   fetchProductAchievements,
   fetchProductBadgeHistory,
@@ -20,6 +21,7 @@ export const produkKeys = {
   stokMap: ["produk", "stok-map"],
   stokWarna: (kode) => ["produk", "stok-warna", kode],
   salesByKode: (kode) => ["produk", "sales", kode],
+  dikirimByKode: (kode) => ["produk", "dikirim", kode],
   salesDetailByKode: (kode) => ["produk", "sales-detail", kode],
   soldQtyMap: ["produk", "sold-qty-map"],
   producedByKode: (kode) => ["produk", "produced", kode],
@@ -41,6 +43,14 @@ export function useSalesByKodeQuery(kode) {
   return useQuery({
     queryKey: produkKeys.salesByKode(kode),
     queryFn: () => fetchSalesByKode(kode),
+    enabled: !!kode,
+  });
+}
+
+export function useDikirimByKodeQuery(kode) {
+  return useQuery({
+    queryKey: produkKeys.dikirimByKode(kode),
+    queryFn: () => fetchDikirimByKode(kode),
     enabled: !!kode,
   });
 }

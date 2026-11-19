@@ -252,8 +252,8 @@ export function filterAndSortProducts(
       if (!productWarna.includes(filter.warna)) return false;
     }
 
-    const s = stokMap[p.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0 };
-    const total = (s.gudang ?? 0) + (s.cideng ?? 0) + (s.tegalgubug ?? 0);
+    const s = stokMap[p.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 };
+    const total = (s.gudang ?? 0) + (s.cideng ?? 0) + (s.tegalgubug ?? 0) + (s.ngorder ?? 0);
 
     if (filter.stokStatus === "habis" && total > 0) return false;
     if (filter.stokStatus === "ada" && total === 0) return false;

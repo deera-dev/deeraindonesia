@@ -1,5 +1,5 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, waitFor, act } from "@testing-library/react";
 
 vi.mock("@deera/shared/lib/supabase", () => ({
   supabase: {
@@ -37,22 +37,19 @@ vi.mock("../../lib/sync", () => ({
   waitForPendingInsert: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { displayName, useAuth } from "@deera/shared/features/auth/hooks";
 import { supabase } from "@deera/shared/lib/supabase";
+import { useAuth, displayName } from "@deera/shared/features/auth/hooks";
 import { db } from "../../lib/db";
+import { applyStokLocal, applyStokToSupabase, deleteSaleFromSupabase, markSaleDeleted } from "../../lib/sync";
 import {
-  applyStokLocal,
-  applyStokToSupabase,
-  deleteSaleFromSupabase,
-  markSaleDeleted,
-} from "../../lib/sync";
-import {
-  splitPendingAdjustments,
-  useCreateRetur,
-  useCreateSale,
-  useDeleteSale,
   useSalesReport,
+  useCreateSale,
+  useCreateRetur,
   useUpdateSale,
+  useDeleteSale,
+  useAdjustStokOnly,
+  useReverseStokAdjustments,
+  splitPendingAdjustments,
 } from "./hooks";
 
 const mockUser = { email: "kasir@test.com" };
@@ -80,13 +77,7 @@ beforeEach(() => {
 });
 
 function localDateStr(d = new Date()) {
-  return (
-    d.getFullYear() +
-    "-" +
-    String(d.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(d.getDate()).padStart(2, "0")
-  );
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
 
 describe("useSalesReport", () => {
@@ -133,11 +124,7 @@ describe("useSalesReport", () => {
   });
 
   it("skips syncSalesForRange when offline", async () => {
-    Object.defineProperty(navigator, "onLine", {
-      value: false,
-      writable: true,
-      configurable: true,
-    });
+    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
     const { result } = renderHook(() => useSalesReport("today"));
     await waitFor(() => expect(result.current.loading).toBe(false));
     const { syncSalesForRange } = await import("../../lib/sync");
@@ -148,9 +135,7 @@ describe("useSalesReport", () => {
     const { result } = renderHook(() => useSalesReport("today"));
     await waitFor(() => expect(result.current.loading).toBe(false));
     const callsBefore = db.sales.sortBy.mock.calls.length;
-    await act(async () => {
-      await result.current.reload();
-    });
+    await act(async () => { await result.current.reload(); });
     expect(db.sales.sortBy.mock.calls.length).toBeGreaterThan(callsBefore);
   });
 });
@@ -160,12 +145,8 @@ describe("useCreateSale", () => {
     const { result } = renderHook(() => useCreateSale());
     const localId = await result.current({
       items: [{ kode: "D-01", size: "Midi", warna: [{ nama: "HITAM", qty: 2 }], harga: 100000 }],
-      total: 200000,
-      discount: 0,
-      buyerName: "Budi",
-      buyerHp: "081",
-      pelangganId: null,
-      location: "gudang",
+      total: 200000, discount: 0, buyerName: "Budi", buyerHp: "081",
+      pelangganId: null, location: "gudang",
     });
     expect(localId).toBe(1);
     expect(db.sales.add).toHaveBeenCalled();
@@ -174,34 +155,14 @@ describe("useCreateSale", () => {
 
   it("syncs to supabase when online", async () => {
     const { result } = renderHook(() => useCreateSale());
-    await result.current({
-      items: [],
-      total: 0,
-      discount: 0,
-      buyerName: "",
-      buyerHp: "",
-      pelangganId: null,
-      location: "gudang",
-    });
+    await result.current({ items: [], total: 0, discount: 0, buyerName: "", buyerHp: "", pelangganId: null, location: "gudang" });
     expect(supabase.from).toHaveBeenCalled();
   });
 
   it("does not sync when offline", async () => {
-    Object.defineProperty(navigator, "onLine", {
-      value: false,
-      writable: true,
-      configurable: true,
-    });
+    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
     const { result } = renderHook(() => useCreateSale());
-    await result.current({
-      items: [],
-      total: 0,
-      discount: 0,
-      buyerName: "",
-      buyerHp: "",
-      pelangganId: null,
-      location: "gudang",
-    });
+    await result.current({ items: [], total: 0, discount: 0, buyerName: "", buyerHp: "", pelangganId: null, location: "gudang" });
     expect(supabase.from).not.toHaveBeenCalled();
   });
 
@@ -209,12 +170,7 @@ describe("useCreateSale", () => {
     const { result } = renderHook(() => useCreateSale());
     await result.current({
       items: [{ kode: "D-01", size: "Midi", warna: [{ nama: "MERAH", qty: 1 }], harga: 100000 }],
-      total: 100000,
-      discount: 0,
-      buyerName: "",
-      buyerHp: "",
-      pelangganId: null,
-      location: "gudang",
+      total: 100000, discount: 0, buyerName: "", buyerHp: "", pelangganId: null, location: "gudang",
     });
     const callArgs = db.sales.add.mock.calls[0][0];
     expect(callArgs.stok_adjustments).toHaveLength(1);
@@ -225,12 +181,7 @@ describe("useCreateSale", () => {
     const { result } = renderHook(() => useCreateSale());
     await result.current({
       items: [{ kode: "D-01", size: "Midi", warna: [{ nama: "HITAM", qty: 0 }], harga: 100000 }],
-      total: 0,
-      discount: 0,
-      buyerName: "",
-      buyerHp: "",
-      pelangganId: null,
-      location: "gudang",
+      total: 0, discount: 0, buyerName: "", buyerHp: "", pelangganId: null, location: "gudang",
     });
     const callArgs = db.sales.add.mock.calls[0][0];
     expect(callArgs.stok_adjustments).toHaveLength(0);
@@ -243,76 +194,40 @@ describe("useCreateSale", () => {
       single: vi.fn().mockRejectedValue(new Error("network fail")),
     });
     const { result } = renderHook(() => useCreateSale());
-    await expect(
-      result.current({
-        items: [],
-        total: 0,
-        discount: 0,
-        buyerName: "",
-        buyerHp: "",
-        pelangganId: null,
-        location: "gudang",
-      }),
-    ).resolves.toBe(1);
+    await expect(result.current({ items: [], total: 0, discount: 0, buyerName: "", buyerHp: "", pelangganId: null, location: "gudang" })).resolves.toBe(1);
   });
 
   it("simple (colorless) item produces one adjustment with warna '_' (bug fix)", async () => {
     const { result } = renderHook(() => useCreateSale());
     await result.current({
       items: [{ kode: "D-02", size: "Midi", qty: 3, warna: null, harga: 90000 }],
-      total: 270000,
-      discount: 0,
-      buyerName: "",
-      buyerHp: "",
-      pelangganId: null,
-      location: "gudang",
+      total: 270000, discount: 0, buyerName: "", buyerHp: "", pelangganId: null, location: "gudang",
     });
     const callArgs = db.sales.add.mock.calls[0][0];
     expect(callArgs.stok_adjustments).toHaveLength(1);
     expect(callArgs.stok_adjustments[0]).toMatchObject({
-      kode: "D-02",
-      size: "Midi",
-      warna: "_",
-      location: "gudang",
-      delta: -3,
+      kode: "D-02", size: "Midi", warna: "_", location: "gudang", delta: -3,
     });
   });
 
   it("colored item with multi-location breakdown produces multiple adjustment entries", async () => {
     const { result } = renderHook(() => useCreateSale());
     await result.current({
-      items: [
-        {
-          kode: "D-01",
-          size: "Midi",
-          harga: 100000,
-          warna: [
-            {
-              nama: "HITAM",
-              qty: 6,
-              breakdown: [
-                { location: "gudang", qty: 4 },
-                { location: "cideng", qty: 2 },
-              ],
-            },
-          ],
-        },
-      ],
-      total: 600000,
-      discount: 0,
-      buyerName: "",
-      buyerHp: "",
-      pelangganId: null,
-      location: "gudang",
+      items: [{
+        kode: "D-01", size: "Midi", harga: 100000,
+        warna: [{
+          nama: "HITAM", qty: 6,
+          breakdown: [{ location: "gudang", qty: 4 }, { location: "cideng", qty: 2 }],
+        }],
+      }],
+      total: 600000, discount: 0, buyerName: "", buyerHp: "", pelangganId: null, location: "gudang",
     });
     const callArgs = db.sales.add.mock.calls[0][0];
     expect(callArgs.stok_adjustments).toHaveLength(2);
-    expect(callArgs.stok_adjustments).toEqual(
-      expect.arrayContaining([
-        { kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: -4 },
-        { kode: "D-01", size: "Midi", warna: "HITAM", location: "cideng", delta: -2 },
-      ]),
-    );
+    expect(callArgs.stok_adjustments).toEqual(expect.arrayContaining([
+      { kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: -4 },
+      { kode: "D-01", size: "Midi", warna: "HITAM", location: "cideng", delta: -2 },
+    ]));
     expect(callArgs.location).toBe("gudang");
   });
 
@@ -320,17 +235,77 @@ describe("useCreateSale", () => {
     const { result } = renderHook(() => useCreateSale());
     await result.current({
       items: [{ kode: "D-01", size: "Midi", harga: 100000, warna: [{ nama: "MERAH", qty: 2 }] }],
-      total: 200000,
-      discount: 0,
-      buyerName: "",
-      buyerHp: "",
-      pelangganId: null,
-      location: "cideng",
+      total: 200000, discount: 0, buyerName: "", buyerHp: "", pelangganId: null, location: "cideng",
     });
     const callArgs = db.sales.add.mock.calls[0][0];
     expect(callArgs.stok_adjustments).toEqual([
       { kode: "D-01", size: "Midi", warna: "MERAH", location: "cideng", delta: -2 },
     ]);
+  });
+
+  // Dipakai utk keep "terkirim": stok sudah dikurangi lebih dulu via
+  // useAdjustStokOnly, jadi createSale tidak boleh mengurangi lagi —
+  // cuma menyalin stok_adjustments yang sudah diterapkan ke baris sales.
+  it("skipStockAdjustment: TIDAK memanggil applyStokLocal/applyStokToSupabase, stok_adjustments dari parameter", async () => {
+    const given = [{ kode: "D-09", size: "Midi", warna: "_", location: "gudang", delta: -2 }];
+    const { result } = renderHook(() => useCreateSale());
+    await result.current({
+      items: [{ kode: "D-09", size: "Midi", qty: 2, harga: 50000 }],
+      total: 100000, discount: 0, buyerName: "", buyerHp: "", pelangganId: null, location: "gudang",
+      skipStockAdjustment: true, stokAdjustments: given,
+    });
+    expect(applyStokLocal).not.toHaveBeenCalled();
+    expect(applyStokToSupabase).not.toHaveBeenCalled();
+    const callArgs = db.sales.add.mock.calls[0][0];
+    expect(callArgs.stok_adjustments).toEqual(given);
+  });
+});
+
+describe("useAdjustStokOnly", () => {
+  it("mengurangi stok (sign -1) tanpa membuat baris sales, mengembalikan adjustment yg diterapkan", async () => {
+    const { result } = renderHook(() => useAdjustStokOnly());
+    const adjs = await result.current({
+      items: [{ kode: "D-05", size: "Midi", qty: 2, harga: 50000 }],
+      location: "cideng",
+      sign: -1,
+    });
+    expect(db.sales.add).not.toHaveBeenCalled();
+    expect(applyStokLocal).toHaveBeenCalledWith(adjs);
+    expect(applyStokToSupabase).toHaveBeenCalledWith(adjs);
+    expect(adjs).toEqual([{ kode: "D-05", size: "Midi", warna: "_", location: "cideng", delta: -2 }]);
+  });
+
+  it("tidak sync ke supabase saat offline", async () => {
+    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
+    const { result } = renderHook(() => useAdjustStokOnly());
+    await result.current({ items: [{ kode: "D-05", size: "Midi", qty: 1, harga: 50000 }], location: "gudang" });
+    expect(applyStokLocal).toHaveBeenCalled();
+    expect(applyStokToSupabase).not.toHaveBeenCalled();
+  });
+
+  it("tidak ada item valid -> tidak memanggil applyStokLocal sama sekali", async () => {
+    const { result } = renderHook(() => useAdjustStokOnly());
+    const adjs = await result.current({ items: [{ kode: "D-05", size: "Midi", qty: 0 }], location: "gudang" });
+    expect(adjs).toEqual([]);
+    expect(applyStokLocal).not.toHaveBeenCalled();
+  });
+});
+
+describe("useReverseStokAdjustments", () => {
+  it("membalik tanda delta lalu menerapkannya (lokal + supabase)", async () => {
+    const { result } = renderHook(() => useReverseStokAdjustments());
+    const given = [{ kode: "D-09", size: "Midi", warna: "_", location: "gudang", delta: -2 }];
+    const reversed = await result.current(given);
+    expect(reversed).toEqual([{ kode: "D-09", size: "Midi", warna: "_", location: "gudang", delta: 2 }]);
+    expect(applyStokLocal).toHaveBeenCalledWith(reversed);
+    expect(applyStokToSupabase).toHaveBeenCalledWith(reversed);
+  });
+
+  it("array kosong -> tidak memanggil apa-apa", async () => {
+    const { result } = renderHook(() => useReverseStokAdjustments());
+    const reversed = await result.current([]);
+    expect(reversed).toEqual([]);
+    expect(applyStokLocal).not.toHaveBeenCalled();
   });
 });
 
@@ -356,11 +331,7 @@ describe("useCreateRetur", () => {
   });
 
   it("does not sync when offline", async () => {
-    Object.defineProperty(navigator, "onLine", {
-      value: false,
-      writable: true,
-      configurable: true,
-    });
+    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
     const { result } = renderHook(() => useCreateRetur());
     await result.current({ originalSale: { location: "gudang" }, items: [], total: 0 });
     expect(supabase.from).not.toHaveBeenCalled();
@@ -381,12 +352,10 @@ describe("useCreateRetur", () => {
       total: 600000,
     });
     const callArgs = db.sales.add.mock.calls[0][0];
-    expect(callArgs.stok_adjustments).toEqual(
-      expect.arrayContaining([
-        { kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: 4 },
-        { kode: "D-01", size: "Midi", warna: "HITAM", location: "cideng", delta: 2 },
-      ]),
-    );
+    expect(callArgs.stok_adjustments).toEqual(expect.arrayContaining([
+      { kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: 4 },
+      { kode: "D-01", size: "Midi", warna: "HITAM", location: "cideng", delta: 2 },
+    ]));
     expect(callArgs.stok_adjustments).toHaveLength(2);
   });
 
@@ -405,12 +374,10 @@ describe("useCreateRetur", () => {
       total: 300000,
     });
     const callArgs = db.sales.add.mock.calls[0][0];
-    expect(callArgs.stok_adjustments).toEqual(
-      expect.arrayContaining([
-        { kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: 2 },
-        { kode: "D-01", size: "Midi", warna: "HITAM", location: "cideng", delta: 1 },
-      ]),
-    );
+    expect(callArgs.stok_adjustments).toEqual(expect.arrayContaining([
+      { kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: 2 },
+      { kode: "D-01", size: "Midi", warna: "HITAM", location: "cideng", delta: 1 },
+    ]));
     expect(callArgs.stok_adjustments).toHaveLength(2);
   });
 
@@ -431,13 +398,7 @@ describe("useCreateRetur", () => {
 
 describe("useUpdateSale", () => {
   it("updates local db for pending sale (no supabase_id)", async () => {
-    db.sales.get.mockResolvedValue({
-      id: 1,
-      supabase_id: null,
-      items: [],
-      discount: 0,
-      edit_history: [],
-    });
+    db.sales.get.mockResolvedValue({ id: 1, supabase_id: null, items: [], discount: 0, edit_history: [] });
     const { result } = renderHook(() => useUpdateSale());
     await result.current({ id: 1, items: [], discount: 0, buyer_name: "A", buyer_hp: "081" });
     expect(db.sales.update).toHaveBeenCalled();
@@ -445,32 +406,14 @@ describe("useUpdateSale", () => {
   });
 
   it("throws when offline with supabase_id", async () => {
-    Object.defineProperty(navigator, "onLine", {
-      value: false,
-      writable: true,
-      configurable: true,
-    });
-    db.sales.get.mockResolvedValue({
-      id: 1,
-      supabase_id: "sup-1",
-      items: [],
-      discount: 0,
-      edit_history: [],
-    });
+    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
+    db.sales.get.mockResolvedValue({ id: 1, supabase_id: "sup-1", items: [], discount: 0, edit_history: [] });
     const { result } = renderHook(() => useUpdateSale());
-    await expect(
-      result.current({ id: 1, supabase_id: "sup-1", items: [], discount: 0 }),
-    ).rejects.toThrow("koneksi");
+    await expect(result.current({ id: 1, supabase_id: "sup-1", items: [], discount: 0 })).rejects.toThrow("koneksi");
   });
 
   it("updates supabase first when online with supabase_id", async () => {
-    db.sales.get.mockResolvedValue({
-      id: 1,
-      supabase_id: "sup-1",
-      items: [],
-      discount: 0,
-      edit_history: [],
-    });
+    db.sales.get.mockResolvedValue({ id: 1, supabase_id: "sup-1", items: [], discount: 0, edit_history: [] });
     const updateChain = {
       update: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -478,25 +421,12 @@ describe("useUpdateSale", () => {
     };
     supabase.from.mockReturnValue(updateChain);
     const { result } = renderHook(() => useUpdateSale());
-    await result.current({
-      id: 1,
-      supabase_id: "sup-1",
-      items: [],
-      discount: 0,
-      buyer_name: "A",
-      buyer_hp: "",
-    });
+    await result.current({ id: 1, supabase_id: "sup-1", items: [], discount: 0, buyer_name: "A", buyer_hp: "" });
     expect(db.sales.update).toHaveBeenCalled();
   });
 
   it("throws when supabase update returns 0 rows", async () => {
-    db.sales.get.mockResolvedValue({
-      id: 1,
-      supabase_id: "sup-1",
-      items: [],
-      discount: 0,
-      edit_history: [],
-    });
+    db.sales.get.mockResolvedValue({ id: 1, supabase_id: "sup-1", items: [], discount: 0, edit_history: [] });
     const updateChain = {
       update: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -504,19 +434,11 @@ describe("useUpdateSale", () => {
     };
     supabase.from.mockReturnValue(updateChain);
     const { result } = renderHook(() => useUpdateSale());
-    await expect(
-      result.current({ id: 1, supabase_id: "sup-1", items: [], discount: 0 }),
-    ).rejects.toThrow("0 baris");
+    await expect(result.current({ id: 1, supabase_id: "sup-1", items: [], discount: 0 })).rejects.toThrow("0 baris");
   });
 
   it("throws when supabase update returns error", async () => {
-    db.sales.get.mockResolvedValue({
-      id: 1,
-      supabase_id: "sup-1",
-      items: [],
-      discount: 0,
-      edit_history: [],
-    });
+    db.sales.get.mockResolvedValue({ id: 1, supabase_id: "sup-1", items: [], discount: 0, edit_history: [] });
     const updateChain = {
       update: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -524,26 +446,18 @@ describe("useUpdateSale", () => {
     };
     supabase.from.mockReturnValue(updateChain);
     const { result } = renderHook(() => useUpdateSale());
-    await expect(
-      result.current({ id: 1, supabase_id: "sup-1", items: [], discount: 0 }),
-    ).rejects.toThrow("rls denied");
+    await expect(result.current({ id: 1, supabase_id: "sup-1", items: [], discount: 0 })).rejects.toThrow("rls denied");
   });
 
   it("recomputes stok_adjustments and includes them in the local patch", async () => {
     db.sales.get.mockResolvedValue({
-      id: 1,
-      supabase_id: null,
-      location: "gudang",
-      discount: 0,
-      edit_history: [],
+      id: 1, supabase_id: null, location: "gudang", discount: 0, edit_history: [],
       items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 100000 }],
       stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -2 }],
     });
     const { result } = renderHook(() => useUpdateSale());
     await result.current({
-      id: 1,
-      location: "gudang",
-      discount: 0,
+      id: 1, location: "gudang", discount: 0,
       items: [{ kode: "D-01", size: "Midi", qty: 3, harga: 100000 }],
     });
     const patch = db.sales.update.mock.calls[0][1];
@@ -554,46 +468,32 @@ describe("useUpdateSale", () => {
 
   it("applies reverse-old + apply-new stock diff locally for a pending sale", async () => {
     db.sales.get.mockResolvedValue({
-      id: 1,
-      supabase_id: null,
-      location: "gudang",
-      discount: 0,
-      edit_history: [],
+      id: 1, supabase_id: null, location: "gudang", discount: 0, edit_history: [],
       items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 100000 }],
       stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -2 }],
     });
     const { result } = renderHook(() => useUpdateSale());
     await result.current({
-      id: 1,
-      location: "gudang",
-      discount: 0,
+      id: 1, location: "gudang", discount: 0,
       items: [{ kode: "D-01", size: "Midi", qty: 3, harga: 100000 }],
     });
     expect(applyStokLocal).toHaveBeenCalled();
     const diff = applyStokLocal.mock.calls[0][0];
-    expect(diff).toEqual(
-      expect.arrayContaining([
-        { kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: 2 },
-        { kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -3 },
-      ]),
-    );
+    expect(diff).toEqual(expect.arrayContaining([
+      { kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: 2 },
+      { kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -3 },
+    ]));
   });
 
   it("produces a net-zero stock diff (reverse + new cancel out) when items are unchanged", async () => {
     db.sales.get.mockResolvedValue({
-      id: 1,
-      supabase_id: null,
-      location: "gudang",
-      discount: 0,
-      edit_history: [],
+      id: 1, supabase_id: null, location: "gudang", discount: 0, edit_history: [],
       items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 100000 }],
       stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -2 }],
     });
     const { result } = renderHook(() => useUpdateSale());
     await result.current({
-      id: 1,
-      location: "gudang",
-      discount: 0,
+      id: 1, location: "gudang", discount: 0,
       items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 100000 }],
     });
     const diff = applyStokLocal.mock.calls[0][0];
@@ -605,11 +505,7 @@ describe("useUpdateSale", () => {
 
   it("applies the stock diff to supabase and includes it in the update payload when supabase_id exists", async () => {
     db.sales.get.mockResolvedValue({
-      id: 1,
-      supabase_id: "sup-1",
-      location: "gudang",
-      discount: 0,
-      edit_history: [],
+      id: 1, supabase_id: "sup-1", location: "gudang", discount: 0, edit_history: [],
       items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 100000 }],
       stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -2 }],
     });
@@ -621,10 +517,7 @@ describe("useUpdateSale", () => {
     supabase.from.mockReturnValue(updateChain);
     const { result } = renderHook(() => useUpdateSale());
     await result.current({
-      id: 1,
-      supabase_id: "sup-1",
-      location: "gudang",
-      discount: 0,
+      id: 1, supabase_id: "sup-1", location: "gudang", discount: 0,
       items: [{ kode: "D-01", size: "Midi", qty: 3, harga: 100000 }],
     });
     expect(applyStokToSupabase).toHaveBeenCalled();
@@ -636,19 +529,13 @@ describe("useUpdateSale", () => {
 
   it("does not call applyStokToSupabase for a pending sale (no supabase_id)", async () => {
     db.sales.get.mockResolvedValue({
-      id: 1,
-      supabase_id: null,
-      location: "gudang",
-      discount: 0,
-      edit_history: [],
+      id: 1, supabase_id: null, location: "gudang", discount: 0, edit_history: [],
       items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 100000 }],
       stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -2 }],
     });
     const { result } = renderHook(() => useUpdateSale());
     await result.current({
-      id: 1,
-      location: "gudang",
-      discount: 0,
+      id: 1, location: "gudang", discount: 0,
       items: [{ kode: "D-01", size: "Midi", qty: 3, harga: 100000 }],
     });
     expect(applyStokToSupabase).not.toHaveBeenCalled();
@@ -657,30 +544,22 @@ describe("useUpdateSale", () => {
 
   it("computes stock adjustments for a newly-added warna item during an edit session", async () => {
     db.sales.get.mockResolvedValue({
-      id: 1,
-      supabase_id: null,
-      location: "gudang",
-      discount: 0,
-      edit_history: [],
+      id: 1, supabase_id: null, location: "gudang", discount: 0, edit_history: [],
       items: [{ kode: "D-01", size: "Midi", qty: 2, harga: 100000 }],
       stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "_", location: "gudang", delta: -2 }],
     });
     const { result } = renderHook(() => useUpdateSale());
     await result.current({
-      id: 1,
-      location: "gudang",
-      discount: 0,
+      id: 1, location: "gudang", discount: 0,
       items: [
         { kode: "D-01", size: "Midi", qty: 2, harga: 100000 },
         { kode: "D-04", size: "Gamis", harga: 100000, warna: [{ nama: "HITAM", qty: 1 }] },
       ],
     });
     const diff = applyStokLocal.mock.calls[0][0];
-    expect(diff).toEqual(
-      expect.arrayContaining([
-        { kode: "D-04", size: "Gamis", warna: "HITAM", location: "gudang", delta: -1 },
-      ]),
-    );
+    expect(diff).toEqual(expect.arrayContaining([
+      { kode: "D-04", size: "Gamis", warna: "HITAM", location: "gudang", delta: -1 },
+    ]));
   });
 });
 
@@ -702,11 +581,7 @@ describe("useDeleteSale", () => {
   });
 
   it("throws when offline and supabase_id present", async () => {
-    Object.defineProperty(navigator, "onLine", {
-      value: false,
-      writable: true,
-      configurable: true,
-    });
+    Object.defineProperty(navigator, "onLine", { value: false, writable: true, configurable: true });
     db.sales.get.mockResolvedValue({ id: 1, supabase_id: "sup-1", stok_adjustments: [] });
     const { result } = renderHook(() => useDeleteSale());
     await expect(result.current({ id: 1 })).rejects.toThrow("koneksi");
@@ -714,13 +589,7 @@ describe("useDeleteSale", () => {
   });
 
   it("reverses stok locally after delete", async () => {
-    db.sales.get.mockResolvedValue({
-      id: 1,
-      supabase_id: null,
-      stok_adjustments: [
-        { kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: -2 },
-      ],
-    });
+    db.sales.get.mockResolvedValue({ id: 1, supabase_id: null, stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: -2 }] });
     const { result } = renderHook(() => useDeleteSale());
     await result.current({ id: 1 });
     expect(applyStokLocal).toHaveBeenCalled();
@@ -745,17 +614,9 @@ describe("useDeleteSale", () => {
 
 describe("splitPendingAdjustments (sisa 'belum masukin warna')", () => {
   function stokRows(map) {
-    db.stok_warna.get.mockImplementation(
-      async ([kode, size, warna]) => map[`${kode}|${size}|${warna}`],
-    );
+    db.stok_warna.get.mockImplementation(async ([kode, size, warna]) => map[`${kode}|${size}|${warna}`]);
   }
-  const adj = (warna, qty) => ({
-    kode: "D-1",
-    size: "Midi",
-    warna,
-    location: "gudang",
-    delta: -qty,
-  });
+  const adj = (warna, qty) => ({ kode: "D-1", size: "Midi", warna, location: "gudang", delta: -qty });
 
   it("warna stok 0 → seluruhnya diambil dari sisa _", async () => {
     stokRows({ "D-1|Midi|_": { gudang: 20 } });

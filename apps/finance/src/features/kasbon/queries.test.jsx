@@ -1,7 +1,7 @@
+import { describe, it, expect, vi } from "vitest";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, renderHook, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./api", () => ({
   fetchKasbonAll: vi.fn().mockResolvedValue([{ id: "kb1" }]),
@@ -16,13 +16,13 @@ vi.mock("./api", () => ({
 
 import {
   kasbonKeys,
-  useApplyKasbonDeductionMutation,
-  useCreateOrAccumulateKasbonMutation,
-  useDeleteKasbonMutation,
   useKasbonAllQuery,
   useKasbonBelumLunasByKaryawanIdsQuery,
-  usePayCicilanMutation,
+  useCreateOrAccumulateKasbonMutation,
   useUpdateKasbonJumlahMutation,
+  useDeleteKasbonMutation,
+  usePayCicilanMutation,
+  useApplyKasbonDeductionMutation,
   useUpdateKasbonRiwayatItemMutation,
 } from "./queries";
 
@@ -55,15 +55,11 @@ describe("useKasbonAllQuery", () => {
 
 describe("useKasbonBelumLunasByKaryawanIdsQuery", () => {
   it("is disabled when ids is empty", () => {
-    const { result } = renderHook(() => useKasbonBelumLunasByKaryawanIdsQuery([]), {
-      wrapper: wrapper(),
-    });
+    const { result } = renderHook(() => useKasbonBelumLunasByKaryawanIdsQuery([]), { wrapper: wrapper() });
     expect(result.current.fetchStatus).toBe("idle");
   });
   it("fetches when ids provided", async () => {
-    const { result } = renderHook(() => useKasbonBelumLunasByKaryawanIdsQuery(["k1"]), {
-      wrapper: wrapper(),
-    });
+    const { result } = renderHook(() => useKasbonBelumLunasByKaryawanIdsQuery(["k1"]), { wrapper: wrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
   });
@@ -71,9 +67,7 @@ describe("useKasbonBelumLunasByKaryawanIdsQuery", () => {
 
 describe("mutation hooks — expose mutate", () => {
   it("useCreateOrAccumulateKasbonMutation exposes mutate", () => {
-    const { result } = renderHook(() => useCreateOrAccumulateKasbonMutation(), {
-      wrapper: wrapper(),
-    });
+    const { result } = renderHook(() => useCreateOrAccumulateKasbonMutation(), { wrapper: wrapper() });
     expect(typeof result.current.mutate).toBe("function");
   });
   it("useUpdateKasbonJumlahMutation exposes mutate", () => {
@@ -93,18 +87,14 @@ describe("mutation hooks — expose mutate", () => {
     expect(typeof result.current.mutate).toBe("function");
   });
   it("useUpdateKasbonRiwayatItemMutation exposes mutate", () => {
-    const { result } = renderHook(() => useUpdateKasbonRiwayatItemMutation(), {
-      wrapper: wrapper(),
-    });
+    const { result } = renderHook(() => useUpdateKasbonRiwayatItemMutation(), { wrapper: wrapper() });
     expect(typeof result.current.mutate).toBe("function");
   });
 });
 
 describe("mutation mutateAsync — mutationFn and onSuccess lambdas", () => {
   it("useCreateOrAccumulateKasbonMutation runs mutationFn and onSuccess", async () => {
-    const { result } = renderHook(() => useCreateOrAccumulateKasbonMutation(), {
-      wrapper: wrapper(),
-    });
+    const { result } = renderHook(() => useCreateOrAccumulateKasbonMutation(), { wrapper: wrapper() });
     await act(async () => {
       await result.current.mutateAsync({ karyawanId: "k1", jumlah: 100, existingRows: [] });
     });
@@ -114,10 +104,7 @@ describe("mutation mutateAsync — mutationFn and onSuccess lambdas", () => {
   it("useUpdateKasbonJumlahMutation runs mutationFn and onSuccess", async () => {
     const { result } = renderHook(() => useUpdateKasbonJumlahMutation(), { wrapper: wrapper() });
     await act(async () => {
-      await result.current.mutateAsync({
-        initial: { id: "kb1", jumlah: 100, sisa: 50 },
-        jumlah: 100,
-      });
+      await result.current.mutateAsync({ initial: { id: "kb1", jumlah: 100, sisa: 50 }, jumlah: 100 });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
@@ -133,11 +120,7 @@ describe("mutation mutateAsync — mutationFn and onSuccess lambdas", () => {
   it("usePayCicilanMutation runs mutationFn and onSuccess", async () => {
     const { result } = renderHook(() => usePayCicilanMutation(), { wrapper: wrapper() });
     await act(async () => {
-      await result.current.mutateAsync({
-        kasbon: { id: "kb1", sisa: 100, cicilan: [] },
-        jumlah: 50,
-        tanggal: "2026-07-01",
-      });
+      await result.current.mutateAsync({ kasbon: { id: "kb1", sisa: 100, cicilan: [] }, jumlah: 50, tanggal: "2026-07-01" });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
@@ -145,28 +128,17 @@ describe("mutation mutateAsync — mutationFn and onSuccess lambdas", () => {
   it("useApplyKasbonDeductionMutation runs mutationFn and onSuccess", async () => {
     const { result } = renderHook(() => useApplyKasbonDeductionMutation(), { wrapper: wrapper() });
     await act(async () => {
-      await result.current.mutateAsync({
-        kasbonRow: { id: "kb1", sisa: 100, cicilan: [] },
-        jumlah: 50,
-        tanggal: "2026-07-01",
-        keterangan: "",
-      });
+      await result.current.mutateAsync({ kasbonRow: { id: "kb1", sisa: 100, cicilan: [] }, jumlah: 50, tanggal: "2026-07-01", keterangan: "" });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 
   it("useUpdateKasbonRiwayatItemMutation runs mutationFn and onSuccess", async () => {
-    const { result } = renderHook(() => useUpdateKasbonRiwayatItemMutation(), {
-      wrapper: wrapper(),
-    });
+    const { result } = renderHook(() => useUpdateKasbonRiwayatItemMutation(), { wrapper: wrapper() });
     await act(async () => {
       await result.current.mutateAsync({
         kasbon: { id: "kb1", jumlah: 1000000, sisa: 700000, tambahan: [], cicilan: [] },
-        jenis: "tambah",
-        index: 0,
-        tanggal: "2026-11-03",
-        jumlah: 50000,
-        keterangan: null,
+        jenis: "tambah", index: 0, tanggal: "2026-11-03", jumlah: 50000, keterangan: null,
       });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

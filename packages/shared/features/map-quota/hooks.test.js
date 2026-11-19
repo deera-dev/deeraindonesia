@@ -1,12 +1,18 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MAP_QUOTA_LIMITS, mapQuota, useMapQuotaStore } from "./hooks";
 
 describe("mapQuota (public surface non-hook)", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-04T08:00:00"));
     useMapQuotaStore.setState({
       date: "2026-10-04",
       counts: { geocoding: 0, directions: 0 },
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("tryConsume() memanggil store tanpa perlu dipakai sbg hook di komponen React", () => {

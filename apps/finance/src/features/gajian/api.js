@@ -3,7 +3,7 @@ import {
   buildJahitCardSync,
   buildJahitContributionsByKode,
   buildKodeReconciliation,
-  pickPendingCards,
+  buildPendingUnits,
 } from "./utils";
 
 export async function fetchGajianList() {
@@ -118,11 +118,12 @@ export async function fetchGajianTotals(gajianId) {
 }
 
 export async function fetchKaryawanIdsInGajian(gajianId) {
-  const [p, j, q, k] = await Promise.all([
+  const [p, j, q, k, f] = await Promise.all([
     supabase.from("gaji_potong").select("karyawan_id").eq("gajian_id", gajianId),
     supabase.from("gaji_jahit").select("karyawan_id").eq("gajian_id", gajianId),
     supabase.from("gaji_qc").select("karyawan_id").eq("gajian_id", gajianId),
     supabase.from("gaji_kreatif").select("karyawan_id").eq("gajian_id", gajianId),
+    supabase.from("gaji_finishing").select("karyawan_id").eq("gajian_id", gajianId),
   ]);
   return [
     ...new Set(
@@ -131,6 +132,7 @@ export async function fetchKaryawanIdsInGajian(gajianId) {
         ...(j.data ?? []).map((r) => r.karyawan_id),
         ...(q.data ?? []).map((r) => r.karyawan_id),
         ...(k.data ?? []).map((r) => r.karyawan_id),
+        ...(f.data ?? []).map((r) => r.karyawan_id),
       ].filter(Boolean),
     ),
   ];
@@ -140,7 +142,7 @@ export async function fetchPotongForRincian(gajianId) {
   const { data, error } = await supabase
     .from("gaji_potong")
     .select(
-      "karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_pola, jumlah_sampel, qty_potongan, tarif_potongan",
+      "karyawan(nama, no_rekening, nama_bank, tim), total_upah, jumlah_pola, jumlah_sampel, qty_potongan, tarif_potongan",
     )
     .eq("gajian_id", gajianId);
   if (error) throw error;
@@ -150,7 +152,7 @@ export async function fetchPotongForRincian(gajianId) {
 export async function fetchJahitForRincian(gajianId) {
   const { data, error } = await supabase
     .from("gaji_jahit")
-    .select("karyawan(nama, no_rekening, nama_bank), total_upah, kartu_items, permak_items")
+    .select("karyawan(nama, no_rekening, nama_bank, tim), total_upah, kartu_items, permak_items")
     .eq("gajian_id", gajianId);
   if (error) throw error;
   return data ?? [];
@@ -159,7 +161,7 @@ export async function fetchJahitForRincian(gajianId) {
 export async function fetchQCForRincian(gajianId) {
   const { data, error } = await supabase
     .from("gaji_qc")
-    .select("karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_pcs")
+    .select("karyawan(nama, no_rekening, nama_bank, tim), total_upah, jumlah_pcs")
     .eq("gajian_id", gajianId);
   if (error) throw error;
   return data ?? [];
@@ -169,8 +171,17 @@ export async function fetchKreatifForRincian(gajianId) {
   const { data, error } = await supabase
     .from("gaji_kreatif")
     .select(
-      "karyawan(nama, no_rekening, nama_bank), total_upah, jumlah_video, jumlah_foto, jumlah_logo",
+      "karyawan(nama, no_rekening, nama_bank, tim), total_upah, jumlah_video, jumlah_foto, jumlah_logo",
     )
+    .eq("gajian_id", gajianId);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function fetchFinishingForRincian(gajianId) {
+  const { data, error } = await supabase
+    .from("gaji_finishing")
+    .select("karyawan(nama, no_rekening, nama_bank, tim), total_upah, items")
     .eq("gajian_id", gajianId);
   if (error) throw error;
   return data ?? [];
@@ -325,33 +336,32 @@ export async function deleteFinishing(id) {
   if (error) throw error;
 }
 
-export async function fetchFinishingForRincian(gajianId) {
-  const { data, error } = await supabase
-    .from("gaji_finishing")
-    .select("karyawan(nama, no_rekening, nama_bank), total_upah, items")
-    .eq("gajian_id", gajianId);
-  if (error) throw error;
-  return data ?? [];
-}
-
 export async function loadFinishingReconciliation(items) {
   const results = {};
   for (const item of items ?? []) {
     const kode = item.kode_produk;
-    const [cardsRes, soldRes, stokRes] = await Promise.all([
+    const [cardsRes, cmtRes, soldRes, stokRes] = await Promise.all([
       supabase
         .from("jahit_cards")
         .select("*, stok_masuk_log(id)")
         .eq("kode_produk", kode)
+        .is("cmt_jahit_kirim_id", null)
+        .order("created_at"),
+      supabase
+        .from("cmt_jahit_kirim")
+        .select("*")
+        .eq("kode_produk", kode)
+        .eq("status", "setor")
         .order("created_at"),
       supabase.rpc("get_sold_qty_by_kode", { p_kode: kode }),
       supabase.from("stok_warna").select("*").eq("kode", kode),
     ]);
     if (cardsRes.error) throw cardsRes.error;
+    if (cmtRes.error) throw cmtRes.error;
     if (soldRes.error) throw soldRes.error;
     if (stokRes.error) throw stokRes.error;
 
-    const cards = pickPendingCards(cardsRes.data ?? [], item.jumlah);
+    const cards = buildPendingUnits(cardsRes.data ?? [], cmtRes.data ?? [], item.jumlah);
     let logRows = [];
     if (cards.length === 0) {
       logRows = await fetchStokMasukLogByKode(kode);
@@ -397,6 +407,13 @@ export async function applyFinishingStockIntake({ rows, gajianFinishingId, userE
         .update({ status: "done", done_at: now, updated_at: now })
         .eq("id", row.cardId);
       if (cardErr) throw cardErr;
+    } else if (row.cmtKirimId) {
+      const now = new Date().toISOString();
+      const { error: cmtErr } = await supabase
+        .from("cmt_jahit_kirim")
+        .update({ status: "selesai", updated_at: now })
+        .eq("id", row.cmtKirimId);
+      if (cmtErr) throw cmtErr;
     }
 
     const { error: logErr } = await supabase.from("stok_masuk_log").insert({
@@ -408,6 +425,7 @@ export async function applyFinishingStockIntake({ rows, gajianFinishingId, userE
       terjual_sebelum: row.terjualSaatIni,
       qty_ditambahkan: row.qtyDitambahkan,
       jahit_card_id: row.cardId ?? null,
+      cmt_jahit_kirim_id: row.cmtKirimId ?? null,
       gajian_finishing_id: gajianFinishingId ?? null,
       created_by: userEmail ?? null,
       created_by_name: userName ?? null,
@@ -542,6 +560,57 @@ export async function saveCmt({ payload, editingId }) {
 export async function deleteCmt(id) {
   const { error } = await supabase.from("gaji_cmt").delete().eq("id", id);
   if (error) throw error;
+}
+
+// Admin: setoran CMT (Jahit-saja sudah disetor/diserap Finishing, atau
+// Full yang langsung masuk stok) yang belum ditautkan ke suatu gaji_cmt —
+// acuan seksi "Setoran CMT belum tergaji" di TabCmt, pengganti isi manual.
+export async function fetchPendingCmtSetoran() {
+  const [jahitRes, fullRes] = await Promise.all([
+    supabase
+      .from("cmt_jahit_kirim")
+      .select("*")
+      .in("status", ["setor", "selesai"])
+      .is("gaji_cmt_id", null)
+      .order("created_at"),
+    supabase.from("cmt_setoran_full").select("*").is("gaji_cmt_id", null).order("created_at"),
+  ]);
+  if (jahitRes.error) throw jahitRes.error;
+  if (fullRes.error) throw fullRes.error;
+  return { jahitRows: jahitRes.data ?? [], fullRows: fullRes.data ?? [] };
+}
+
+// Begitu ditambahkan, baris cmt_jahit_kirim/cmt_setoran_full yang masuk
+// grup ini ditandai gaji_cmt_id (paralel ke jahit_cards.gajian_jahit_id)
+// supaya tidak ke-double-hitung di periode gajian lain.
+export async function syncPendingCmtIntoGajian({ gajianId, group }) {
+  const payload = {
+    gajian_id: gajianId,
+    nama_vendor: group.namaVendor,
+    jumlah_kirim: group.jumlahKirim,
+    jumlah_terima: group.jumlahTerima,
+    harga_upah: group.hargaUpah,
+    total_upah: group.totalUpah,
+    catatan: "Otomatis dari setoran CMT",
+  };
+  const { data, error } = await supabase.from("gaji_cmt").insert(payload).select("id").single();
+  if (error) throw error;
+
+  if (group.jahitIds?.length) {
+    const { error: jErr } = await supabase
+      .from("cmt_jahit_kirim")
+      .update({ gaji_cmt_id: data.id })
+      .in("id", group.jahitIds);
+    if (jErr) throw jErr;
+  }
+  if (group.fullIds?.length) {
+    const { error: fErr } = await supabase
+      .from("cmt_setoran_full")
+      .update({ gaji_cmt_id: data.id })
+      .in("id", group.fullIds);
+    if (fErr) throw fErr;
+  }
+  return data.id;
 }
 
 export async function fetchProdukList() {

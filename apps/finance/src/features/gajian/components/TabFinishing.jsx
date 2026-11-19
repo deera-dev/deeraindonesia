@@ -1,11 +1,11 @@
-import { toast } from "@deera/shared/features/toast/hooks";
 import { useState } from "react";
+import { toast } from "@deera/shared/features/toast/hooks";
 import { fmtRp } from "../../../shared/lib/format";
 import { useDeleteFinishing, useFinishing } from "../hooks";
-import FinishingForm from "./FinishingForm";
-import FinishingStockModal from "./FinishingStockModal";
 import TabHeader from "./TabHeader";
 import TotalBar from "./TotalBar";
+import FinishingForm from "./FinishingForm";
+import FinishingStockModal from "./FinishingStockModal";
 
 export default function TabFinishing({ gajianId, karyawanList }) {
   const { record, loading } = useFinishing(gajianId);
@@ -44,13 +44,9 @@ export default function TabFinishing({ gajianId, karyawanList }) {
             <span className="font-editorial text-sm text-skin-text">
               {karyawanList.find((k) => k.id === record.karyawan_id)?.nama ?? "— Belum dipilih —"}
             </span>
-            <span className="font-numeric text-sm font-semibold text-skin-text">
-              {fmtRp(record.total_upah)}
-            </span>
+            <span className="font-numeric text-sm font-semibold text-skin-text">{fmtRp(record.total_upah)}</span>
           </div>
-          <p className="font-editorial text-xs text-skin-text4">
-            {(record.items ?? []).length} produk
-          </p>
+          <p className="font-editorial text-xs text-skin-text4">{(record.items ?? []).length} produk</p>
           <div className="space-y-1 border-t border-skin-bdr-lt pt-2">
             {(record.items ?? []).map((it, i) => (
               <p key={i} className="font-editorial text-xs text-skin-text3">
@@ -61,29 +57,20 @@ export default function TabFinishing({ gajianId, karyawanList }) {
             ))}
           </div>
           <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={() => setShowForm(true)}
-              className="text-xs font-editorial text-skin-accent-text hover:text-skin-accent-text transition"
-            >
+            <button type="button" onClick={() => setShowForm(true)} className="text-xs font-editorial text-skin-accent-text hover:text-skin-accent-text transition">
               Edit
             </button>
             <button
               type="button"
               onClick={() => {
                 const relevantItems = (record.items ?? []).filter((it) => Number(it.jumlah) > 0);
-                if (relevantItems.length > 0)
-                  setReconcile({ items: relevantItems, gajianFinishingId: record.id });
+                if (relevantItems.length > 0) setReconcile({ items: relevantItems, gajianFinishingId: record.id });
               }}
               className="text-xs font-editorial text-skin-accent-text hover:text-skin-accent-text transition"
             >
               Rekonsiliasi Stok
             </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="text-xs font-editorial text-red-400"
-            >
+            <button type="button" onClick={handleDelete} className="text-xs font-editorial text-red-400">
               Hapus
             </button>
           </div>

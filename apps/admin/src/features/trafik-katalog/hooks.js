@@ -4,16 +4,4 @@ export function useVisitStats(range) {
   const q = useVisitStatsQuery(range);
   return { stats: q.data ?? null, loading: q.isLoading, error: q.error };
 }
-export {
-  channelColor,
-  channelLabel,
-  clampRange,
-  dailyBars,
-  fmtDay,
-  INTERNAL_MARK_URL,
-  localDateStr,
-  PERIODS,
-  pct,
-  rangeForPreset,
-  sourceLabel,
-} from "./utils";
+export { PERIODS, channelLabel, channelColor, sourceLabel, locationLabel, pct, dailyBars, fmtDay, localDateStr, rangeForPreset, clampRange, INTERNAL_MARK_URL } from "./utils";

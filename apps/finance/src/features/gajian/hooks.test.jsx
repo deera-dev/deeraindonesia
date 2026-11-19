@@ -1,7 +1,7 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import React from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const mockFinalizeMutateAsync = vi.fn();
 const mockSyncJahitCardsMutateAsync = vi.fn();
@@ -39,10 +39,19 @@ vi.mock("./queries", () => ({
   useDeleteKreatifMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
   useSaveCmtMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
   useDeleteCmtMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  usePendingCmtSetoranQuery: vi.fn(() => ({
+    data: { jahitRows: [], fullRows: [] },
+    isLoading: false,
+  })),
+  useSyncPendingCmtIntoGajianMutation: vi.fn(() => ({
+    mutateAsync: vi.fn().mockResolvedValue("gc1"),
+    isPending: false,
+  })),
   usePotongForRincianQuery: vi.fn(() => ({ data: [], isLoading: false })),
   useJahitForRincianQuery: vi.fn(() => ({ data: [], isLoading: false })),
   useQCForRincianQuery: vi.fn(() => ({ data: [], isLoading: false })),
   useKreatifForRincianQuery: vi.fn(() => ({ data: [], isLoading: false })),
+  useFinishingForRincianQuery: vi.fn(() => ({ data: [], isLoading: false })),
   useLoadFinishingReconciliationMutation: vi.fn(() => ({
     mutateAsync: vi.fn().mockResolvedValue({}),
   })),
@@ -71,48 +80,51 @@ vi.mock("../pettycash/hooks", () => ({
   useSavePettycash: vi.fn(() => mockSavePettycash),
 }));
 
-import { act } from "@testing-library/react";
 import {
-  useApplyFinishingStockIntake,
-  useCmt,
-  useCreateGajianPeriode,
-  useDeleteCmt,
-  useDeleteFinishing,
-  useDeleteGajianPeriode,
-  useDeleteJahit,
-  useDeleteKreatif,
-  useDeletePotong,
-  useDeleteQC,
-  useFinalizeGajian,
-  useFinishing,
-  useGajianDetail,
   useGajianList,
+  useGajianDetail,
+  useCreateGajianPeriode,
+  useDeleteGajianPeriode,
+  useSaveGajianRequest,
   useGajianTotals,
-  useJahit,
-  useKancingHppMap,
   useKaryawanIdsInGajian,
   useKasbonForGajian,
-  useKreatif,
-  useLoadFinishingReconciliation,
-  usePettycashTerpakai,
   usePotong,
-  useProdukList,
-  useProduksiTotalMap,
+  useSavePotong,
+  useDeletePotong,
+  useJahit,
+  useSaveJahit,
+  useDeleteJahit,
+  useFinishing,
+  useSaveFinishing,
+  useDeleteFinishing,
   useQC,
+  useSaveQC,
+  useDeleteQC,
+  useKreatif,
+  useSaveKreatif,
+  useDeleteKreatif,
+  useCmt,
+  useSaveCmt,
+  useDeleteCmt,
+  usePendingCmtSetoran,
+  useSyncPendingCmtIntoGajian,
+  useProdukList,
+  useUpahJahitMap,
+  useUpahJahitHistoryMap,
+  usePettycashTerpakai,
+  useFinalizeGajian,
+  useLoadFinishingReconciliation,
+  useApplyFinishingStockIntake,
+  useProduksiTotalMap,
+  useKancingHppMap,
   useRingkasanDraftField,
   useRingkasanDraftMeta,
   useRingkasanValues,
-  useSaveCmt,
-  useSaveFinishing,
-  useSaveGajianRequest,
-  useSaveJahit,
-  useSaveKreatif,
-  useSavePotong,
-  useSaveQC,
-  useUpahJahitHistoryMap,
-  useUpahJahitMap,
+  usePerKaryawanRincian,
 } from "./hooks";
 import { useRingkasanDraftStore } from "./store";
+import { act } from "@testing-library/react";
 
 const w = () => {
   const qc = new QueryClient();
@@ -157,6 +169,23 @@ describe("mutation hooks return functions", () => {
       expect(typeof result.current).toBe("function");
     });
   }
+});
+
+describe("usePendingCmtSetoran", () => {
+  it("groups dibangun dari groupPendingCmtByVendor atas data query", () => {
+    const { result } = renderHook(() => usePendingCmtSetoran(), { wrapper: w() });
+    expect(result.current.groups).toEqual([]);
+    expect(result.current.loading).toBe(false);
+  });
+});
+
+describe("useSyncPendingCmtIntoGajian", () => {
+  it("returns syncPendingCmt function + syncing flag", async () => {
+    const { result } = renderHook(() => useSyncPendingCmtIntoGajian(), { wrapper: w() });
+    expect(typeof result.current.syncPendingCmt).toBe("function");
+    expect(result.current.syncing).toBe(false);
+    await expect(result.current.syncPendingCmt({ gajianId: "g1", group: {} })).resolves.toBe("gc1");
+  });
 });
 
 describe("useSaveFinishing — sinkron Kancing HPP otomatis (permintaan Denny 2026-09)", () => {
@@ -212,6 +241,11 @@ describe("query hooks", () => {
   it("useFinishing returns record", () => {
     const { result } = renderHook(() => useFinishing("g1"), { wrapper: w() });
     expect(result.current.record).toBeNull();
+  });
+  it("usePerKaryawanRincian returns empty perKaryawan when no rincian data", () => {
+    const { result } = renderHook(() => usePerKaryawanRincian("g1"), { wrapper: w() });
+    expect(result.current.perKaryawan).toEqual([]);
+    expect(result.current.loading).toBe(false);
   });
   it("useProdukList returns produkList", () => {
     const { result } = renderHook(() => useProdukList(), { wrapper: w() });

@@ -1,24 +1,17 @@
+import { useState } from "react";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { formatHarga } from "@deera/shared/lib/constants";
-import { useState } from "react";
-import { CetakLabelModal } from "../../cetak-label";
-import {
-  useProducedByKode,
-  useProductAchievements,
-  useProductBadgeHistory,
-  useProductBadgeReason,
-  useSalesByKode,
-  useSalesDetailByKode,
-  useStokWarnaByKode,
-} from "../hooks";
-import { BADGE_META, describeBadgeHistory, fmtTanggal } from "../utils";
-import ProductChangeHistory from "./ProductChangeHistory";
+import { useSalesByKode, useDikirimByKode, useProducedByKode, useSalesDetailByKode, useStokWarnaByKode, useProductBadgeHistory, useProductBadgeReason, useProductAchievements } from "../hooks";
+import { fmtTanggal, BADGE_META, describeBadgeHistory } from "../utils";
 import ProductCodeImageModal from "./ProductCodeImageModal";
+import ProductChangeHistory from "./ProductChangeHistory";
+import { CetakLabelModal } from "../../cetak-label";
 
 const LOCS = [
   { key: "gudang", label: "Gudang" },
   { key: "cideng", label: "Cideng" },
   { key: "tegalgubug", label: "Tegalgubug" },
+  { key: "ngorder", label: "Ngorder" },
 ];
 const LOC_LABEL = Object.fromEntries(LOCS.map((l) => [l.key, l.label]));
 
@@ -46,18 +39,14 @@ function AccordionSection({ title, defaultOpen = true, children }) {
   );
 }
 
-function StatCard({ label, value, accent = false, title }) {
+function StatCard({ label, value, accent = false, title, sub }) {
   return (
     <div className="bg-skin-raised p-2.5 text-center">
-      <p className="text-[10px] text-skin-text3 uppercase tracking-[0.1em] font-semibold">
-        {label}
-      </p>
-      <p
-        title={title}
-        className={`text-lg font-bold mt-0.5 ${accent ? "text-skin-accent-text" : "text-skin-text"}`}
-      >
+      <p className="text-[10px] text-skin-text3 uppercase tracking-[0.1em] font-semibold">{label}</p>
+      <p title={title} className={`text-lg font-bold mt-0.5 ${accent ? "text-skin-accent-text" : "text-skin-text"}`}>
         {value}
       </p>
+      {sub && <p className="text-[10px] text-sky-600 font-semibold mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -90,18 +79,7 @@ function SalesDetailList({ kode, location }) {
   );
 }
 
-function StokPenjualanRow({
-  label,
-  stokVal,
-  terjualVal,
-  stokTitle,
-  kode,
-  location,
-  isOpen,
-  onToggle,
-  emphasis = false,
-  testId,
-}) {
+function StokPenjualanRow({ label, stokVal, terjualVal, stokTitle, kode, location, isOpen, onToggle, emphasis = false, testId }) {
   return (
     <div>
       <button
@@ -121,15 +99,10 @@ function StokPenjualanRow({
         >
           {label}
         </span>
-        <span
-          title={stokTitle}
-          className={`text-right ${emphasis ? "text-sm font-bold text-skin-text" : "text-sm text-skin-text2"}`}
-        >
+        <span title={stokTitle} className={`text-right ${emphasis ? "text-sm font-bold text-skin-text" : "text-sm text-skin-text2"}`}>
           {stokVal}
         </span>
-        <span
-          className={`text-right ${emphasis ? "text-sm font-bold text-skin-accent-text" : "text-sm font-semibold text-skin-text"}`}
-        >
+        <span className={`text-right ${emphasis ? "text-sm font-bold text-skin-accent-text" : "text-sm font-semibold text-skin-text"}`}>
           {terjualVal}
         </span>
         <span
@@ -161,28 +134,20 @@ function StokPenjualanSection({ stok, sales, salesLoading, kode, isHabis, isBelu
       {hasSizeBreakdown && (
         <div className="space-y-2 mb-4">
           {Object.entries(stok.sizes).map(([size, vals]) => {
-            const sizeTotal = (vals.gudang ?? 0) + (vals.cideng ?? 0) + (vals.tegalgubug ?? 0);
+            const sizeTotal = (vals.gudang ?? 0) + (vals.cideng ?? 0) + (vals.tegalgubug ?? 0) + (vals.ngorder ?? 0);
             return (
               <div key={size} className="border border-skin-bdr-lt p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-bold text-skin-text uppercase tracking-wide">
-                    {size}
-                  </span>
-                  <span
-                    className={`text-base font-bold ${sizeTotal === 0 ? "text-skin-text4" : "text-skin-text"}`}
-                  >
+                  <span className="text-sm font-bold text-skin-text uppercase tracking-wide">{size}</span>
+                  <span className={`text-base font-bold ${sizeTotal === 0 ? "text-skin-text4" : "text-skin-text"}`}>
                     {sizeTotal === 0 ? "HABIS" : sizeTotal}
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {LOCS.map((l) => (
                     <div key={l.key} className="text-center">
-                      <p className="text-[10px] text-skin-text3 uppercase tracking-wide mb-0.5">
-                        {l.label}
-                      </p>
-                      <p
-                        className={`text-sm font-semibold ${vals[l.key] === 0 ? "text-skin-text4" : "text-skin-text2"}`}
-                      >
+                      <p className="text-[10px] text-skin-text3 uppercase tracking-wide mb-0.5">{l.label}</p>
+                      <p className={`text-sm font-semibold ${vals[l.key] === 0 ? "text-skin-text4" : "text-skin-text2"}`}>
                         {vals[l.key] ?? 0}
                       </p>
                     </div>
@@ -200,12 +165,8 @@ function StokPenjualanSection({ stok, sales, salesLoading, kode, isHabis, isBelu
         <div>
           <div className="grid grid-cols-[1fr_52px_52px_14px] gap-1.5 pb-1.5 mb-1 border-b border-skin-bdr-lt">
             <div />
-            <div className="text-[10px] text-skin-text3 uppercase tracking-wide text-right">
-              Stok
-            </div>
-            <div className="text-[10px] text-skin-text3 uppercase tracking-wide text-right">
-              Terjual
-            </div>
+            <div className="text-[10px] text-skin-text3 uppercase tracking-wide text-right">Stok</div>
+            <div className="text-[10px] text-skin-text3 uppercase tracking-wide text-right">Terjual</div>
             <div />
           </div>
           {LOCS.map(({ key, label }) => (
@@ -238,30 +199,62 @@ function StokPenjualanSection({ stok, sales, salesLoading, kode, isHabis, isBelu
   );
 }
 
+// 1 kode bisa punya >1 ukuran (mis. Midi + Gamis) dgn stok/produksi yang
+// independen -- admin: "itu juga jangan digabung ya, terpisah stoknya".
+// Gabungkan daftar ukuran dari variants produk + apa pun yang muncul di
+// data stok/terjual/dikirim/produksi (jaga-jaga ada histori ukuran lama
+// yang sudah dihapus dari variants), lalu hitung tiap stat PER UKURAN,
+// bukan dijumlah jadi 1 angka.
+export function buildSizeStats(p, stok, sales, dikirim, producedBySize) {
+  const sizeList = [...new Set((p.variants ?? []).map((v) => v.size).filter(Boolean))];
+  return sizeList.map((size) => {
+    const s = stok.sizes?.[size] ?? {};
+    return {
+      size,
+      stok: (s.gudang ?? 0) + (s.cideng ?? 0) + (s.tegalgubug ?? 0) + (s.ngorder ?? 0),
+      terjual: sales[size]?.total ?? 0,
+      dikirim: dikirim[size]?.total ?? 0,
+      produksi: producedBySize[size] ?? 0,
+    };
+  });
+}
+
+// StokPenjualanSection menampilkan Terjual per LOKASI (digabung semua
+// ukuran -- sumbu beda dari buildSizeStats di atas, sengaja TETAP
+// digabung di sini karena memang soal lokasi fisik, bukan ukuran).
+function sumSalesByLocation(salesBySize) {
+  const out = { gudang: 0, cideng: 0, tegalgubug: 0, total: 0 };
+  for (const s of Object.values(salesBySize ?? {})) {
+    out.gudang += s.gudang ?? 0;
+    out.cideng += s.cideng ?? 0;
+    out.tegalgubug += s.tegalgubug ?? 0;
+    out.total += s.total ?? 0;
+  }
+  return out;
+}
+
 export function buildWarnaStok(stokWarnaMap = {}, warnaList = []) {
   if (!warnaList?.length) return [];
   const acc = {};
   for (const bySize of Object.values(stokWarnaMap)) {
     for (const [warna, v] of Object.entries(bySize ?? {})) {
-      const a = (acc[warna] ??= { gudang: 0, cideng: 0, tegalgubug: 0 });
+      const a = (acc[warna] ??= { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 });
       a.gudang += v?.gudang ?? 0;
       a.cideng += v?.cideng ?? 0;
       a.tegalgubug += v?.tegalgubug ?? 0;
+      a.ngorder += v?.ngorder ?? 0;
     }
   }
-  const names = [
-    ...(warnaList ?? []),
-    ...Object.keys(acc).filter((w) => w !== "_" && !(warnaList ?? []).includes(w)),
-  ];
+  const names = [...(warnaList ?? []), ...Object.keys(acc).filter((w) => w !== "_" && !(warnaList ?? []).includes(w))];
   const rows = names
     .filter((w) => acc[w] || (warnaList ?? []).includes(w))
     .map((warna) => {
-      const a = acc[warna] ?? { gudang: 0, cideng: 0, tegalgubug: 0 };
-      return { warna, ...a, total: a.gudang + a.cideng + a.tegalgubug };
+      const a = acc[warna] ?? { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 };
+      return { warna, ...a, total: a.gudang + a.cideng + a.tegalgubug + a.ngorder };
     });
   if (acc._) {
     const a = acc._;
-    const total = a.gudang + a.cideng + a.tegalgubug;
+    const total = a.gudang + a.cideng + a.tegalgubug + a.ngorder;
     if (total > 0 && rows.length > 0) rows.push({ warna: "_", pending: true, ...a, total });
   }
   return rows;
@@ -272,6 +265,7 @@ export default function ProductDetailModal({
   stok = {},
   hasStok = true,
   badge = null,
+  keepQty = 0,
   onClose,
   onEdit,
 }) {
@@ -281,15 +275,18 @@ export default function ProductDetailModal({
   const photos = [p.image, ...(Array.isArray(p.detail) ? p.detail : [])].filter(Boolean);
   const { stokWarnaMap } = useStokWarnaByKode(p.kode);
   const warnaRows = buildWarnaStok(stokWarnaMap, p.warna);
-  const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0);
+  const total = (stok.gudang ?? 0) + (stok.cideng ?? 0) + (stok.tegalgubug ?? 0) + (stok.ngorder ?? 0);
   const isHabis = total === 0 && (hasStok || !p.image);
   const isBelumDiisi = total === 0 && !isHabis;
   const variants = (p.variants ?? []).filter((v) => v.harga > 0);
   const { data: salesRaw, isLoading: salesLoading } = useSalesByKode(p.kode);
   const sales = salesRaw ?? {};
+  const { data: dikirimRaw } = useDikirimByKode(p.kode);
+  const dikirim = dikirimRaw ?? {};
   const { producedBySize, isLoading: producedLoading } = useProducedByKode(p.kode);
   const producedSizes = Object.entries(producedBySize);
   const producedTotal = producedSizes.reduce((s, [, qty]) => s + qty, 0);
+  const sizeStats = buildSizeStats(p, stok, sales, dikirim, producedBySize);
 
   const bm = badge ? BADGE_META[badge] : null;
   const tierClass = bm ? bm.frame.split(" ")[1] : "";
@@ -297,9 +294,7 @@ export default function ProductDetailModal({
   const achievements = useProductAchievements(p.kode).filter((a) => BADGE_META[a.badge]);
   const badgeHistory = describeBadgeHistory(useProductBadgeHistory(p.kode), badge);
 
-  const infoLine = [p.bahan, p.hpp > 0 ? `HPP Rp ${formatHarga(p.hpp)}` : null]
-    .filter(Boolean)
-    .join(" · ");
+  const infoLine = [p.bahan, p.hpp > 0 ? `HPP Rp ${formatHarga(p.hpp)}` : null].filter(Boolean).join(" · ");
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -325,27 +320,14 @@ export default function ProductDetailModal({
             className={`rar-fill ${tierClass} flex items-center gap-3 px-5 py-3 text-white flex-shrink-0`}
           >
             <span className="w-10 h-10 rounded-full bg-black/25 ring-2 ring-white/70 flex items-center justify-center flex-shrink-0">
-              <svg
-                viewBox="0 0 24 24"
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
+              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={bm.icon} />
               </svg>
             </span>
             <div className="min-w-0 [text-shadow:0_1px_3px_rgba(0,0,0,.55)]">
-              <p className="text-[10px] tracking-[0.25em] uppercase font-bold opacity-90">
-                {bm.tier}
-              </p>
+              <p className="text-[10px] tracking-[0.25em] uppercase font-bold opacity-90">{bm.tier}</p>
               <p className="font-headline text-xl leading-tight">{bm.label}</p>
-              <p className="text-xs opacity-95" data-testid="badge-reason">
-                {badgeReason ?? `${bm.hint} · 30 hari terakhir`}
-              </p>
+              <p className="text-xs opacity-95" data-testid="badge-reason">{badgeReason ?? `${bm.hint} · 30 hari terakhir`}</p>
             </div>
           </div>
         )}
@@ -368,11 +350,7 @@ export default function ProductDetailModal({
                       aria-label={`Foto ${i + 1}`}
                       className={`flex-shrink-0 w-14 h-14 border-2 ${i === fotoIdx ? "border-skin-accent" : "border-skin-bdr-lt"}`}
                     >
-                      <img
-                        src={cldUrl(u, { width: 120 })}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={cldUrl(u, { width: 120 })} alt="" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -382,20 +360,14 @@ export default function ProductDetailModal({
 
           {badgeHistory.length > 0 && (
             <div className="border border-skin-bdr-lt p-3 space-y-1.5" data-testid="badge-history">
-              <p className="text-[10px] font-editorial tracking-[0.15em] uppercase text-skin-text3">
-                Riwayat Pencapaian
-              </p>
+              <p className="text-[10px] font-editorial tracking-[0.15em] uppercase text-skin-text3">Riwayat Pencapaian</p>
               {badgeHistory.map((h) => (
                 <p key={h.badge} className="text-sm text-skin-text2">
-                  <span
-                    className={`font-semibold ${h.current ? "text-skin-accent-text" : "text-skin-text"}`}
-                  >
+                  <span className={`font-semibold ${h.current ? "text-skin-accent-text" : "text-skin-text"}`}>
                     {h.tier} · {h.label}
                   </span>
                   <span className="block text-xs text-skin-text3">{h.text}</span>
-                  {h.reason && (
-                    <span className="block text-xs text-skin-text2 mt-0.5">{h.reason}</span>
-                  )}
+                  {h.reason && <span className="block text-xs text-skin-text2 mt-0.5">{h.reason}</span>}
                 </p>
               ))}
             </div>
@@ -403,24 +375,11 @@ export default function ProductDetailModal({
 
           {achievements.length > 0 && (
             <div className="border border-skin-bdr-lt p-3 space-y-2" data-testid="achievements">
-              <p className="text-[10px] font-editorial tracking-[0.15em] uppercase text-skin-text3">
-                Pencapaian Bulanan
-              </p>
+              <p className="text-[10px] font-editorial tracking-[0.15em] uppercase text-skin-text3">Pencapaian Bulanan</p>
               {achievements.map((a) => (
                 <div key={a.month + a.badge} className="flex items-start gap-2">
-                  <span
-                    className={`mt-0.5 w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-white ${BADGE_META[a.badge].bg}`}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="w-3.5 h-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
+                  <span className={`mt-0.5 w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-white ${BADGE_META[a.badge].bg}`}>
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d={BADGE_META[a.badge].icon} />
                     </svg>
                   </span>
@@ -439,32 +398,91 @@ export default function ProductDetailModal({
             <p className="text-lg text-skin-text font-semibold leading-snug">{p.nama}</p>
             {infoLine && <p className="text-sm text-skin-text3">{infoLine}</p>}
             {variants.length > 0 && (
-              <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1">
+              <div data-testid="variant-chips" className="flex flex-wrap gap-x-3 gap-y-1 pt-1">
                 {variants.map((v, i) => (
                   <span key={i} className="text-sm">
                     <span className="font-semibold text-skin-text uppercase">{v.size}</span>{" "}
-                    <span className="text-skin-accent-text font-semibold">
-                      Rp {formatHarga(v.harga)}
-                    </span>
+                    <span className="text-skin-accent-text font-semibold">Rp {formatHarga(v.harga)}</span>
                   </span>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <StatCard
-              label="Stok"
-              value={isHabis ? "HABIS" : isBelumDiisi ? "–" : total}
-              title={isBelumDiisi ? "Stok belum diisi (belum stok opname)" : undefined}
-            />
-            <StatCard label="Terjual" value={sales.total ?? 0} accent />
-            <StatCard label="Produksi" value={producedTotal} />
-          </div>
+          {/* Admin: "1 kode ada beberapa yang punya lebih dari 1 ukuran, nah
+              itu juga jangan digabung ya, terpisah stoknya" — tiap ukuran
+              (mis. Midi vs Gamis) py stok/produksi independen, jadi 1 blok
+              kartu PER UKURAN (label ukuran cuma tampil kalau >1 ukuran). */}
+          {sizeStats.length > 0 ? (
+            sizeStats.map((st) => {
+              const isHabisSize = st.stok === 0 && (hasStok || !p.image);
+              const isBelumDiisiSize = st.stok === 0 && !isHabisSize;
+              const overSize = st.stok + st.dikirim + st.terjual;
+              return (
+                <div key={st.size} data-testid={`sizestat-${st.size}`} className="space-y-1.5">
+                  {sizeStats.length > 1 && (
+                    <p className="text-xs font-bold text-skin-text uppercase tracking-wide">{st.size}</p>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    <div className="flex-1 min-w-[80px]">
+                      <StatCard
+                        label="Stok"
+                        value={isHabisSize ? "HABIS" : isBelumDiisiSize ? "–" : st.stok}
+                        title={isBelumDiisiSize ? "Stok belum diisi (belum stok opname)" : undefined}
+                        sub={sizeStats.length === 1 && keepQty > 0 ? `${keepQty} di-Keep` : undefined}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-[80px]">
+                      <StatCard label="Terjual" value={st.terjual} accent />
+                    </div>
+                    <div className="flex-1 min-w-[80px]">
+                      <StatCard label="Dikirim" value={st.dikirim} />
+                    </div>
+                    <div className="flex-1 min-w-[80px]">
+                      <StatCard label="Produksi" value={st.produksi} />
+                    </div>
+                  </div>
+                  {/* Produksi (buku potongan) adalah batas pasti — stok+dikirim+
+                      terjual TIDAK PERNAH bisa lebih dari itu di dunia nyata
+                      UNTUK UKURAN ITU SENDIRI. Kalau muncul, berarti ada
+                      kesalahan di data stok/penjualan yang perlu dicek. Dikirim
+                      = keep yang sudah dikirim (stok sudah keluar) tapi belum
+                      dibayar — dihitung terpisah dari Terjual. */}
+                  {!producedLoading && st.produksi > 0 && overSize > st.produksi && (
+                    <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2 leading-relaxed">
+                      ⚠ {sizeStats.length > 1 ? `${st.size}: ` : ""}Stok + Dikirim + Terjual ({overSize})
+                      melebihi Produksi tercatat ({st.produksi}) — ini seharusnya tidak mungkin terjadi.
+                      Kemungkinan ada kesalahan di data Stok Opname atau penjualan yang perlu dicek per warna.
+                    </p>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <div className="flex-1 min-w-[80px]">
+                <StatCard
+                  label="Stok"
+                  value={isHabis ? "HABIS" : isBelumDiisi ? "–" : total}
+                  title={isBelumDiisi ? "Stok belum diisi (belum stok opname)" : undefined}
+                  sub={keepQty > 0 ? `${keepQty} di-Keep` : undefined}
+                />
+              </div>
+              <div className="flex-1 min-w-[80px]">
+                <StatCard label="Terjual" value={0} accent />
+              </div>
+              <div className="flex-1 min-w-[80px]">
+                <StatCard label="Dikirim" value={0} />
+              </div>
+              <div className="flex-1 min-w-[80px]">
+                <StatCard label="Produksi" value={0} />
+              </div>
+            </div>
+          )}
 
           <StokPenjualanSection
             stok={stok}
-            sales={sales}
+            sales={sumSalesByLocation(sales)}
             salesLoading={salesLoading}
             kode={p.kode}
             isHabis={isHabis}
@@ -478,7 +496,7 @@ export default function ProductDetailModal({
             ) : producedSizes.length === 0 ? (
               <p className="text-sm text-skin-text4">Belum ada data produksi.</p>
             ) : (
-              <div className="space-y-2">
+              <div data-testid="produksi-sesuai-list" className="space-y-2">
                 {producedSizes.map(([size, qty]) => (
                   <div key={size} className="flex justify-between">
                     <span className="text-sm text-skin-text2 uppercase tracking-wide">{size}</span>
@@ -496,41 +514,26 @@ export default function ProductDetailModal({
           </AccordionSection>
 
           {warnaRows.length > 0 && (
-            <AccordionSection
-              title={`Stok per Warna (${warnaRows.filter((r) => !r.pending).length})`}
-            >
-              <div className="grid grid-cols-[1fr_38px_38px_38px_44px] gap-1.5 pb-1.5 mb-1 border-b border-skin-bdr-lt">
+            <AccordionSection title={`Stok per Warna (${warnaRows.filter((r) => !r.pending).length})`}>
+              <div className="grid grid-cols-[1fr_32px_32px_32px_32px_44px] gap-1.5 pb-1.5 mb-1 border-b border-skin-bdr-lt">
                 <div />
-                {["GD", "CD", "TG", "Total"].map((h) => (
-                  <div
-                    key={h}
-                    className="text-[10px] text-skin-text3 uppercase tracking-wide text-right"
-                  >
+                {["GD", "CD", "TG", "NG", "Total"].map((h) => (
+                  <div key={h} className="text-[10px] text-skin-text3 uppercase tracking-wide text-right">
                     {h}
                   </div>
                 ))}
               </div>
               {warnaRows.map((r) => (
-                <div
-                  key={r.warna}
-                  className="grid grid-cols-[1fr_38px_38px_38px_44px] gap-1.5 items-center py-1.5"
-                >
-                  <span
-                    className={`text-sm truncate ${r.pending ? "text-skin-text3 italic" : "text-skin-text2"}`}
-                  >
+                <div key={r.warna} className="grid grid-cols-[1fr_32px_32px_32px_32px_44px] gap-1.5 items-center py-1.5">
+                  <span className={`text-sm truncate ${r.pending ? "text-skin-text3 italic" : "text-skin-text2"}`}>
                     {r.pending ? "Belum dibagi warna" : r.warna}
                   </span>
-                  {[r.gudang, r.cideng, r.tegalgubug].map((v, i) => (
-                    <span
-                      key={i}
-                      className={`text-sm text-right ${v === 0 ? "text-skin-text4" : "text-skin-text2"}`}
-                    >
+                  {[r.gudang, r.cideng, r.tegalgubug, r.ngorder].map((v, i) => (
+                    <span key={i} className={`text-sm text-right ${v === 0 ? "text-skin-text4" : "text-skin-text2"}`}>
                       {v}
                     </span>
                   ))}
-                  <span
-                    className={`text-sm font-bold text-right ${r.total === 0 ? "text-skin-text4" : "text-skin-text"}`}
-                  >
+                  <span className={`text-sm font-bold text-right ${r.total === 0 ? "text-skin-text4" : "text-skin-text"}`}>
                     {r.total}
                   </span>
                 </div>

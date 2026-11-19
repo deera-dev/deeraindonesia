@@ -1,11 +1,20 @@
-import { toPng } from "html-to-image";
 import { useRef, useState } from "react";
-import { LABEL_TYPES, PAPER_WIDTHS, useTsplPrinter } from "../hooks/useTsplPrinter";
+import { toPng } from "html-to-image";
+import {
+  useTsplPrinter,
+  LABEL_TYPES,
+  PRINTER_PROTOCOLS,
+  paperWidthsFor,
+  defaultPaperWidthFor,
+  CROP_COLUMNS_DEFAULT,
+} from "../hooks/useTsplPrinter";
 import StrukContent from "./StrukContent";
 
 const LS_LABEL_TYPE = "deera-label-type";
 const LS_PAPER_WIDTH = "deera-paper-width";
 const LS_IMG_ALGO = "deera-img-algo";
+const LS_PROTOCOL = "deera-printer-protocol";
+const LS_CROP_COLUMNS = "deera-printer-crop-columns";
 const IMG_ALGOS = { dither: "Dithering", binary: "Biner" };
 const STAGE_LABEL = {
   capture: "Menyiapkan gambar…",
@@ -13,12 +22,9 @@ const STAGE_LABEL = {
   connect: "Menghubungkan printer…",
   send: "Mengirim ke printer…",
 };
-const DEFAULT_PAPER_WIDTH = "78";
-
 const PREVIEW_PX_PER_DOT = 384 / 623;
 
-function modalWidthPx(paperWidthMm, paperWidths) {
-  const dots = paperWidths[paperWidthMm]?.dots ?? paperWidths[DEFAULT_PAPER_WIDTH].dots;
+function modalWidthPx(dots) {
   return Math.round(dots * PREVIEW_PX_PER_DOT);
 }
 
@@ -32,7 +38,8 @@ function getSavedLabelType() {
 function saveLabelType(v) {
   try {
     localStorage.setItem(LS_LABEL_TYPE, v);
-  } catch {}
+  } catch {
+  }
 }
 
 function getSavedImgAlgo() {
@@ -46,20 +53,59 @@ function getSavedImgAlgo() {
 function saveImgOption(key, v) {
   try {
     localStorage.setItem(key, v);
-  } catch {}
+  } catch {
+  }
 }
 
-function getSavedPaperWidth() {
+function getSavedPaperWidth(protocol) {
   try {
-    return localStorage.getItem(LS_PAPER_WIDTH) || DEFAULT_PAPER_WIDTH;
+    const v = localStorage.getItem(LS_PAPER_WIDTH);
+    const widths = paperWidthsFor(protocol);
+    return v && widths[v] ? v : defaultPaperWidthFor(protocol);
   } catch {
-    return DEFAULT_PAPER_WIDTH;
+    return defaultPaperWidthFor(protocol);
   }
 }
 function savePaperWidth(v) {
   try {
     localStorage.setItem(LS_PAPER_WIDTH, v);
-  } catch {}
+  } catch {
+  }
+}
+
+function getSavedProtocol() {
+  try {
+    const v = localStorage.getItem(LS_PROTOCOL);
+    return v && PRINTER_PROTOCOLS[v] ? v : "tspl";
+  } catch {
+    return "tspl";
+  }
+}
+function saveProtocol(v) {
+  try {
+    localStorage.setItem(LS_PROTOCOL, v);
+  } catch {
+  }
+}
+
+// Eksperimen "diakali kayak TSPL" (November 2026, admin: TSPL BITMAP bisa
+// pangkas kiri-kanan per bagian konten, GS v 0 ESC/POS belum) — toggle
+// on/off (bukan daftar angka spt ackEvery/chunkSize) krn cuma 2 keadaan:
+// pakai ESC $ buat mangkas kolom kosong, atau tidak. Default OFF — WAJIB
+// dicek visual lurus/geser di printer fisik sebelum dipercaya, lihat
+// catatan risiko di useTsplPrinter.js.
+function getSavedCropColumns() {
+  try {
+    return localStorage.getItem(LS_CROP_COLUMNS) === "1";
+  } catch {
+    return CROP_COLUMNS_DEFAULT;
+  }
+}
+function saveCropColumns(v) {
+  try {
+    localStorage.setItem(LS_CROP_COLUMNS, v ? "1" : "0");
+  } catch {
+  }
 }
 
 export default function Struk({ sale, onClose }) {
@@ -67,9 +113,14 @@ export default function Struk({ sale, onClose }) {
   const [busy, setBusy] = useState(false);
   const [btMsg, setBtMsg] = useState("");
   const [labelType, setLabelType] = useState(getSavedLabelType);
-  const [paperWidth, setPaperWidth] = useState(getSavedPaperWidth);
   const [imgAlgo, setImgAlgo] = useState(getSavedImgAlgo);
+  const [protocol, setProtocol] = useState(getSavedProtocol);
+  const [paperWidth, setPaperWidth] = useState(() => getSavedPaperWidth(protocol));
+  const [cropColumns, setCropColumns] = useState(getSavedCropColumns);
   const [showSettings, setShowSettings] = useState(false);
+
+  const paperWidths = paperWidthsFor(protocol);
+  const dots = paperWidths[paperWidth]?.dots ?? paperWidths[defaultPaperWidthFor(protocol)].dots;
 
   const {
     printImageBle,
@@ -92,7 +143,6 @@ export default function Struk({ sale, onClose }) {
 
   function printPixelRatio() {
     const w = contentRef.current?.offsetWidth;
-    const dots = PAPER_WIDTHS[paperWidth]?.dots ?? PAPER_WIDTHS[DEFAULT_PAPER_WIDTH].dots;
     if (!w) return 2;
     return Math.min(3, Math.max(1, dots / w));
   }
@@ -153,6 +203,8 @@ export default function Struk({ sale, onClose }) {
       labelType,
       paperWidthMm: paperWidth,
       algorithm: imgAlgo,
+      protocol,
+      ...(protocol === "escpos" ? { cropColumns } : {}),
     });
     if (ok) setBtMsg("✓ Terkirim ke printer");
   }
@@ -170,6 +222,26 @@ export default function Struk({ sale, onClose }) {
   function handlePaperWidthChange(v) {
     setPaperWidth(v);
     savePaperWidth(v);
+  }
+
+  function handleCropColumnsToggle() {
+    const next = !cropColumns;
+    setCropColumns(next);
+    saveCropColumns(next);
+  }
+
+  function handleProtocolChange(v) {
+    setProtocol(v);
+    saveProtocol(v);
+    // Preset "Lebar kertas" TSPL ("78"/"100") dan ESC/POS ("58"/"80") beda
+    // dot-width (lihat catatan di ESCPOS_PAPER_WIDTHS) — reset ke default
+    // protokol baru supaya tidak kebawa key dari protokol sebelumnya.
+    const widths = paperWidthsFor(v);
+    const next = widths[paperWidth] ? paperWidth : defaultPaperWidthFor(v);
+    if (next !== paperWidth) {
+      setPaperWidth(next);
+      savePaperWidth(next);
+    }
   }
 
   return (
@@ -200,7 +272,7 @@ export default function Struk({ sale, onClose }) {
 
         <div
           id="struk-wrapper"
-          style={{ "--paper-w": `${modalWidthPx(paperWidth, PAPER_WIDTHS)}px` }}
+          style={{ "--paper-w": `${modalWidthPx(dots)}px` }}
           className="relative bg-skin-card mx-auto w-full h-[100dvh] md:w-[var(--paper-w)] md:max-w-[92vw] md:h-auto md:max-h-[90dvh] md:border-2 border-skin-bdr shadow-2xl overflow-hidden flex flex-col"
         >
           <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
@@ -216,16 +288,7 @@ export default function Struk({ sale, onClose }) {
                 title="Pengaturan cetak"
                 className={`transition leading-none ${showSettings ? "text-white" : "text-white/60 hover:text-white"}`}
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <circle cx="12" cy="12" r="3" />
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
                 </svg>
@@ -254,10 +317,7 @@ export default function Struk({ sale, onClose }) {
                 </span>
                 {btProgress?.stage === "send" && (
                   <div className="w-2/3 h-1.5 bg-white/25">
-                    <div
-                      className="h-full bg-skin-accent"
-                      style={{ width: `${btProgress.pct}%` }}
-                    />
+                    <div className="h-full bg-skin-accent" style={{ width: `${btProgress.pct}%` }} />
                   </div>
                 )}
               </div>
@@ -266,7 +326,7 @@ export default function Struk({ sale, onClose }) {
               <div
                 id="struk-paper"
                 data-testid="struk-paper"
-                style={{ width: modalWidthPx(paperWidth, PAPER_WIDTHS), maxWidth: "100%" }}
+                style={{ width: modalWidthPx(dots), maxWidth: "100%" }}
                 className="bg-white"
               >
                 <div ref={contentRef}>
@@ -290,15 +350,24 @@ export default function Struk({ sale, onClose }) {
           )}
 
           {showSettings && (
-            <div
-              data-testid="struk-settings"
-              className="flex-shrink-0 border-t border-skin-bdr-lt px-3 pt-3 pb-2 space-y-2"
-            >
-              <div
-                className="flex gap-1 bg-skin-page p-1 rounded-full"
-                role="group"
-                aria-label="Jenis label"
-              >
+          <div data-testid="struk-settings" className="flex-shrink-0 border-t border-skin-bdr-lt px-3 pt-3 pb-2 space-y-2">
+            <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Protokol printer">
+              {Object.entries(PRINTER_PROTOCOLS).map(([key, cfg]) => (
+                <button
+                  key={key}
+                  onClick={() => handleProtocolChange(key)}
+                  className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
+                    protocol === key
+                      ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                      : "text-skin-text2 hover:text-skin-text"
+                  }`}
+                >
+                  {cfg.label}
+                </button>
+              ))}
+            </div>
+            {protocol === "tspl" && (
+              <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Jenis label">
                 {Object.entries(LABEL_TYPES).map(([key, cfg]) => (
                   <button
                     key={key}
@@ -313,45 +382,58 @@ export default function Struk({ sale, onClose }) {
                   </button>
                 ))}
               </div>
-              <div
-                className="flex gap-1 bg-skin-page p-1 rounded-full"
-                role="group"
-                aria-label="Lebar kertas"
-              >
-                {Object.entries(PAPER_WIDTHS).map(([key, cfg]) => (
-                  <button
-                    key={key}
-                    onClick={() => handlePaperWidthChange(key)}
-                    className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
-                      paperWidth === key
-                        ? "bg-skin-accent text-skin-on-accent shadow-sm"
-                        : "text-skin-text2 hover:text-skin-text"
-                    }`}
-                  >
-                    {cfg.label}
-                  </button>
-                ))}
-              </div>
-              <div
-                className="flex gap-1 bg-skin-page p-1 rounded-full"
-                role="group"
-                aria-label="Opsi cetak gambar"
-              >
-                {Object.entries(IMG_ALGOS).map(([key, label]) => (
-                  <button
-                    key={key}
-                    onClick={() => handleImgAlgoChange(key)}
-                    className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
-                      imgAlgo === key
-                        ? "bg-skin-accent text-skin-on-accent shadow-sm"
-                        : "text-skin-text2 hover:text-skin-text"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+            )}
+            <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Lebar kertas">
+              {Object.entries(paperWidths).map(([key, cfg]) => (
+                <button
+                  key={key}
+                  onClick={() => handlePaperWidthChange(key)}
+                  className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
+                    paperWidth === key
+                      ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                      : "text-skin-text2 hover:text-skin-text"
+                  }`}
+                >
+                  {cfg.label}
+                </button>
+              ))}
             </div>
+            {protocol === "escpos" && (
+              <div className="space-y-1">
+                <p className="text-[10px] tracking-[0.06em] uppercase text-skin-text4 px-1">
+                  Eksperimen pangkas kolom kosong kiri-kanan — WAJIB cek fisik lurus/tidak geser,
+                  jangan cuma lihat pesan "Terkirim"
+                </p>
+                <button
+                  type="button"
+                  onClick={handleCropColumnsToggle}
+                  aria-pressed={cropColumns}
+                  className={`w-full py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
+                    cropColumns
+                      ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                      : "bg-skin-page text-skin-text2 hover:text-skin-text"
+                  }`}
+                >
+                  Pangkas kolom kosong: {cropColumns ? "Aktif" : "Nonaktif"}
+                </button>
+              </div>
+            )}
+            <div className="flex gap-1 bg-skin-page p-1 rounded-full" role="group" aria-label="Opsi cetak gambar">
+              {Object.entries(IMG_ALGOS).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => handleImgAlgoChange(key)}
+                  className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
+                    imgAlgo === key
+                      ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                      : "text-skin-text2 hover:text-skin-text"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           )}
 
           <div

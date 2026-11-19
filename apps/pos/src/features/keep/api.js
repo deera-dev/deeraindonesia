@@ -7,7 +7,7 @@ export async function fetchKeepOrders() {
   const { data, error } = await supabase
     .from(TABLE)
     .select("*")
-    .eq("status", "aktif")
+    .in("status", ["aktif", "terkirim"])
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -87,3 +87,8 @@ async function setStatus(id, status, extra = {}) {
 
 export const markKeepPaid = (id) => setStatus(id, "lunas", { paid_at: new Date().toISOString() });
 export const cancelKeep = (id) => setStatus(id, "batal");
+export const markKeepTerkirim = (id, { stokAdjustments }) =>
+  setStatus(id, "terkirim", {
+    delivered_at: new Date().toISOString(),
+    stok_adjustments: stokAdjustments ?? [],
+  });

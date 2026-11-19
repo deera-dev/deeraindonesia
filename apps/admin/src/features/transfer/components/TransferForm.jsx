@@ -1,9 +1,10 @@
-import { useProducts } from "@deera/shared/features/products/hooks";
+import { useState, useMemo, useEffect } from "react";
+import { useCreateTransfer, useUpdateTransfer } from "@deera/shared/features/transfers/hooks";
 import { useStokByLocation } from "@deera/shared/features/stok/hooks";
-import { useCreateTransfer } from "@deera/shared/features/transfers/hooks";
-import { LOCATION_LABELS, LOCATIONS } from "@deera/shared/lib/marketDay";
-import { useEffect, useMemo, useState } from "react";
+import { useProducts } from "@deera/shared/features/products/hooks";
+import { LOCATION_LABELS, TRANSFER_LOCATIONS } from "@deera/shared/lib/marketDay";
 import { readTransferDraft, useTransferDraftActions } from "../hooks";
+import LocationChangeConfirmModal from "./LocationChangeConfirmModal";
 
 function compareKodeByProductOrder(a, b, kodeOrderIndex) {
   const ia = kodeOrderIndex.has(a) ? kodeOrderIndex.get(a) : Infinity;
@@ -18,9 +19,7 @@ function RingkasanAccordion({ selectedItems, totalQty, kodeOrderIndex }) {
     acc[item.kode] = (acc[item.kode] ?? 0) + item.qty;
     return acc;
   }, {});
-  const grouped = Object.entries(byKode).sort(([a], [b]) =>
-    compareKodeByProductOrder(a, b, kodeOrderIndex),
-  );
+  const grouped = Object.entries(byKode).sort(([a], [b]) => compareKodeByProductOrder(a, b, kodeOrderIndex));
   return (
     <div className="border border-skin-bdr-gold bg-skin-gold">
       <button
@@ -29,7 +28,7 @@ function RingkasanAccordion({ selectedItems, totalQty, kodeOrderIndex }) {
         className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-semibold text-skin-text2 uppercase tracking-[0.1em]"
       >
         <span>Ringkasan Transfer ({totalQty} pcs)</span>
-        <span className="text-skin-text3 text-base leading-none">{open ? "▲" : "▼"}</span>
+        <span className="text-skin-text3 text-base leading-none">{open ? '▲' : '▼'}</span>
       </button>
       {open && (
         <div className="border-t border-skin-bdr-gold px-3 pb-3 pt-2 space-y-1">
@@ -45,42 +44,46 @@ function RingkasanAccordion({ selectedItems, totalQty, kodeOrderIndex }) {
   );
 }
 
-export default function TransferForm({
-  onClose,
-  onSaved,
-  initialData = null,
-  duplicateData = null,
-}) {
+export default function TransferForm({ onClose, onSaved, initialData = null, duplicateData = null }) {
   const isEdit = !!initialData;
   const isDuplicate = !!duplicateData;
 
   const draft = !isEdit && !isDuplicate ? readTransferDraft() : null;
   const { saveDraft, clearDraft: clearDraftStorage } = useTransferDraftActions();
 
+  // BUG FIX (November 2026, saran admin: "dropdown dari dan ke nya jangan
+  // default terisi, defaultnya kosong, jadi harus tetap isi dan pilih
+  // manual") — sebelumnya transfer BARU selalu default "gudang" → "cideng"
+  // tanpa admin benar2 memilih, rawan submit tanpa sadar ke lokasi yang
+  // salah. SEKARANG kosong ("") utk transfer baru — admin wajib pilih
+  // manual (lihat validasi submit di bawah). Mode edit/duplicate TETAP
+  // terisi dari data asli (itu bukan "default tebakan", itu data nyata
+  // yang sedang diedit/disalin).
   const [fromLoc, setFromLoc] = useState(
-    draft?.fromLoc ?? initialData?.from_location ?? duplicateData?.from_location ?? "gudang",
+    draft?.fromLoc ?? initialData?.from_location ?? duplicateData?.from_location ?? "",
   );
   const [toLoc, setToLoc] = useState(() => {
-    const saved =
-      draft?.toLoc ?? initialData?.to_location ?? duplicateData?.to_location ?? "cideng";
-    return LOCATIONS.includes(saved) ? saved : "cideng";
+    const saved = draft?.toLoc ?? initialData?.to_location ?? duplicateData?.to_location ?? "";
+    return TRANSFER_LOCATIONS.includes(saved) ? saved : "";
   });
+  // Dialog konfirmasi sebelum mengganti Dari/Ke Lokasi yang SUDAH terisi
+  // (saran admin: "setiap ganti dari dan ke nya kalau valuenya sudah ada
+  // dan mau diubah lagi, ada dialognya dulu") — cuma utk pilihan pertama
+  // (dari kosong) yang TIDAK perlu konfirmasi, ganti dari nilai yang sudah
+  // ada barulah perlu.
+  const [pendingLocChange, setPendingLocChange] = useState(null);
   const [useCustomToLoc, setUseCustomToLoc] = useState(() => {
     const saved = draft?.useCustomToLoc;
     if (saved !== undefined) return saved;
-    if (isEdit && initialData?.to_location && !LOCATIONS.includes(initialData.to_location))
-      return true;
+    if (isEdit && initialData?.to_location && !TRANSFER_LOCATIONS.includes(initialData.to_location)) return true;
     return false;
   });
   const [customToLocText, setCustomToLocText] = useState(() => {
     if (draft?.customToLocText !== undefined) return draft.customToLocText;
-    if (isEdit && initialData?.to_location && !LOCATIONS.includes(initialData.to_location))
-      return initialData.to_location;
+    if (isEdit && initialData?.to_location && !TRANSFER_LOCATIONS.includes(initialData.to_location)) return initialData.to_location;
     return "";
   });
-  const [notes, setNotes] = useState(
-    draft?.notes ?? initialData?.notes ?? duplicateData?.notes ?? "",
-  );
+  const [notes, setNotes] = useState(draft?.notes ?? initialData?.notes ?? duplicateData?.notes ?? "");
 
   const effectiveToLoc = useCustomToLoc ? customToLocText.trim() : toLoc;
   const [saving, setSaving] = useState(false);
@@ -147,6 +150,7 @@ export default function TransferForm({
   }, [products]);
 
   const createTransfer = useCreateTransfer();
+  const updateTransfer = useUpdateTransfer();
 
   function handleFromLocChange(loc) {
     setFromLoc(loc);
@@ -154,8 +158,35 @@ export default function TransferForm({
     setSearch("");
   }
 
+  // Dipanggil langsung dari <select> Dari/Ke Lokasi. Kalau belum ada nilai
+  // sebelumnya (pilihan pertama) atau nilainya sama saja, langsung terapkan
+  // — konfirmasi cuma perlu begitu ADA nilai sebelumnya yang mau diganti.
+  function requestFromLocChange(newLoc) {
+    if (!fromLoc || fromLoc === newLoc) {
+      handleFromLocChange(newLoc);
+      return;
+    }
+    setPendingLocChange({
+      title: "Ganti Lokasi Asal?",
+      description: `Lokasi asal akan diganti dari "${LOCATION_LABELS[fromLoc] ?? fromLoc}" ke "${LOCATION_LABELS[newLoc] ?? newLoc}" — barang yang sudah dipilih akan direset.`,
+      apply: () => handleFromLocChange(newLoc),
+    });
+  }
+
+  function requestToLocChange(newLoc) {
+    if (!toLoc || toLoc === newLoc) {
+      setToLoc(newLoc);
+      return;
+    }
+    setPendingLocChange({
+      title: "Ganti Lokasi Tujuan?",
+      description: `Lokasi tujuan akan diganti dari "${LOCATION_LABELS[toLoc] ?? toLoc}" ke "${LOCATION_LABELS[newLoc] ?? newLoc}".`,
+      apply: () => setToLoc(newLoc),
+    });
+  }
+
   function swapLocations() {
-    if (useCustomToLoc) return;
+    if (useCustomToLoc || !fromLoc || !toLoc) return;
     const newFrom = toLoc;
     const newTo = fromLoc;
     handleFromLocChange(newFrom);
@@ -276,12 +307,22 @@ export default function TransferForm({
     e?.preventDefault();
     setError("");
 
-    if (selectedItems.length === 0) {
-      setError("Pilih minimal satu barang yang akan ditransfer.");
+    // BUG FIX (November 2026) — lihat catatan di state fromLoc/toLoc: wajib
+    // dipilih manual, tidak boleh lolos dgn default kosong.
+    if (!fromLoc) {
+      setError("Pilih lokasi asal dulu.");
       return;
     }
     if (useCustomToLoc && !customToLocText.trim()) {
       setError("Isi nama lokasi tujuan.");
+      return;
+    }
+    if (!effectiveToLoc) {
+      setError("Pilih lokasi tujuan dulu.");
+      return;
+    }
+    if (selectedItems.length === 0) {
+      setError("Pilih minimal satu barang yang akan ditransfer.");
       return;
     }
     if (fromLoc === effectiveToLoc) {
@@ -290,14 +331,28 @@ export default function TransferForm({
 
     setSaving(true);
     try {
-      const transfer = await createTransfer({
+      const payload = {
         fromLocation: fromLoc,
         toLocation: effectiveToLoc,
         items: selectedItems.map(({ stok_id: _id, ...rest }) => rest),
         notes,
-      });
-      clearDraft();
-      onSaved(transfer);
+      };
+      // BUG FIX (November 2026) — laporan admin: "Edit Transfer" malah
+      // bikin transfer BARU, bukan mengubah yang lama — transfer lama
+      // tetap nyangkut "pending" tanpa pernah tersentuh. Kalau admin
+      // (tidak sadar) approve KEDUANYA, stok dipindah dua kali utk
+      // barang yang sama, salah satu kemungkinan penyebab stok di
+      // lokasi tujuan bisa melebihi produksi. Root cause: handleSubmit
+      // SELALU memanggil createTransfer, tidak pernah updateTransfer,
+      // walau tombolnya sendiri sudah bilang "Perbarui" saat isEdit.
+      if (isEdit) {
+        await updateTransfer(initialData, payload);
+        onSaved(initialData);
+      } else {
+        const transfer = await createTransfer(payload);
+        clearDraft();
+        onSaved(transfer);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -316,11 +371,7 @@ export default function TransferForm({
       <div className="relative bg-skin-card w-full max-w-lg mx-auto border-t-2 md:border-2 border-skin-bdr shadow-2xl h-[100dvh] md:h-[95dvh] flex flex-col">
         <div className="flex-shrink-0 bg-skin-header px-4 py-3 flex items-center justify-between">
           <span className="text-sm tracking-[0.15em] uppercase text-white font-medium">
-            {isEdit
-              ? "Edit Transfer"
-              : isDuplicate
-                ? "Salin & Balik Transfer"
-                : "Buat Transfer Stok"}
+            {isEdit ? "Edit Transfer" : isDuplicate ? "Salin & Balik Transfer" : "Buat Transfer Stok"}
           </span>
           <button onClick={onClose} className="text-white/60 hover:text-white transition text-xl">
             ✕
@@ -346,13 +397,7 @@ export default function TransferForm({
             <span>Draft tersimpan dipulihkan.</span>
             <button
               type="button"
-              onClick={() => {
-                clearDraft();
-                setSelected({});
-                setFromLoc("gudang");
-                setToLoc("cideng");
-                setNotes("");
-              }}
+              onClick={() => { clearDraft(); setSelected({}); setFromLoc(""); setToLoc(""); setNotes(""); }}
               className="underline hover:text-amber-900"
             >
               Hapus draft
@@ -364,27 +409,18 @@ export default function TransferForm({
           <div className="flex items-start gap-2">
             <div className="flex-1 min-w-0">
               <label className={labelCls}>Dari Lokasi</label>
-              <select
-                value={fromLoc}
-                onChange={(e) => handleFromLocChange(e.target.value)}
-                className={inputCls}
-              >
-                {LOCATIONS.map((loc) => (
-                  <option key={loc} value={loc}>
-                    {LOCATION_LABELS[loc]}
-                  </option>
+              <select value={fromLoc} onChange={(e) => requestFromLocChange(e.target.value)} className={inputCls}>
+                <option value="" disabled>Pilih lokasi...</option>
+                {TRANSFER_LOCATIONS.map((loc) => (
+                  <option key={loc} value={loc}>{LOCATION_LABELS[loc]}</option>
                 ))}
               </select>
             </div>
             <button
               type="button"
               onClick={swapLocations}
-              disabled={useCustomToLoc}
-              title={
-                useCustomToLoc
-                  ? "Tidak bisa ditukar saat Ke Lokasi custom"
-                  : "Tukar lokasi asal ↔ tujuan"
-              }
+              disabled={useCustomToLoc || !fromLoc || !toLoc}
+              title={useCustomToLoc ? "Tidak bisa ditukar saat Ke Lokasi custom" : "Tukar lokasi asal ↔ tujuan"}
               aria-label="Tukar lokasi asal dan tujuan"
               className="mt-[26px] w-9 h-9 flex-shrink-0 flex items-center justify-center border border-skin-bdr text-skin-text3 hover:text-skin-accent-text hover:border-skin-accent transition disabled:opacity-30 disabled:cursor-not-allowed"
             >
@@ -402,15 +438,10 @@ export default function TransferForm({
                   autoFocus
                 />
               ) : (
-                <select
-                  value={toLoc}
-                  onChange={(e) => setToLoc(e.target.value)}
-                  className={inputCls}
-                >
-                  {LOCATIONS.map((loc) => (
-                    <option key={loc} value={loc}>
-                      {LOCATION_LABELS[loc]}
-                    </option>
+                <select value={toLoc} onChange={(e) => requestToLocChange(e.target.value)} className={inputCls}>
+                  <option value="" disabled>Pilih lokasi...</option>
+                  {TRANSFER_LOCATIONS.map((loc) => (
+                    <option key={loc} value={loc}>{LOCATION_LABELS[loc]}</option>
                   ))}
                 </select>
               )}
@@ -426,15 +457,14 @@ export default function TransferForm({
               </button>
             </div>
           </div>
-          {!useCustomToLoc && fromLoc === toLoc && (
+          {!useCustomToLoc && fromLoc && fromLoc === toLoc && (
             <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2">
               ⚠ Lokasi asal dan tujuan tidak boleh sama.
             </p>
           )}
           {useCustomToLoc && customToLocText.trim() && (
             <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2">
-              ⚠ Stok tidak akan bertambah di lokasi ini (lokasi di luar sistem). Hanya stok di{" "}
-              {LOCATION_LABELS[fromLoc] ?? fromLoc} yang berkurang saat disetujui.
+              ⚠ Stok tidak akan bertambah di lokasi ini (lokasi di luar sistem). Hanya stok di {LOCATION_LABELS[fromLoc] ?? fromLoc} yang berkurang saat disetujui.
             </p>
           )}
           <input
@@ -453,15 +483,15 @@ export default function TransferForm({
               className="flex-1 bg-skin-page border border-skin-bdr px-3 py-2 text-xs text-skin-text focus:outline-none focus:border-skin-accent transition"
             />
             {totalQty > 0 && (
-              <span className="shrink-0 text-xs font-bold text-skin-accent-text">
-                {totalQty} pcs
-              </span>
+              <span className="shrink-0 text-xs font-bold text-skin-accent-text">{totalQty} pcs</span>
             )}
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {stokLoading ? (
+          {!fromLoc ? (
+            <p className="text-xs text-skin-text4 py-8 text-center">Pilih lokasi asal dulu.</p>
+          ) : stokLoading ? (
             <p className="text-xs text-skin-text3 py-8 text-center">Memuat stok...</p>
           ) : groupedItems.length === 0 ? (
             <p className="text-xs text-skin-text4 py-8 text-center">
@@ -471,113 +501,109 @@ export default function TransferForm({
             </p>
           ) : (
             <div className="divide-y divide-skin-bdr">
-              {groupedItems.map(({ kode, items: kodeItems }) => {
-                const kodeQtyTotal = kodeItems.reduce(
-                  (s, item) => s + (selected[itemKey(item)] ?? 0),
-                  0,
-                );
-                return (
-                  <div key={kode} className="border-b border-skin-bdr last:border-b-0">
-                    <div className="flex items-center justify-between px-3 py-2 bg-skin-raised border-b border-skin-bdr-lt sticky top-0 z-10">
-                      <span className="font-mono font-bold text-sm text-skin-text">{kode}</span>
-                      <div className="flex items-center gap-2">
-                        {kodeQtyTotal > 0 && (
-                          <span className="text-xs font-bold text-skin-accent-text">
-                            {kodeQtyTotal} pcs
-                          </span>
-                        )}
-                        {kodeQtyTotal > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => resetKode(kodeItems)}
-                            className="text-[10px] tracking-[0.1em] uppercase font-editorial px-2 py-0.5 border border-skin-bdr text-skin-text3 hover:border-red-400 hover:text-red-500 transition"
-                          >
-                            Reset
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => seriPenuh(kodeItems)}
-                          className="text-[10px] tracking-[0.1em] uppercase font-editorial px-2 py-0.5 border border-skin-accent text-skin-accent-text hover:bg-skin-accent hover:text-white transition"
-                        >
-                          Seri Penuh
-                        </button>
-                      </div>
-                    </div>
-
-                    {kodeItems.map((item) => {
-                      const qty = getQty(item);
-                      const avail = getAvailable(item);
-                      const isSelected = qty > 0;
-                      return (
-                        <div
-                          key={item.id}
-                          className={`flex items-center gap-3 pl-5 pr-3 py-2.5 border-b border-skin-bdr-lt last:border-b-0 transition ${
-                            isSelected ? "bg-skin-gold" : "hover:bg-skin-raised"
-                          }`}
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold text-skin-text">
-                                {item.size}
+                  {groupedItems.map(({ kode, items: kodeItems }) => {
+                    const kodeQtyTotal = kodeItems.reduce(
+                      (s, item) => s + (selected[itemKey(item)] ?? 0),
+                      0,
+                    );
+                    return (
+                      <div key={kode} className="border-b border-skin-bdr last:border-b-0">
+                        <div className="flex items-center justify-between px-3 py-2 bg-skin-raised border-b border-skin-bdr-lt sticky top-0 z-10">
+                          <span className="font-mono font-bold text-sm text-skin-text">{kode}</span>
+                          <div className="flex items-center gap-2">
+                            {kodeQtyTotal > 0 && (
+                              <span className="text-xs font-bold text-skin-accent-text">
+                                {kodeQtyTotal} pcs
                               </span>
-                              {item.warna && (
-                                <span className="text-xs text-skin-text3 bg-skin-page border border-skin-bdr px-1.5 py-0.5">
-                                  {item.warna}
-                                </span>
-                              )}
-                            </div>
-                            <p
-                              className={`text-xs mt-0.5 font-medium ${avail === 0 ? "text-red-500" : avail < 3 ? "text-amber-600" : "text-green-600"}`}
-                            >
-                              {avail} pcs tersedia
-                            </p>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            )}
+                            {kodeQtyTotal > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => resetKode(kodeItems)}
+                                className="text-[10px] tracking-[0.1em] uppercase font-editorial px-2 py-0.5 border border-skin-bdr text-skin-text3 hover:border-red-400 hover:text-red-500 transition"
+                              >
+                                Reset
+                              </button>
+                            )}
                             <button
                               type="button"
-                              onClick={() => removeOne(item)}
-                              disabled={qty === 0}
-                              className="w-7 h-7 flex items-center justify-center border border-skin-bdr bg-skin-card text-skin-text2 hover:bg-skin-raised disabled:opacity-30 disabled:cursor-not-allowed text-base font-bold"
+                              onClick={() => seriPenuh(kodeItems)}
+                              className="text-[10px] tracking-[0.1em] uppercase font-editorial px-2 py-0.5 border border-skin-accent text-skin-accent-text hover:bg-skin-accent hover:text-white transition"
                             >
-                              −
-                            </button>
-                            <input
-                              type="number"
-                              min="0"
-                              max={avail}
-                              value={qty || ""}
-                              placeholder="0"
-                              onChange={(e) => setQty(item, e.target.value)}
-                              className="w-10 text-center border border-skin-bdr bg-skin-card text-skin-text text-sm py-1 focus:outline-none focus:border-skin-accent"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => addOne(item)}
-                              disabled={qty >= avail || avail === 0}
-                              className="w-7 h-7 flex items-center justify-center border border-skin-bdr bg-skin-card text-skin-text2 hover:bg-skin-raised disabled:opacity-30 disabled:cursor-not-allowed text-base font-bold"
-                            >
-                              +
+                              Seri Penuh
                             </button>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
+
+                        {kodeItems.map((item) => {
+                          const qty = getQty(item);
+                          const avail = getAvailable(item);
+                          const isSelected = qty > 0;
+                          return (
+                            <div
+                              key={item.id}
+                              className={`flex items-center gap-3 pl-5 pr-3 py-2.5 border-b border-skin-bdr-lt last:border-b-0 transition ${
+                                isSelected ? "bg-skin-gold" : "hover:bg-skin-raised"
+                              }`}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-semibold text-skin-text">
+                                    {item.size}
+                                  </span>
+                                  {item.warna && (
+                                    <span className="text-xs text-skin-text3 bg-skin-page border border-skin-bdr px-1.5 py-0.5">
+                                      {item.warna}
+                                    </span>
+                                  )}
+                                </div>
+                                <p
+                                  className={`text-xs mt-0.5 font-medium ${avail === 0 ? "text-red-500" : avail < 3 ? "text-amber-600" : "text-green-600"}`}
+                                >
+                                  {avail} pcs tersedia
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => removeOne(item)}
+                                  disabled={qty === 0}
+                                  className="w-7 h-7 flex items-center justify-center border border-skin-bdr bg-skin-card text-skin-text2 hover:bg-skin-raised disabled:opacity-30 disabled:cursor-not-allowed text-base font-bold"
+                                >
+                                  −
+                                </button>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={avail}
+                                  value={qty || ""}
+                                  placeholder="0"
+                                  onChange={(e) => setQty(item, e.target.value)}
+                                  className="w-10 text-center border border-skin-bdr bg-skin-card text-skin-text text-sm py-1 focus:outline-none focus:border-skin-accent"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => addOne(item)}
+                                  disabled={qty >= avail || avail === 0}
+                                  className="w-7 h-7 flex items-center justify-center border border-skin-bdr bg-skin-card text-skin-text2 hover:bg-skin-raised disabled:opacity-30 disabled:cursor-not-allowed text-base font-bold"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
             </div>
           )}
         </div>
 
         <div className="shrink-0">
           {selectedItems.length > 0 && (
-            <RingkasanAccordion
-              selectedItems={selectedItems}
-              totalQty={totalQty}
-              kodeOrderIndex={kodeOrderIndex}
-            />
+            <RingkasanAccordion selectedItems={selectedItems} totalQty={totalQty} kodeOrderIndex={kodeOrderIndex} />
           )}
           {error && (
             <p className="text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2">
@@ -598,7 +624,11 @@ export default function TransferForm({
             type="button"
             onClick={handleSubmit}
             disabled={
-              saving || selectedItems.length === 0 || (useCustomToLoc && !customToLocText.trim())
+              saving ||
+              selectedItems.length === 0 ||
+              !fromLoc ||
+              !effectiveToLoc ||
+              (useCustomToLoc && !customToLocText.trim())
             }
             className="py-4 text-sm tracking-[0.08em] uppercase font-semibold text-skin-on-accent bg-skin-accent hover:bg-skin-accent-hover transition disabled:opacity-40"
           >
@@ -606,6 +636,18 @@ export default function TransferForm({
           </button>
         </div>
       </div>
+
+      {pendingLocChange && (
+        <LocationChangeConfirmModal
+          title={pendingLocChange.title}
+          description={pendingLocChange.description}
+          onConfirm={() => {
+            pendingLocChange.apply();
+            setPendingLocChange(null);
+          }}
+          onCancel={() => setPendingLocChange(null)}
+        />
+      )}
     </div>
   );
 }

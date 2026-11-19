@@ -1,9 +1,14 @@
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 
+// Ngorder = stok tersendiri (dibawa keliling toko), BUKAN "dipinjam" dari
+// Gudang — diisi langsung sama seperti Gudang, TIDAK ada auto-ambil dari
+// lokasi lain. Tetap bisa juga diisi lewat Transfer (dari/ke lokasi mana
+// pun) kalau mau tercatat sebagai perpindahan formal.
 export const LOCS = [
   { key: "gudang", label: "Gudang" },
   { key: "cideng", label: "Cideng" },
   { key: "tegalgubug", label: "TegalGubug" },
+  { key: "ngorder", label: "Ngorder" },
 ];
 
 export const ALL_LOC = { key: "semua", label: "Semua" };
@@ -26,8 +31,7 @@ export function kodeNum(kode) {
 }
 
 export function sortProductsTerbaru(products) {
-  const byNama = (a, b) =>
-    (a.nama ?? "").localeCompare(b.nama ?? "", "id", { sensitivity: "base" });
+  const byNama = (a, b) => (a.nama ?? "").localeCompare(b.nama ?? "", "id", { sensitivity: "base" });
   const byTanggal = (a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? "");
   return [...products].sort((a, b) => {
     const d = -byTanggal(a, b);
@@ -46,6 +50,7 @@ export const SIZE_COLORS = {
   "Gamis Jumbo": "text-orange-500 dark:text-orange-400",
   "Super Jumbo": "text-fuchsia-500 dark:text-fuchsia-400",
 };
+
 
 const SYNTHETIC_STOK_PREFIX = "new__";
 
@@ -87,6 +92,7 @@ export function fillMissingStokRows(product, existingRows) {
   return placeholders.length ? [...existingRows, ...placeholders] : existingRows;
 }
 
+
 export const NO_WARNA = "_";
 
 export function pendingPlaceholderRow(kode, size) {
@@ -127,10 +133,8 @@ export function computeSizeCount({ kode, size, sizeRows, loc, entries = {}, tota
     over = T !== null && colorSum > T;
     pending = { row, old, next };
   }
-  const changes = [
-    ...items.map((it) => ({ row: it.row, old: it.old, next: it.next })),
-    ...(pending ? [pending] : []),
-  ].filter((c) => c.next !== c.old);
+  const changes = [...items.map((it) => ({ row: it.row, old: it.old, next: it.next })), ...(pending ? [pending] : [])]
+    .filter((c) => c.next !== c.old);
   const total = colorSum + (pending ? pending.next : 0);
   const systemTotal = items.reduce((s, it) => s + it.old, 0) + (pending ? pending.old : 0);
   return { items, hasColors, pending, colorSum, total, systemTotal, over, changes };
@@ -143,8 +147,7 @@ export function buildChanged(changes, loc) {
 }
 
 export function productLocTotal(rows, loc) {
-  if (loc === ALL_LOC.key)
-    return rows.reduce((s, r) => s + (r.gudang ?? 0) + (r.cideng ?? 0) + (r.tegalgubug ?? 0), 0);
+  if (loc === ALL_LOC.key) return rows.reduce((s, r) => s + (r.gudang ?? 0) + (r.cideng ?? 0) + (r.tegalgubug ?? 0) + (r.ngorder ?? 0), 0);
   return rows.reduce((s, r) => s + (r[loc] ?? 0), 0);
 }
 
@@ -152,8 +155,11 @@ export function productStatus(counted) {
   return counted ? "sudah" : "belum";
 }
 
+// Termasuk ngorder (stok yang sedang dibawa keliling toko) — bukan lokasi
+// yang di-opname, tapi tetap harus ikut dihitung total supaya perbandingan
+// ke buku potongan tidak kelihatan "kurang" padahal cuma lagi dibawa ngorder.
 export function stokAllTotal(rows) {
-  return rows.reduce((s, r) => s + (r.gudang ?? 0) + (r.cideng ?? 0) + (r.tegalgubug ?? 0), 0);
+  return rows.reduce((s, r) => s + (r.gudang ?? 0) + (r.cideng ?? 0) + (r.tegalgubug ?? 0) + (r.ngorder ?? 0), 0);
 }
 
 export function pendingWarnaPcs(rows, loc) {
@@ -180,6 +186,21 @@ export function bukuCompare(buku, kode, rows, extraDelta = 0) {
   return { seharusnya: b.seharusnya, stok, selisih: stok - b.seharusnya };
 }
 
+// "seharusnya" per satu lokasi (bukan totalan semua lokasi) — admin:
+// "seharusnya itu kan untuk semua lokasi, ini agak bingung... bisa ga
+// seharusnya ada di cideng sekian, tg sekian, gudang sekian". Buku
+// potongan fisik cuma angka total; pembagian ke lokasi dihitung backend
+// dari ledger transfer approved (lihat migrasi
+// buku_potongan_seharusnya_per_lokasi), tersedia di entry.byLocation.
+// loc === ALL_LOC.key (atau tidak diisi) -> tetap totalan semua lokasi,
+// sama seperti sebelumnya.
+export function bukuSeharusnyaForLoc(entry, loc) {
+  if (!entry) return 0;
+  if (!loc || loc === ALL_LOC.key) return entry.seharusnya ?? 0;
+  return entry.byLocation?.[loc]?.seharusnya ?? 0;
+}
+
+
 export function buildOverflowChanges(changed, rows, loc) {
   const out = [];
   for (const [id, vals] of Object.entries(changed ?? {})) {
@@ -195,10 +216,7 @@ export function applyOverflowPlan(changed, plan, rows, kode) {
   for (const sz of plan?.sizes ?? []) {
     for (const a of sz.adjustments ?? []) {
       const row = rows.find(
-        (r) =>
-          r.kode === kode &&
-          r.warna === a.warna &&
-          String(r.size).toLowerCase() === String(sz.size).toLowerCase(),
+        (r) => r.kode === kode && r.warna === a.warna && String(r.size).toLowerCase() === String(sz.size).toLowerCase(),
       );
       if (row) next[row.id] = { ...(next[row.id] ?? {}), gudang: a.gudang_to };
     }
@@ -225,15 +243,14 @@ export function changedToFullRows(changed, rows) {
   return Object.entries(changed ?? {}).flatMap(([id, vals]) => {
     const row = rows.find((r) => String(r.id) === String(id));
     if (!row) return [];
-    return [
-      {
-        size: row.size,
-        warna: row.warna,
-        gudang: vals.gudang ?? row.gudang ?? 0,
-        cideng: vals.cideng ?? row.cideng ?? 0,
-        tegalgubug: vals.tegalgubug ?? row.tegalgubug ?? 0,
-      },
-    ];
+    return [{
+      size: row.size,
+      warna: row.warna,
+      gudang: vals.gudang ?? row.gudang ?? 0,
+      cideng: vals.cideng ?? row.cideng ?? 0,
+      tegalgubug: vals.tegalgubug ?? row.tegalgubug ?? 0,
+      ngorder: vals.ngorder ?? row.ngorder ?? 0,
+    }];
   });
 }
 
@@ -243,7 +260,7 @@ export function blockingOver(over, changed, rows) {
     const row = rows.find((r) => String(r.id) === String(id));
     if (!row) continue;
     const k = String(row.size).toLowerCase();
-    for (const loc of ["gudang", "cideng", "tegalgubug"]) {
+    for (const loc of ["gudang", "cideng", "tegalgubug", "ngorder"]) {
       if (vals[loc] !== undefined) delta[k] = (delta[k] ?? 0) + (vals[loc] - (row[loc] ?? 0));
     }
   }

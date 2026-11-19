@@ -1,41 +1,42 @@
-import BackToTop from "@deera/shared/components/BackToTop";
+import { useState, useMemo } from "react";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { useMemo, useState } from "react";
+import { cldUrl } from "@deera/shared/lib/cloudinary";
+import BackToTop from "@deera/shared/components/BackToTop";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
-import { PindahStokLokasiModal } from "../../pindah-stok-lokasi";
 import {
-  useBukuPotonganInfo,
-  useCheckStokSemua,
-  useJahitDikerjakan,
-  usePlanOpnameOverflow,
-  useSaveStokOpname,
-  useStokOpnameSession,
-  useStokWarnaAll,
-} from "../hooks";
-import {
-  applyOverflowPlan,
+  sortRows,
+  sortProductsTerbaru,
+  LOCS,
+  LOC_TABS,
   blockingOver,
-  buildOverflowChanges,
-  bukuCompare,
-  bukuSummary,
   changedToFullRows,
+  locLabelOf,
   dikerjakanKey,
   fillMissingStokRows,
-  LOC_TABS,
-  LOCS,
-  locLabelOf,
-  pendingWarnaPcs,
   productLocTotal,
   productStatus,
-  sortProductsTerbaru,
-  sortRows,
+  pendingWarnaPcs,
+  bukuSummary,
+  bukuCompare,
+  buildOverflowChanges,
+  applyOverflowPlan,
 } from "../utils";
-import AllLocCountSheet from "./AllLocCountSheet";
+import {
+  useStokWarnaAll,
+  useJahitDikerjakan,
+  useSaveStokOpname,
+  usePlanOpnameOverflow,
+  useCheckStokSemua,
+  useStokOpnameSession,
+  useBukuPotonganInfo,
+} from "../hooks";
 import GuideCard from "./GuideCard";
-import OverflowConfirm from "./OverflowConfirm";
 import ProductCountSheet from "./ProductCountSheet";
+import OverflowConfirm from "./OverflowConfirm";
+import AllLocCountSheet from "./AllLocCountSheet";
+import { PindahStokLokasiModal } from "../../pindah-stok-lokasi";
 
 const FILTERS = [
   ["semua", "Semua"],
@@ -58,16 +59,8 @@ export default function StokOpnamePage() {
   const planOverflow = usePlanOpnameOverflow();
   const checkSemua = useCheckStokSemua();
   const [confirmAsk, setConfirmAsk] = useState(null);
-  const {
-    loc,
-    counted,
-    guideDismissed,
-    setLoc,
-    markCounted,
-    resetCounted,
-    dismissGuide,
-    showGuide,
-  } = useStokOpnameSession();
+  const { loc, counted, guideDismissed, setLoc, markCounted, resetCounted, dismissGuide, showGuide } =
+    useStokOpnameSession();
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("semua");
@@ -76,9 +69,9 @@ export default function StokOpnamePage() {
   const [showPindahStok, setShowPindahStok] = useState(false);
 
   const locTotals = useMemo(() => {
-    const t = { gudang: 0, cideng: 0, tegalgubug: 0 };
+    const t = { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 };
     for (const r of stokRows) for (const k of Object.keys(t)) t[k] += r[k] ?? 0;
-    return { ...t, semua: t.gudang + t.cideng + t.tegalgubug };
+    return { ...t, semua: t.gudang + t.cideng + t.tegalgubug + t.ngorder };
   }, [stokRows]);
 
   const stokByKode = useMemo(() => {
@@ -100,8 +93,7 @@ export default function StokOpnamePage() {
   const sorted = useMemo(() => sortProductsTerbaru(products ?? []), [products]);
   const q = search.trim().toLowerCase();
   const visible = sorted.filter((p) => {
-    if (q && !p.kode.toLowerCase().includes(q) && !(p.nama ?? "").toLowerCase().includes(q))
-      return false;
+    if (q && !p.kode.toLowerCase().includes(q) && !(p.nama ?? "").toLowerCase().includes(q)) return false;
     const st = productStatus(locCounted[p.kode]);
     if (filter === "beda") return bukuCompare(buku, p.kode, stokByKode[p.kode] ?? [])?.selisih;
     return filter === "semua" || st === filter;
@@ -111,21 +103,35 @@ export default function StokOpnamePage() {
 
   const openProduct = openKode ? sorted.find((p) => p.kode === openKode) : null;
   const nextKode = openKode
-    ? sorted.find(
-        (p) => p.kode !== openKode && !locCounted[p.kode] && visible.some((v) => v.kode === p.kode),
-      )?.kode
+    ? sorted.find((p) => p.kode !== openKode && !locCounted[p.kode] && visible.some((v) => v.kode === p.kode))?.kode
     : null;
 
   function previewOverflow(changed) {
     const changes = buildOverflowChanges(changed, allStokRows, loc);
-    if (loc === "gudang" || changes.length === 0)
+    // Ngorder = stok tersendiri, sama seperti Gudang — tidak pernah
+    // otomatis mengambil dari lokasi lain.
+    if (loc === "gudang" || loc === "ngorder" || changes.length === 0) {
       return Promise.resolve({ overflow: false, sizes: [] });
+    }
     return planOverflow({ kode: openKode, loc, changes });
   }
 
+  // Stok Opname adalah kebenaran lapangan — TIDAK PERNAH diblokir oleh
+  // perbandingan ke produksi/buku potongan (itu angka turunan, bisa saja
+  // belum lengkap/salah input, sedangkan hasil hitung fisik admin adalah
+  // sumber kebenaran). Kalau hasilnya "melebihi produksi", itu sinyal utk
+  // admin cek data produksi/buku potongan — bukan alasan menolak simpan.
   async function handleSubmitSemua({ changed }) {
     try {
       if (Object.keys(changed).length > 0) {
+        const chk = await checkSemua({ kode: openKode, rows: changedToFullRows(changed, allStokRows) });
+        const over = blockingOver(chk?.over, changed, allStokRows);
+        if (over.length > 0) {
+          const o = over[0];
+          toast.error(
+            `Perhatian: ${o.size} stok ${o.total_after} + terjual ${o.sold} melebihi produksi ${o.produced} (lebih ${o.excess}). Tetap disimpan — cek data produksi/buku potongan.`,
+          );
+        }
         await saveStokOpname({ changed, stokRows: allStokRows, products });
       }
       markCounted("semua", openKode, 0);
@@ -148,27 +154,21 @@ export default function StokOpnamePage() {
         changed = applyOverflowPlan(changed, plan, allStokRows, openKode);
         toast.success(`Stok gudang ${openKode} dikurangi ${take} pcs (melebihi produksi)`);
       }
-      if (loc === "gudang" && Object.keys(changed).length > 0) {
-        const chk = await checkSemua({
-          kode: openKode,
-          rows: changedToFullRows(changed, allStokRows),
-        });
-        const blocked = blockingOver(chk?.over, changed, allStokRows);
-        if (blocked.length > 0) {
-          const b = blocked[0];
+      if ((loc === "gudang" || loc === "ngorder") && Object.keys(changed).length > 0) {
+        const chk = await checkSemua({ kode: openKode, rows: changedToFullRows(changed, allStokRows) });
+        const over = blockingOver(chk?.over, changed, allStokRows);
+        if (over.length > 0) {
+          const o = over[0];
           toast.error(
-            `Ditolak: ${b.size} stok ${b.total_after} + terjual ${b.sold} melebihi produksi ${b.produced} (lebih ${b.excess}). Kurangi dulu.`,
+            `Perhatian: ${o.size} stok ${o.total_after} + terjual ${o.sold} melebihi produksi ${o.produced} (lebih ${o.excess}). Tetap disimpan — cek data produksi/buku potongan.`,
           );
-          return;
         }
       }
       if (Object.keys(changed).length > 0) {
         await saveStokOpname({ changed, stokRows: allStokRows, products });
       }
       markCounted(loc, openKode, selisih);
-      toast.success(
-        `${openKode} tersimpan${selisih ? ` (stok ${selisih > 0 ? "+" : ""}${selisih})` : ""}`,
-      );
+      toast.success(`${openKode} tersimpan${selisih ? ` (stok ${selisih > 0 ? "+" : ""}${selisih})` : ""}`);
       setOpenKode(next && nextKode ? nextKode : null);
     } catch (err) {
       toast.error("Gagal simpan: " + err.message);
@@ -180,13 +180,12 @@ export default function StokOpnamePage() {
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
-            <h1 className="font-headline text-skin-accent-text text-xl leading-none">
-              Stok Opname
-            </h1>
+            <h1 className="font-headline text-skin-accent-text text-xl leading-none">Stok Opname</h1>
             <p className="text-xs text-skin-text4 mt-1">
               {loc ? (
                 <>
-                  Menghitung <b>{locLabelOf(loc)}</b> · {doneCount}/{sorted.length} produk dihitung
+                  Menghitung <b>{locLabelOf(loc)}</b> · {doneCount}/{sorted.length} produk
+                  dihitung
                 </>
               ) : (
                 "Pilih lokasi yang akan dihitung"
@@ -208,11 +207,7 @@ export default function StokOpnamePage() {
           </div>
         </div>
 
-        <div
-          className="border-t border-skin-bdr-lt px-4 py-2 grid grid-cols-2 md:grid-cols-4 gap-2"
-          role="group"
-          aria-label="Lokasi"
-        >
+        <div className="border-t border-skin-bdr-lt px-4 py-2 grid grid-cols-2 md:grid-cols-5 gap-2" role="group" aria-label="Lokasi">
           {LOC_TABS.map((l) => (
             <button
               key={l.key}
@@ -225,10 +220,7 @@ export default function StokOpnamePage() {
               }`}
             >
               {l.label}
-              <span
-                className="block text-[11px] font-semibold normal-case tracking-normal tabular-nums opacity-80"
-                data-testid={`total-${l.key}`}
-              >
+              <span className="block text-[11px] font-semibold normal-case tracking-normal tabular-nums opacity-80" data-testid={`total-${l.key}`}>
                 {locTotals[l.key].toLocaleString("id-ID")} pcs
               </span>
             </button>
@@ -299,13 +291,11 @@ export default function StokOpnamePage() {
 
         {!loc && (
           <p className="text-center text-sm text-skin-text3 py-12">
-            Pilih lokasi di atas dulu. Semua hitungan berlaku untuk satu lokasi saja, jadi tidak ada
-            risiko salah kolom.
+            Pilih lokasi di atas dulu. Semua hitungan berlaku untuk satu lokasi saja, jadi tidak ada risiko salah
+            kolom.
           </p>
         )}
-        {loc && loading && (
-          <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>
-        )}
+        {loc && loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
         {loc && !loading && visible.length === 0 && (
           <p className="text-center text-sm text-skin-text4 py-12">
             {q ? `Tidak ada produk "${search}"` : "Tidak ada produk di filter ini"}
@@ -325,24 +315,34 @@ export default function StokOpnamePage() {
                     onClick={() => setOpenKode(p.kode)}
                     className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-skin-card border border-skin-bdr text-left hover:border-skin-accent transition"
                   >
-                    <div className="min-w-0">
-                      <p className="font-mono text-sm font-bold text-skin-text">{p.kode}</p>
-                      <p className="text-xs text-skin-text3 truncate">{p.nama}</p>
-                      {bukuSummary(buku, p.kode) && (
-                        <p className="text-[11px] text-skin-text3 mt-0.5">
-                          📒 Buku potongan: seharusnya {bukuSummary(buku, p.kode).seharusnya} pcs
-                        </p>
-                      )}
-                      {pend > 0 && (
-                        <p className="text-[11px] text-red-500 font-bold mt-0.5">
-                          ⚠ {pend} pcs belum masukin warna
-                        </p>
-                      )}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="flex-shrink-0 w-20 h-20 bg-skin-raised overflow-hidden">
+                        {p.image ? (
+                          <img
+                            src={cldUrl(p.image, { width: 160 })}
+                            alt={p.kode}
+                            loading="lazy"
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <span className="w-full h-full flex items-center justify-center text-skin-text4 text-xs">—</span>
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-mono text-sm font-bold text-skin-text">{p.kode}</p>
+                        <p className="text-xs text-skin-text3 truncate">{p.nama}</p>
+                        {bukuSummary(buku, p.kode) && (
+                          <p className="text-[11px] text-skin-text3 mt-0.5">
+                            📒 Buku potongan: seharusnya {bukuSummary(buku, p.kode).seharusnya} pcs
+                          </p>
+                        )}
+                        {pend > 0 && (
+                          <p className="text-[11px] text-red-500 font-bold mt-0.5">⚠ {pend} pcs belum masukin warna</p>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold tabular-nums">
-                        stok {productLocTotal(rows, loc)} pcs
-                      </p>
+                      <p className="text-sm font-bold tabular-nums">stok {productLocTotal(rows, loc)} pcs</p>
                       <span
                         className={`inline-block mt-1 px-2 py-0.5 text-[11px] font-semibold border ${STATUS_UI[st][1]}`}
                       >
@@ -351,9 +351,7 @@ export default function StokOpnamePage() {
                       {bukuCompare(buku, p.kode, rows) && (
                         <p
                           className={`text-[11px] mt-1 font-semibold ${
-                            bukuCompare(buku, p.kode, rows).selisih === 0
-                              ? "text-emerald-600"
-                              : "text-amber-600"
+                            bukuCompare(buku, p.kode, rows).selisih === 0 ? "text-emerald-600" : "text-amber-600"
                           }`}
                         >
                           {bukuCompare(buku, p.kode, rows).selisih === 0
@@ -395,10 +393,7 @@ export default function StokOpnamePage() {
         />
       )}
       {showPindahStok && (
-        <PindahStokLokasiModal
-          onClose={() => setShowPindahStok(false)}
-          onDone={() => setShowPindahStok(false)}
-        />
+        <PindahStokLokasiModal onClose={() => setShowPindahStok(false)} onDone={() => setShowPindahStok(false)} />
       )}
       <AdminSidebar />
       <AdminBottomNav />

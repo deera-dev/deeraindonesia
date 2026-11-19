@@ -214,6 +214,9 @@ export function rincianFinishing(r, cfg) {
   return out;
 }
 
+// Urutan grup tim di "Rincian Per Karyawan" (lihat DECISIONS.md §9).
+const TIM_URUTAN = ["potong", "jahit", "finishing", "qc"];
+
 export function buildPerKaryawanMap({
   potong = [],
   jahit = [],
@@ -234,7 +237,36 @@ export function buildPerKaryawanMap({
   for (const r of qc) add(r, rincianQC(r, cfg));
   for (const r of kreatif) add(r, rincianKreatif(r, cfg));
   for (const r of finishing) add(r, rincianFinishing(r, cfg));
-  return Object.entries(map).sort((a, b) => b[1].total - a[1].total);
+  return Object.entries(map).sort((a, b) => {
+    const oa = TIM_URUTAN.includes(a[1].tim) ? TIM_URUTAN.indexOf(a[1].tim) : TIM_URUTAN.length;
+    const ob = TIM_URUTAN.includes(b[1].tim) ? TIM_URUTAN.indexOf(b[1].tim) : TIM_URUTAN.length;
+    if (oa !== ob) return oa - ob;
+    return b[1].total - a[1].total;
+  });
+}
+
+// Beli Gas -> karyawan Finishing periode ini; Persiapan ATK -> karyawan QC dgn total terbesar
+// periode ini (lihat DECISIONS.md §9). Tidak mengubah perKaryawan kalau tim-nya tidak ada.
+export function attachGasAtkToPerKaryawan(perKaryawan, { beliGas = 0, atk = 0 } = {}) {
+  if (!beliGas && !atk) return perKaryawan;
+  const list = perKaryawan.map(([nama, data]) => [nama, { ...data, rincian: [...data.rincian] }]);
+
+  if (beliGas > 0) {
+    const entry = list.find(([, d]) => d.tim === "finishing");
+    if (entry) {
+      entry[1].total += beliGas;
+      entry[1].rincian.push({ label: BELI_GAS_LABEL, sub: beliGas });
+    }
+  }
+  if (atk > 0) {
+    const qcEntries = list.filter(([, d]) => d.tim === "qc");
+    if (qcEntries.length > 0) {
+      const target = qcEntries.reduce((max, cur) => (cur[1].total > max[1].total ? cur : max));
+      target[1].total += atk;
+      target[1].rincian.push({ label: PERSIAPAN_ATK_LABEL, sub: atk });
+    }
+  }
+  return list;
 }
 
 export function sumTambahan(tambahan = []) {
@@ -350,7 +382,7 @@ export function generateWAText({
     ["CMT Luar", isFinal ? gajian.total_cmt : totals?.cmt],
   ].filter(([, v]) => (v ?? 0) > 0);
 
-  const lines = [];
+  let lines = [];
   lines.push(`*🧾 GAJIAN DEERA*`);
   lines.push(`${fmtTanggal(gajian.tanggal_sabtu)}`);
   if (isFinal) lines.push(`✅ _Final_`);
@@ -415,6 +447,7 @@ export function buildReconciliationRow({
   warna,
   qtyKartu,
   cardId = null,
+  cmtKirimId = null,
   qtyKartuPlaceholder = 0,
   soldRows,
   stokRows,
@@ -429,6 +462,7 @@ export function buildReconciliationRow({
     warna,
     qtyKartu: qtyKartuNum,
     cardId,
+    cmtKirimId,
     qtyKartuPlaceholder,
     stokSaatIni,
     terjualSaatIni,
@@ -498,6 +532,112 @@ export function pickPendingCards(cards = [], jumlah = 0) {
   return batches[0].cards;
 }
 
+// Setoran CMT Jahit-saja (cmt_jahit_kirim, status='setor') — paralel ke
+// pickPendingCards tapi dikelompokkan per kirim_no (bukan batch_id) dan
+// qty-nya dari qty_setor (bukan qty kirim). Query pemanggil sudah
+// memfilter status='setor' jadi tidak perlu filter stok_masuk_log lagi.
+export function pickPendingCmtKirim(rows = [], jumlah = 0) {
+  const batches = [];
+  for (const r of rows) {
+    let b = batches.find((x) => x.id === r.kirim_no);
+    if (!b) {
+      b = { id: r.kirim_no, latest: r.created_at ?? "", rows: [] };
+      batches.push(b);
+    }
+    b.rows.push(r);
+    if ((r.created_at ?? "") > b.latest) b.latest = r.created_at;
+  }
+  if (batches.length === 0) return [];
+  batches.sort((a, b) => (a.latest < b.latest ? 1 : a.latest > b.latest ? -1 : 0));
+  const target = Number(jumlah) || 0;
+  let sum = 0;
+  const picked = [];
+  for (const b of batches) {
+    picked.push(...b.rows);
+    sum += b.rows.reduce((s, r) => s + (Number(r.qty_setor) || 0), 0);
+    if (sum === target) return picked;
+    if (sum > target) break;
+  }
+  return batches[0].rows;
+}
+
+function normalizeJahitUnit(c) {
+  return {
+    id: c.id,
+    qty: Number(c.qty) || 0,
+    size: c.size,
+    warna: c.warna,
+    cardId: c.id,
+    cmtKirimId: null,
+  };
+}
+
+function normalizeCmtUnit(r) {
+  return {
+    id: r.id,
+    qty: Number(r.qty_setor ?? r.qty) || 0,
+    size: r.size,
+    warna: r.warna,
+    cardId: null,
+    cmtKirimId: r.id,
+  };
+}
+
+// Admin: "dihitungnya dengan cara otomatis ... karena ada otomatisnya" —
+// setoran CMT Jahit-saja (cmt_jahit_kirim) dipakai sebagai acuan breakdown
+// Finishing SAMA seperti jahit_cards, TANPA numpang ke tabel itu. Prioritas:
+// kartu Jahit internal dulu kalau ada yang pending (perilaku lama, utuh);
+// CMT dipakai HANYA kalau tidak ada kartu Jahit pending sama sekali utk
+// kode ini (kasus campuran kartu+CMT utk kode yang sama tetap jatuh ke
+// kartu Jahit — tetap aman, cuma mismatch & perlu koreksi manual seperti
+// kasus mismatch lain).
+export function buildPendingUnits(jahitCardRows, cmtRows, jumlah) {
+  const jahitPicked = pickPendingCards(jahitCardRows ?? [], jumlah);
+  if (jahitPicked.length > 0) {
+    return jahitPicked.map(normalizeJahitUnit);
+  }
+  return pickPendingCmtKirim(cmtRows ?? [], jumlah).map(normalizeCmtUnit);
+}
+
+// Seksi "Setoran CMT belum tergaji" di TabCmt — group per vendor+harga
+// upah supaya satu klik "Tambahkan ke Gajian Minggu Ini" bisa jadi satu
+// baris gaji_cmt per kombinasi itu (vendor beda / harga beda = baris
+// terpisah, konsisten dgn gaji_cmt yang satu baris = satu kesepakatan).
+export function groupPendingCmtByVendor(jahitRows = [], fullRows = []) {
+  const byKey = {};
+  const keyOf = (namaVendor, hargaUpah) => `${namaVendor}__${hargaUpah}`;
+  const ensure = (namaVendor, hargaUpah) => {
+    const key = keyOf(namaVendor, hargaUpah);
+    if (!byKey[key]) {
+      byKey[key] = {
+        namaVendor,
+        hargaUpah: Number(hargaUpah) || 0,
+        jahitIds: [],
+        fullIds: [],
+        jumlahKirim: 0,
+        jumlahTerima: 0,
+      };
+    }
+    return byKey[key];
+  };
+
+  for (const r of jahitRows) {
+    const g = ensure(r.nama_vendor, r.harga_upah);
+    g.jahitIds.push(r.id);
+    g.jumlahKirim += Number(r.qty) || 0;
+    g.jumlahTerima += Number(r.qty_setor ?? r.qty) || 0;
+  }
+  for (const r of fullRows) {
+    const g = ensure(r.nama_vendor, r.harga_upah);
+    g.fullIds.push(r.id);
+    const qty = (r.items ?? []).reduce((s, it) => s + (Number(it.qty) || 0), 0);
+    g.jumlahKirim += qty;
+    g.jumlahTerima += qty;
+  }
+
+  return Object.values(byKey).map((g) => ({ ...g, totalUpah: g.jumlahTerima * g.hargaUpah }));
+}
+
 export function buildKodeReconciliation({ item, cards, soldRows, stokRows, logRows = [] }) {
   const cardsSum = (cards ?? []).reduce((s, c) => s + (Number(c.qty) || 0), 0);
   const mismatch = (cards ?? []).length === 0 || cardsSum !== Number(item.jumlah);
@@ -509,7 +649,8 @@ export function buildKodeReconciliation({ item, cards, soldRows, stokRows, logRo
             size: c.size,
             warna: c.warna,
             qtyKartu: c.qty,
-            cardId: c.id,
+            cardId: "cardId" in c ? c.cardId : c.id,
+            cmtKirimId: c.cmtKirimId ?? null,
             soldRows,
             stokRows,
           }),

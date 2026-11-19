@@ -52,6 +52,14 @@ describe("ProductCard", () => {
     expect(screen.getByText("HABIS")).toBeInTheDocument();
   });
 
+  // Total ikut menghitung ngorder (stok dibawa keliling toko) supaya badge
+  // tidak salah tampil "HABIS" kalau produk sedang full dibawa ngorder.
+  it("menghitung total stok termasuk ngorder, TIDAK HABIS walau gudang/cideng/tegalgubug 0", () => {
+    renderCard({ stok: { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 4 } });
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.queryByText("HABIS")).not.toBeInTheDocument();
+  });
+
   it("badge amber saat total stok 1-4", () => {
     renderCard({ stok: { gudang: 2, cideng: 0, tegalgubug: 1 } });
     expect(screen.getByText("3")).toBeInTheDocument();
@@ -141,7 +149,7 @@ describe("ProductCard — hasStok (permintaan Denny 2026-09: jangan HABIS kalau 
       stok: { gudang: 3, cideng: 0, tegalgubug: 0 },
       hasStok: false,
     });
-    const badge = container.querySelector('[class*="right-1.5"][class*="rounded-full"]');
+    const badge = container.querySelector('[class*="right-1.5"] [class*="rounded-full"]');
     expect(badge).toHaveTextContent("3");
     expect(badge).not.toHaveTextContent("HABIS");
     expect(badge).not.toHaveTextContent("–");
@@ -162,5 +170,22 @@ describe("ProductCard — hasStok (permintaan Denny 2026-09: jangan HABIS kalau 
   it("tanpa lencana: tidak ada ikon lencana", () => {
     const { container } = renderCard();
     expect(container.querySelector("[data-badge]")).toBeNull();
+  });
+
+  // BUG FIX (November 2026, laporan admin: stok yang terlihat di gudang
+  // tidak mencerminkan barang yang sudah dipesan via Keep, bikin tim
+  // gudang & tim pasar bingung) — badge "N Keep" cuma info tambahan,
+  // tidak mengubah angka stok yang sudah ada.
+  describe("badge keepQty", () => {
+    it("menampilkan badge 'N Keep' saat keepQty > 0, tanpa mengubah angka stok utama", () => {
+      renderCard({ keepQty: 3 });
+      expect(screen.getByText("3 Keep")).toBeInTheDocument();
+      expect(screen.getByText("10")).toBeInTheDocument(); // total stok (5+3+2) tetap apa adanya
+    });
+
+    it("tidak menampilkan badge keep saat keepQty 0 atau tidak di-pass (default)", () => {
+      renderCard();
+      expect(screen.queryByText(/Keep/)).toBeNull();
+    });
   });
 });

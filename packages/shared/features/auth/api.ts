@@ -12,10 +12,19 @@ function toUsername(email: string | undefined | null): string {
   return email.endsWith(DOMAIN) ? email.slice(0, -DOMAIN.length) : email;
 }
 
+/**
+ * BUG FIX (November 2026) - laporan admin: toggle "tampilkan password"
+ * (PasswordInput) masih bikin keyboard mobile kapital-in huruf pertama/
+ * setelah spasi (autoCapitalize="none" di input-nya sendiri ternyata tidak
+ * cukup mencegah ini di semua device/browser). Semua password akun Deera
+ * memang selalu lowercase (konvensi internal tim), jadi solusi admin:
+ * lowercase paksa password sebelum dikirim ke API - tidak peduli apa yang
+ * sebenarnya ditik/dikapitalkan keyboard, hasil akhirnya tetap benar.
+ */
 export async function signIn(username: string, password: string) {
   return supabase.auth.signInWithPassword({
     email: toEmail(username),
-    password,
+    password: password.toLowerCase(),
   });
 }
 
@@ -24,7 +33,10 @@ export async function signOut() {
 }
 
 export async function verifyPassword(email: string, password: string): Promise<boolean> {
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password: password.toLowerCase(),
+  });
   return !error;
 }
 

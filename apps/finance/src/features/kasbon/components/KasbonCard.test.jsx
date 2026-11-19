@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 vi.mock("../../../shared/lib/format", () => ({
   fmtRp: vi.fn((v) => `Rp${v}`),
@@ -117,9 +117,7 @@ describe("KasbonCard — jumlah=0 → persen=0 branch", () => {
 describe("KasbonCard — keterangan null → no keterangan paragraph", () => {
   it("does not render keterangan line when keterangan is falsy", () => {
     const k = { ...kBelum, keterangan: null };
-    const { container } = render(
-      <KasbonCard k={k} onEdit={vi.fn()} onCicilan={vi.fn()} onDelete={vi.fn()} />,
-    );
+    const { container } = render(<KasbonCard k={k} onEdit={vi.fn()} onCicilan={vi.fn()} onDelete={vi.fn()} />);
     expect(screen.queryByText("Pinjaman darurat")).toBeNull();
   });
 });
@@ -130,11 +128,21 @@ describe("KasbonCard — tambahan entries (jenis=tambah branch)", () => {
       ...kBelum,
       tambahan: [{ tanggal: "2026-07-05", jumlah: 200000, keterangan: "tambah bon" }],
     };
-    render(
-      <KasbonCard k={kWithTambahan} onEdit={vi.fn()} onCicilan={vi.fn()} onDelete={vi.fn()} />,
-    );
+    render(<KasbonCard k={kWithTambahan} onEdit={vi.fn()} onCicilan={vi.fn()} onDelete={vi.fn()} />);
     fireEvent.click(screen.getByText(/Riwayat/));
     expect(screen.getByText(/tambahan/)).toBeInTheDocument();
+  });
+});
+
+describe("KasbonCard — cicilan without keterangan (falsy branch)", () => {
+  it("does not render cicilan keterangan paragraph when keterangan is null", () => {
+    const kNoKet = {
+      ...kBelum,
+      cicilan: [{ tanggal: "2026-07-10", jumlah: 100000, keterangan: null, jenis: "bayar" }],
+    };
+    render(<KasbonCard k={kNoKet} onEdit={vi.fn()} onCicilan={vi.fn()} onDelete={vi.fn()} />);
+    fireEvent.click(screen.getByText(/Riwayat/));
+    expect(screen.getByText(/2026-07-10/)).toBeInTheDocument();
   });
 });
 
@@ -146,23 +154,10 @@ describe("KasbonCard — edit riwayat spesifik (cicilan/tambahan)", () => {
       cicilan: [{ tanggal: "2026-07-10", jumlah: 300000, keterangan: "cicil 1" }],
       tambahan: [],
     };
-    render(
-      <KasbonCard
-        k={k}
-        onEdit={vi.fn()}
-        onCicilan={vi.fn()}
-        onDelete={vi.fn()}
-        onEditRiwayat={onEditRiwayat}
-      />,
-    );
+    render(<KasbonCard k={k} onEdit={vi.fn()} onCicilan={vi.fn()} onDelete={vi.fn()} onEditRiwayat={onEditRiwayat} />);
     fireEvent.click(screen.getByText(/Riwayat/));
     fireEvent.click(screen.getByTestId("riwayat-edit-bayar-0"));
-    expect(onEditRiwayat).toHaveBeenCalledWith(
-      k,
-      "bayar",
-      0,
-      expect.objectContaining({ jumlah: 300000 }),
-    );
+    expect(onEditRiwayat).toHaveBeenCalledWith(k, "bayar", 0, expect.objectContaining({ jumlah: 300000 }));
   });
 
   it("klik Edit pada baris ketiga dari banyak entri tambahan tetap memakai index aslinya di array tambahan (bukan index gabungan)", () => {
@@ -176,35 +171,12 @@ describe("KasbonCard — edit riwayat spesifik (cicilan/tambahan)", () => {
         { tanggal: "2026-11-03", jumlah: 300000, keterangan: "c" },
       ],
     };
-    render(
-      <KasbonCard
-        k={k}
-        onEdit={vi.fn()}
-        onCicilan={vi.fn()}
-        onDelete={vi.fn()}
-        onEditRiwayat={onEditRiwayat}
-      />,
-    );
+    render(<KasbonCard k={k} onEdit={vi.fn()} onCicilan={vi.fn()} onDelete={vi.fn()} onEditRiwayat={onEditRiwayat} />);
     fireEvent.click(screen.getByText(/Riwayat/));
     fireEvent.click(screen.getByTestId("riwayat-edit-tambah-2"));
     expect(onEditRiwayat).toHaveBeenCalledWith(
-      k,
-      "tambah",
-      2,
-      expect.objectContaining({ jumlah: 300000, tanggal: "2026-11-03" }),
+      k, "tambah", 2, expect.objectContaining({ jumlah: 300000, tanggal: "2026-11-03" }),
     );
-  });
-});
-
-describe("KasbonCard — cicilan without keterangan (falsy branch)", () => {
-  it("does not render cicilan keterangan paragraph when keterangan is null", () => {
-    const kNoKet = {
-      ...kBelum,
-      cicilan: [{ tanggal: "2026-07-10", jumlah: 100000, keterangan: null, jenis: "bayar" }],
-    };
-    render(<KasbonCard k={kNoKet} onEdit={vi.fn()} onCicilan={vi.fn()} onDelete={vi.fn()} />);
-    fireEvent.click(screen.getByText(/Riwayat/));
-    expect(screen.getByText(/2026-07-10/)).toBeInTheDocument();
   });
 });
 

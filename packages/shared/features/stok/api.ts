@@ -15,7 +15,7 @@ export async function fetchStokByLocation(location: StokLocation | "" | null | u
 
   const { data, error } = await supabase
     .from("stok_warna")
-    .select("id, kode, size, warna, gudang, cideng, tegalgubug")
+    .select("id, kode, size, warna, gudang, cideng, tegalgubug, ngorder")
     .gt(validLocation, 0)
     .order("kode", { ascending: true })
     .order("size", { ascending: true });

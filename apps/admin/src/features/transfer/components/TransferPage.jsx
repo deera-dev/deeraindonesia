@@ -1,22 +1,21 @@
-import BackToTop from "@deera/shared/components/BackToTop";
-import { useAuth } from "@deera/shared/features/auth/hooks";
-import { toast } from "@deera/shared/features/toast/hooks";
-import {
-  useApproveTransfer,
-  useDeleteTransfer,
-  usePendingTransferCount,
-  useRejectTransfer,
-  useTransfers,
-  useUpdateTransfer,
-} from "@deera/shared/features/transfers/hooks";
 import { useState } from "react";
+import { useAuth } from "@deera/shared/features/auth/hooks";
+import BackToTop from "@deera/shared/components/BackToTop";
+import { toast } from "@deera/shared/features/toast/hooks";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
+import {
+  useTransfers,
+  usePendingTransferCount,
+  useApproveTransfer,
+  useRejectTransfer,
+  useDeleteTransfer,
+} from "@deera/shared/features/transfers/hooks";
 import { PengirimanTab } from "../../pengiriman";
-import ConfirmModal from "./ConfirmModal";
-import SuratJalan from "./SuratJalan";
-import TransferCard from "./TransferCard";
 import TransferForm from "./TransferForm";
+import TransferCard from "./TransferCard";
+import SuratJalan from "./SuratJalan";
+import ConfirmModal from "./ConfirmModal";
 
 const CATEGORY_TABS = [
   { key: "stok", label: "Transfer Stok" },
@@ -67,7 +66,6 @@ export default function TransferPage() {
   const approveHook = useApproveTransfer();
   const rejectHook = useRejectTransfer();
   const deleteHook = useDeleteTransfer();
-  const updateHook = useUpdateTransfer();
 
   function showMsg(text) {
     toast.success(text);
@@ -122,29 +120,13 @@ export default function TransferPage() {
       from_location: transfer.to_location,
       to_location: transfer.from_location,
       notes: `Salin & balik dari ${transfer.transfer_no}`,
-      items: (transfer.items ?? []).map(({ kode, size, warna, qty }) => ({
-        kode,
-        size,
-        warna,
-        qty,
-      })),
+      items: (transfer.items ?? []).map(({ kode, size, warna, qty }) => ({ kode, size, warna, qty })),
     });
   }
 
   function handleDuplicateSaved(transfer) {
     setDuplicateSeed(null);
     openConfirm("surat_jalan", transfer, { savedTransfer: transfer });
-  }
-
-  async function handleEditSaved(transfer, payload) {
-    try {
-      await updateHook(transfer, payload);
-      setEditTarget(null);
-      showMsg("Transfer berhasil diperbarui.");
-      reload();
-    } catch (err) {
-      alert(err.message);
-    }
   }
 
   const pendingCount = usePendingTransferCount();
@@ -270,8 +252,19 @@ export default function TransferPage() {
             </p>
           </div>
 
-          <div className="px-4 py-4 md:px-8 xl:px-10 2xl:px-12 space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-3 2xl:grid-cols-4">
-            {loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
+          {/* BUG FIX (November 2026, laporan admin: tombol BackToTop
+              menutupi icon hapus kartu transfer terakhir) — BackToTop
+              (packages/shared/components/BackToTop.jsx) melayang 88-136px
+              dari bawah layar utk clear AdminBottomNav, tapi <main> di
+              bawah cuma reservasi pb-20 (80px) — kurang utk clear BackToTop
+              juga. pb-24 TAMBAHAN di sini (bukan ganti pb-20 <main>, itu
+              konvensi dipakai 8 halaman admin lain) memberi jarak ekstra
+              khusus di bawah daftar transfer ini, supaya kartu terakhir
+              (icon hapusnya) tidak pernah ketiban BackToTop. */}
+          <div className="px-4 py-4 pb-24 md:pb-4 md:px-8 xl:px-10 2xl:px-12 space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 xl:grid-cols-3 2xl:grid-cols-4">
+            {loading && (
+              <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>
+            )}
 
             {!loading && transfers.length === 0 && (
               <div className="text-center py-16 md:col-span-full">
@@ -299,6 +292,7 @@ export default function TransferPage() {
               />
             ))}
           </div>
+
 
           {showForm && (
             <TransferForm onClose={() => setShowForm(false)} onSaved={handleFormSaved} />

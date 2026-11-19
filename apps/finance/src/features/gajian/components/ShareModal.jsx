@@ -1,34 +1,29 @@
-import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import { useRef, useState } from "react";
 import { usePerKaryawanRincian } from "../hooks";
-import { generateWAText } from "../utils";
+import {
+  attachGasAtkToPerKaryawan,
+  BELI_GAS_LABEL,
+  findTambahanByLabel,
+  generateWAText,
+  PERSIAPAN_ATK_LABEL,
+} from "../utils";
+import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import GajianShareCard from "./GajianShareCard";
 
-export default function ShareModal({
-  gajian,
-  totals,
-  gajianId,
-  tambahan,
-  pettycash,
-  kasbonDeds,
-  totalRequest,
-  onClose,
-}) {
-  const { perKaryawan } = usePerKaryawanRincian(gajianId);
+export default function ShareModal({ gajian, totals, gajianId, tambahan, pettycash, kasbonDeds, totalRequest, onClose }) {
+  const { perKaryawan: rawPerKaryawan } = usePerKaryawanRincian(gajianId);
   const cardRef = useRef(null);
   const [tab, setTab] = useState("teks");
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const waText = generateWAText({
-    gajian,
-    totals,
-    perKaryawan,
-    tambahan,
-    pettycash,
-    kasbonDeds,
-    totalRequest,
-  });
+  const isFinal = gajian.status === "final";
+  const tambsSrc = (isFinal ? gajian.tambahan : tambahan) ?? [];
+  const beliGasAmt = Number(findTambahanByLabel(tambsSrc, BELI_GAS_LABEL)?.jumlah) || 0;
+  const atkAmt = Number(findTambahanByLabel(tambsSrc, PERSIAPAN_ATK_LABEL)?.jumlah) || 0;
+  const perKaryawan = attachGasAtkToPerKaryawan(rawPerKaryawan, { beliGas: beliGasAmt, atk: atkAmt });
+
+  const waText = generateWAText({ gajian, totals, perKaryawan, tambahan, pettycash, kasbonDeds, totalRequest });
   const waTextReal = waText.replace(/\\n/g, "\n");
 
   async function copyText() {
@@ -62,9 +57,7 @@ export default function ShareModal({
       const dataUrl = await toPng(cardRef.current, { pixelRatio: 3, backgroundColor: "#18120a" });
       const res = await fetch(dataUrl);
       const blob = await res.blob();
-      const file = new File([blob], `gajian-deera-${gajian.tanggal_sabtu}.png`, {
-        type: "image/png",
-      });
+      const file = new File([blob], `gajian-deera-${gajian.tanggal_sabtu}.png`, { type: "image/png" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file] });
       } else {
@@ -86,13 +79,7 @@ export default function ShareModal({
       <div className="relative bg-skin-card w-full h-full md:h-auto md:max-w-lg md:max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-skin-bdr-lt">
           <h3 className="font-headline text-lg text-skin-text">Bagikan Ringkasan</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-skin-text3 hover:text-skin-text text-xl leading-none"
-          >
-            ×
-          </button>
+          <button type="button" onClick={onClose} className="text-skin-text3 hover:text-skin-text text-xl leading-none">×</button>
         </div>
 
         <div className="flex gap-2 px-4 py-3 border-b border-skin-bdr-lt">
@@ -115,22 +102,12 @@ export default function ShareModal({
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {tab === "teks" ? (
             <>
-              <pre className="whitespace-pre-wrap font-mono text-xs bg-skin-raised p-3 text-skin-text">
-                {waTextReal}
-              </pre>
+              <pre className="whitespace-pre-wrap font-mono text-xs bg-skin-raised p-3 text-skin-text">{waTextReal}</pre>
               <div className="flex gap-2 mt-3">
-                <button
-                  type="button"
-                  onClick={copyText}
-                  className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent transition"
-                >
+                <button type="button" onClick={copyText} className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent transition">
                   {copied ? "✓ Tersalin" : "Salin Teks"}
                 </button>
-                <button
-                  type="button"
-                  onClick={shareViaWA}
-                  className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase bg-skin-accent text-black hover:bg-skin-accent-hover transition"
-                >
+                <button type="button" onClick={shareViaWA} className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase bg-skin-accent text-black hover:bg-skin-accent-hover transition">
                   Buka di WA
                 </button>
               </div>
@@ -150,20 +127,10 @@ export default function ShareModal({
                 />
               </ScaleToFitPreview>
               <div className="flex gap-2 mt-3">
-                <button
-                  type="button"
-                  disabled={generating}
-                  onClick={downloadImage}
-                  className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent transition disabled:opacity-50"
-                >
+                <button type="button" disabled={generating} onClick={downloadImage} className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase border border-skin-bdr text-skin-text3 hover:border-skin-accent transition disabled:opacity-50">
                   {generating ? "Memproses..." : "Unduh PNG"}
                 </button>
-                <button
-                  type="button"
-                  disabled={generating}
-                  onClick={shareImage}
-                  className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase bg-skin-accent text-black hover:bg-skin-accent-hover transition disabled:opacity-50"
-                >
+                <button type="button" disabled={generating} onClick={shareImage} className="flex-1 py-2 text-xs font-editorial tracking-[0.1em] uppercase bg-skin-accent text-black hover:bg-skin-accent-hover transition disabled:opacity-50">
                   Bagikan Gambar
                 </button>
               </div>

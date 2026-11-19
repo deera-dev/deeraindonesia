@@ -1,21 +1,13 @@
-import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
-import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { STORE_INFO } from "@deera/shared/lib/storeInfo";
-import { useMemo, useRef, useState } from "react";
-import { useComments, useLogWorkOrder } from "../hooks";
-import {
-  buildWoNotes,
-  fmtDate,
-  formatDisplayName,
-  listAllWoFotos,
-  listCommentFotos,
-  MAX_WO_REF_FOTOS,
-  photoGridDims,
-  printImageA4,
-} from "../utils";
+import { SIZE_PRESETS } from "@deera/shared/lib/constants";
+import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
+import { useLogWorkOrder, useSaveWoDraft, useWoDraft } from "../hooks";
+import { fmtDate, formatDisplayName, buildWoNotes, listAllWoFotos, printImageA4, photoGridDims, MAX_WO_REF_FOTOS, WO_ZONA, emptyZonaCatatan, zonaHasContent, splitCatatanPoints, isZonaAktif } from "../utils";
+import ZonaChecklist from "./ZonaChecklist";
 
 function formatDateTime(iso) {
   if (!iso) return "-";
@@ -30,15 +22,6 @@ function formatDateTime(iso) {
 
 export const MAX_WO_FOTOS = 2;
 
-export const MAX_KESIMPULAN_CHARS = 500;
-
-export const MAX_KESIMPULAN_CHARS_P2 = 1500;
-
-function truncateKesimpulan(text, max = MAX_KESIMPULAN_CHARS) {
-  if (!text) return text;
-  return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
-}
-
 const WO_LABEL = {
   fontSize: 9,
   textTransform: "uppercase",
@@ -51,26 +34,11 @@ const WO_PHOTO_BG = "#f6f3ec";
 
 function WoPhoto({ url, alt, width = 600, label }) {
   return (
-    <div
-      style={{
-        position: "relative",
-        flex: 1,
-        minHeight: 0,
-        minWidth: 0,
-        background: WO_PHOTO_BG,
-        border: "1px solid #ddd",
-      }}
-    >
+    <div style={{ position: "relative", flex: 1, minHeight: 0, minWidth: 0, background: WO_PHOTO_BG, border: "1px solid #ddd" }}>
       <img
         src={cldUrl(url, { width })}
         alt={alt}
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "contain",
-        }}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
       />
       {label && (
         <span
@@ -113,22 +81,13 @@ function WorkOrderPhotoPage({ sampel, fotos, refFotos = [] }) {
         gap: 10,
       }}
     >
-      <div
-        style={{ ...WO_LABEL, marginBottom: 0, display: "flex", justifyContent: "space-between" }}
-      >
+      <div style={{ ...WO_LABEL, marginBottom: 0, display: "flex", justifyContent: "space-between" }}>
         <span>Foto Work Order</span>
         <span>{sampel.nomor}</span>
       </div>
       <div
         data-testid="wo-photo-page"
-        style={{
-          flex: 1,
-          minHeight: 0,
-          display: "grid",
-          gridTemplateColumns: `repeat(${cols}, 1fr)`,
-          gridTemplateRows: `repeat(${rows}, 1fr)`,
-          gap: 10,
-        }}
+        style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)`, gap: 10 }}
       >
         {items.map((it) => (
           <WoPhoto key={it.url} url={it.url} alt={it.alt} label={it.label} width={1200} />
@@ -138,15 +97,94 @@ function WorkOrderPhotoPage({ sampel, fotos, refFotos = [] }) {
   );
 }
 
-function WorkOrderContent({
-  sampel,
-  fotos,
-  refFotos = [],
-  sizes,
-  catatanPenting,
-  creatorName,
-  photosOnPage2 = false,
-}) {
+
+const MOTIF_CAPSULE_PRINT_STYLE = {
+  motif: { background: "#d97706", color: "#fff" },
+  polos: { background: "#475569", color: "#fff" },
+};
+const MOTIF_PRINT_LABEL = { motif: "MOTIF", polos: "POLOS" };
+
+function ZonaPrintBlock({ zona }) {
+  if (!zonaHasContent(zona)) return null;
+  return (
+    <div style={{ flex: 1, minHeight: 0, border: "1px solid #ddd", padding: "10px 14px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div style={{ ...WO_LABEL, marginBottom: 8, flexShrink: 0 }}>Catatan Potong per Bagian</div>
+      <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+        {WO_ZONA.filter((z) => isZonaAktif(zona?.[z.key])).map((z) => {
+          const entry = zona?.[z.key] ?? { catatan: "", crop: null, motif: null, aktif: true };
+          return (
+            <div
+              key={z.key}
+              data-testid={`wo-zona-print-${z.key}`}
+              style={{ display: "flex", gap: 8, minHeight: 0, border: "1px solid #eee", padding: 6, overflow: "hidden" }}
+            >
+              {entry.crop && (
+                <img
+                  src={cldUrl(entry.crop.url, {
+                    width: 240,
+                    cropX: entry.crop.x,
+                    cropY: entry.crop.y,
+                    cropWidth: entry.crop.width,
+                    cropHeight: entry.crop.height,
+                  })}
+                  alt={`potongan ${z.label}`}
+                  style={{ width: 100, height: 120, objectFit: "cover", border: "1px solid #ccc", flexShrink: 0 }}
+                />
+              )}
+              <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 4, overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "nowrap", minWidth: 0 }}>
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 12,
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {z.label}
+                  </span>
+                  {entry.motif && (
+                    <span
+                      data-testid={`wo-zona-motif-${z.key}`}
+                      style={{
+                        ...MOTIF_CAPSULE_PRINT_STYLE[entry.motif],
+                        fontSize: 9.5,
+                        fontWeight: 800,
+                        letterSpacing: 0.5,
+                        padding: "2px 8px",
+                        borderRadius: 999,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {MOTIF_PRINT_LABEL[entry.motif]}
+                    </span>
+                  )}
+                </div>
+                {entry.catatan ? (
+                  <ul style={{ margin: 0, paddingLeft: 14, listStyle: "disc" }}>
+                    {splitCatatanPoints(entry.catatan).map((point, i) => (
+                      <li key={i} style={{ fontSize: 11.5, lineHeight: 1.35, color: "#1a1a1a" }}>
+                        {point}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span style={{ fontSize: 11.5, lineHeight: 1.35, color: "#999", fontStyle: "italic" }}>
+                    Sama seperti foto patokan
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function WorkOrderContent({ sampel, fotos, refFotos = [], sizes, zona, creatorName, photosOnPage2 = false }) {
   const bahanItems = sampel.bahan_items ?? [];
   const isSampelWo = sampel.status === "planning";
 
@@ -184,22 +222,13 @@ function WorkOrderContent({
         }}
       >
         <div>
-          <div style={{ fontSize: 22, fontWeight: "bold", letterSpacing: 4, color: "#a8925a" }}>
-            DEERA
-          </div>
+          <div style={{ fontSize: 22, fontWeight: "bold", letterSpacing: 4, color: "#a8925a" }}>DEERA</div>
           <div style={{ fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color: "#888" }}>
             INDONESIA · WA: {STORE_INFO.wa}
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div
-            style={{
-              fontSize: 15,
-              fontWeight: "bold",
-              letterSpacing: 3,
-              textTransform: "uppercase",
-            }}
-          >
+          <div style={{ fontSize: 15, fontWeight: "bold", letterSpacing: 3, textTransform: "uppercase" }}>
             {isSampelWo ? "Work Order — Sampel" : "Work Order — Potong"}
           </div>
           <div style={{ fontSize: 12, fontWeight: "bold", color: "#a8925a", letterSpacing: 1 }}>
@@ -233,9 +262,7 @@ function WorkOrderContent({
               <div style={{ fontWeight: 600, textTransform: "uppercase" }}>
                 {formatDisplayName(sampel.approved_by) || "-"}
               </div>
-              <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>
-                {formatDateTime(sampel.approved_at)}
-              </div>
+              <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{formatDateTime(sampel.approved_at)}</div>
             </>
           )}
         </div>
@@ -280,26 +307,16 @@ function WorkOrderContent({
               {bahanItems.map((b, i) => {
                 const foto = b.foto ?? (i === 0 ? sampel.bahan_foto : null);
                 return (
-                  <div
-                    key={`${b.nama_bahan}-${i}`}
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
+                  <div key={`${b.nama_bahan}-${i}`} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {foto ? (
                       <img
                         src={cldUrl(foto, { width: 80, height: 100, crop: "fill" })}
                         alt={b.nama_bahan}
-                        style={{
-                          width: 32,
-                          height: 40,
-                          objectFit: "cover",
-                          border: "1px solid #ddd",
-                        }}
+                        style={{ width: 32, height: 40, objectFit: "cover", border: "1px solid #ddd" }}
                       />
                     ) : null}
                     <span style={{ fontWeight: 700, fontSize: 12 }}>{b.nama_bahan}</span>
-                    <span style={{ marginLeft: "auto", color: "#888", fontSize: 11 }}>
-                      {b.kode_bahan ?? ""}
-                    </span>
+                    <span style={{ marginLeft: "auto", color: "#888", fontSize: 11 }}>{b.kode_bahan ?? ""}</span>
                   </div>
                 );
               })}
@@ -309,38 +326,18 @@ function WorkOrderContent({
       </div>
 
       {photosOnPage2 && (fotos.length > 0 || refFotos.length > 0) && (
-        <div
-          style={{
-            flex: catatanPenting ? "0 0 auto" : 1,
-            minHeight: 0,
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "flex-end",
-          }}
-        >
-          <span style={{ ...WO_LABEL, marginBottom: 0 }} data-testid="wo-foto-p2">
-            Foto → lihat halaman 2
-          </span>
+        <div style={{ flex: zonaHasContent(zona) ? "0 0 auto" : 1, minHeight: 0, display: "flex", alignItems: "flex-end", justifyContent: "flex-end" }}>
+          <span style={{ ...WO_LABEL, marginBottom: 0 }} data-testid="wo-foto-p2">Foto → lihat halaman 2</span>
         </div>
       )}
       {!photosOnPage2 && (fotos.length > 0 || refFotos.length > 0) && (
         <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 14 }}>
           {fotos.length > 0 && (
-            <div
-              style={{
-                flex: refFotos.length === 0 ? 1 : refFotos.length >= 4 ? 1 : 1.3,
-                minWidth: 0,
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
+            <div style={{ flex: refFotos.length === 0 ? 1 : refFotos.length >= 4 ? 1 : 1.3, minWidth: 0, display: "flex", flexDirection: "column" }}>
               <div style={WO_LABEL}>Foto Sampel Final (Acuan Potong)</div>
               <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 10 }}>
                 {fotos.map((url, i) => (
-                  <div
-                    key={url ?? i}
-                    style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}
-                  >
+                  <div key={url ?? i} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
                     <WoPhoto url={url} alt={`sampel final ${i + 1}`} />
                   </div>
                 ))}
@@ -372,36 +369,7 @@ function WorkOrderContent({
         </div>
       )}
 
-      {catatanPenting && (
-        <div
-          style={{
-            background: "#fff8e6",
-            border: "1.5px solid #d4af37",
-            padding: "10px 14px",
-            ...(photosOnPage2 ? { flex: 1, minHeight: 0 } : { flexShrink: 0, maxHeight: 230 }),
-            overflow: "hidden",
-          }}
-        >
-          <div style={{ ...WO_LABEL, color: "#7a5c1e", marginBottom: 5 }}>Kesimpulan Penting</div>
-          <div
-            data-testid="wo-kesimpulan-text"
-            style={{
-              color: "#2a2a2a",
-              whiteSpace: "pre-wrap",
-              columnCount: 2,
-              columnGap: 24,
-              columnRule: "1px solid #e8dcb8",
-              fontSize: 12.5,
-              lineHeight: 1.45,
-            }}
-          >
-            {truncateKesimpulan(
-              catatanPenting,
-              photosOnPage2 ? MAX_KESIMPULAN_CHARS_P2 : MAX_KESIMPULAN_CHARS,
-            )}
-          </div>
-        </div>
-      )}
+      <ZonaPrintBlock zona={zona} />
 
       <div
         style={{
@@ -423,51 +391,63 @@ function WorkOrderContent({
 export default function WorkOrderModal({ sampel, onClose }) {
   const { user } = useAuth();
   const logWorkOrder = useLogWorkOrder();
-  const { comments } = useComments(sampel?.id);
+  const saveWoDraft = useSaveWoDraft();
   const contentRef = useRef(null);
   const photoPageRef = useRef(null);
+  const { draft, saveDraft, clearDraft } = useWoDraft(sampel?.id);
   const [busy, setBusy] = useState(false);
-  const [sizes, setSizes] = useState(() => sampel?.wo_sizes ?? []);
-  const [catatanPenting, setCatatanPenting] = useState(
-    sampel?.wo_catatan ?? sampel?.perubahan ?? "",
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [sizes, setSizes] = useState(() => draft?.sizes ?? sampel?.wo_sizes ?? []);
+  const [zonaCatatan, setZonaCatatan] = useState(
+    () => draft?.zonaCatatan ?? sampel?.wo_catatan_zona ?? emptyZonaCatatan(),
   );
-  const [selectedFotos, setSelectedFotos] = useState(() =>
-    (sampel?.foto ?? []).slice(0, MAX_WO_FOTOS),
+  const [selectedFotos, setSelectedFotos] = useState(
+    () => draft?.selectedFotos ?? (sampel?.foto ?? []).slice(0, MAX_WO_FOTOS),
   );
   const [copiedNotes, setCopiedNotes] = useState(false);
-  const [refSelection, setRefSelection] = useState(null);
+  const [refSelection, setRefSelection] = useState(() => draft?.refSelection ?? null);
+
+  useEffect(() => {
+    if (!sampel?.id) return;
+    saveDraft({ sizes, selectedFotos, zonaCatatan, refSelection });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sampel?.id, sizes, selectedFotos, zonaCatatan, refSelection]);
 
   const creatorName = useMemo(
     () => formatDisplayName(user?.user_metadata?.full_name || user?.email),
     [user],
   );
 
-  const allFotos = useMemo(() => listAllWoFotos(sampel, comments), [sampel, comments]);
+  const allFotos = useMemo(() => listAllWoFotos(sampel), [sampel]);
   const refCandidates = useMemo(
     () => allFotos.filter((u) => !selectedFotos.includes(u)),
     [allFotos, selectedFotos],
   );
   const isSampelWo = sampel?.status === "planning";
   const defaultRefs = useMemo(
-    () =>
-      isSampelWo
-        ? allFotos.slice(0, MAX_WO_REF_FOTOS)
-        : listCommentFotos(comments, selectedFotos).slice(0, MAX_WO_REF_FOTOS),
-    [comments, selectedFotos, isSampelWo, allFotos],
+    () => allFotos.slice(0, MAX_WO_REF_FOTOS),
+    [allFotos],
   );
   const selectedRefs = useMemo(
-    () => (refSelection ? refSelection.filter((u) => refCandidates.includes(u)) : defaultRefs),
+    () =>
+      refSelection
+        ? refSelection.filter((u) => refCandidates.includes(u))
+        : defaultRefs,
     [refSelection, refCandidates, defaultRefs],
   );
   const { text: notesText, refFotos } = useMemo(
-    () => buildWoNotes(sampel, comments, { excludeUrls: selectedFotos, selected: selectedRefs }),
-    [sampel, comments, selectedFotos, selectedRefs],
+    () => buildWoNotes(sampel, { excludeUrls: selectedFotos, selected: selectedRefs }),
+    [sampel, selectedFotos, selectedRefs],
   );
 
   if (!sampel) return null;
 
   const fname = `work-order${isSampelWo ? "-sampel" : ""}-${sampel.nomor}.png`;
   const fotos = allFotos;
+
+  function setZona(key, entry) {
+    setZonaCatatan((prev) => ({ ...prev, [key]: entry }));
+  }
 
   function toggleSize(sz) {
     setSizes((prev) => (prev.includes(sz) ? prev.filter((s) => s !== sz) : [...prev, sz]));
@@ -477,9 +457,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
     setSelectedFotos((prev) => {
       if (prev.includes(url)) return prev.filter((u) => u !== url);
       if (prev.length >= MAX_WO_FOTOS) {
-        toast.error(
-          `Maksimal ${MAX_WO_FOTOS} foto yang bisa dicetak — hapus centang salah satu dulu`,
-        );
+        toast.error(`Maksimal ${MAX_WO_FOTOS} foto yang bisa dicetak — hapus centang salah satu dulu`);
         return prev;
       }
       return [...prev, url];
@@ -523,7 +501,6 @@ export default function WorkOrderModal({ sampel, onClose }) {
   }
 
   const hasFotos = selectedFotos.length > 0 || refFotos.length > 0;
-  const maxChars = hasFotos ? MAX_KESIMPULAN_CHARS_P2 : MAX_KESIMPULAN_CHARS;
   async function capturePages() {
     const pages = [await capturePng()];
     if (hasFotos && photoPageRef.current) pages.push(await capturePng(photoPageRef.current));
@@ -531,7 +508,20 @@ export default function WorkOrderModal({ sampel, onClose }) {
   }
 
   async function afterGenerate() {
-    logWorkOrder({ sampel, sizes, catatanPenting }).catch(() => {});
+    logWorkOrder({ sampel, sizes, zonaCatatan }).catch(() => {});
+    clearDraft();
+  }
+
+  async function handleSaveDraft() {
+    setSavingDraft(true);
+    try {
+      await saveWoDraft({ sampel, sizes, zonaCatatan });
+      toast.success("Draft tersimpan ✓");
+    } catch (err) {
+      toast.error("Gagal menyimpan draft: " + err.message);
+    } finally {
+      setSavingDraft(false);
+    }
   }
 
   async function handleDownload() {
@@ -572,9 +562,7 @@ export default function WorkOrderModal({ sampel, onClose }) {
       const files = await Promise.all(
         pages.map(async (dataUrl, i) => {
           const blob = await (await fetch(dataUrl)).blob();
-          return new File([blob], i === 0 ? fname : fname.replace(/\.png$/, "-foto.png"), {
-            type: "image/png",
-          });
+          return new File([blob], i === 0 ? fname : fname.replace(/\.png$/, "-foto.png"), { type: "image/png" });
         }),
       );
 
@@ -606,208 +594,187 @@ export default function WorkOrderModal({ sampel, onClose }) {
             </span>
             <span className="ml-2 text-xs text-skin-accent-text font-mono">{sampel.nomor}</span>
           </div>
-          <button
-            onClick={onClose}
-            className="text-white/60 hover:text-white transition text-xl leading-none"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              disabled={savingDraft}
+              className="text-[10px] tracking-[0.1em] uppercase text-skin-accent-text border border-skin-accent-text/50 hover:border-skin-accent-text px-2.5 py-1.5 transition disabled:opacity-40"
+            >
+              {savingDraft ? "Menyimpan..." : "Simpan Draft"}
+            </button>
+            <button
+              onClick={onClose}
+              className="text-white/60 hover:text-white transition text-xl leading-none"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto min-h-0 lg:overflow-hidden lg:grid lg:grid-cols-[minmax(420px,42%)_1fr]">
-          <div className="bg-skin-card border-b border-skin-bdr px-4 py-3 space-y-3 lg:border-b-0 lg:border-r lg:overflow-y-auto lg:px-6 lg:py-5">
-            <div>
-              <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3 mb-1.5">
-                {isSampelWo ? "Size Sampel" : "Size yang Dipotong"}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {SIZE_PRESETS.map(({ size }) => (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => toggleSize(size)}
-                    className={`px-2.5 py-1 text-xs font-editorial uppercase border transition ${
-                      sizes.includes(size)
-                        ? "border-skin-accent bg-skin-gold text-skin-accent-text"
-                        : "border-skin-bdr text-skin-text3 hover:border-skin-accent"
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
+        <div className="bg-skin-card border-b border-skin-bdr px-4 py-3 space-y-3 lg:border-b-0 lg:border-r lg:overflow-y-auto lg:px-6 lg:py-5">
+          <div>
+            <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3 mb-1.5">
+              {isSampelWo ? "Size Sampel" : "Size yang Dipotong"}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {SIZE_PRESETS.map(({ size }) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => toggleSize(size)}
+                  className={`px-2.5 py-1 text-xs font-editorial uppercase border transition ${
+                    sizes.includes(size)
+                      ? "border-skin-accent bg-skin-gold text-skin-accent-text"
+                      : "border-skin-bdr text-skin-text3 hover:border-skin-accent"
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
             </div>
-            {fotos.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
-                    Foto yang Dicetak
-                  </p>
-                  <span className="text-[10px] font-editorial text-skin-text4">
-                    {selectedFotos.length}/{MAX_WO_FOTOS} dipilih
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {fotos.map((url, i) => {
-                    const checked = selectedFotos.includes(url);
-                    const atMax = !checked && selectedFotos.length >= MAX_WO_FOTOS;
-                    return (
-                      <button
-                        key={url ?? i}
-                        type="button"
-                        onClick={() => toggleFoto(url)}
-                        className={`relative w-14 h-20 border-2 overflow-hidden transition ${
-                          checked
-                            ? "border-skin-accent"
-                            : atMax
-                              ? "border-skin-bdr opacity-25 cursor-not-allowed"
-                              : "border-skin-bdr opacity-40"
-                        }`}
-                      >
-                        <img
-                          src={cldUrl(url, { width: 112, height: 144, crop: "fill" })}
-                          className="w-full h-full object-cover"
-                          alt={`foto ${i + 1}`}
-                        />
-                        <span
-                          className={`absolute top-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] leading-none ${
-                            checked
-                              ? "bg-skin-accent text-skin-on-accent"
-                              : "bg-black/50 text-skin-on-accent/70"
-                          }`}
-                        >
-                          {checked ? "✓" : ""}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            {refCandidates.length > 0 && (
-              <div data-testid="ref-picker">
-                <div className="flex items-center justify-between mb-1.5">
-                  <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
-                    Foto Referensi
-                  </p>
-                  <span className="text-[10px] font-editorial text-skin-text4">
-                    {selectedRefs.length}/{MAX_WO_REF_FOTOS} dipilih
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {refCandidates.map((url, i) => {
-                    const checked = selectedRefs.includes(url);
-                    const label = refFotos.find((r) => r.url === url)?.label;
-                    const atMax = !checked && selectedRefs.length >= MAX_WO_REF_FOTOS;
-                    return (
-                      <button
-                        key={url}
-                        type="button"
-                        onClick={() => toggleRef(url)}
-                        className={`relative w-14 h-20 border-2 overflow-hidden transition ${
-                          checked
-                            ? "border-skin-accent"
-                            : atMax
-                              ? "border-skin-bdr opacity-25 cursor-not-allowed"
-                              : "border-skin-bdr opacity-40"
-                        }`}
-                      >
-                        <img
-                          src={cldUrl(url, { width: 112, height: 144, crop: "fill" })}
-                          className="w-full h-full object-cover"
-                          alt={`referensi ${i + 1}`}
-                        />
-                        <span
-                          className={`absolute top-0.5 right-0.5 min-w-4 h-4 px-0.5 rounded-full flex items-center justify-center text-[9px] font-bold leading-none ${
-                            checked
-                              ? "bg-skin-accent text-skin-on-accent"
-                              : "bg-black/50 text-skin-on-accent/70"
-                          }`}
-                        >
-                          {checked ? (label ?? "✓") : ""}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+          </div>
+          {fotos.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
-                  Kumpulan Catatan &amp; Diskusi
+                  Foto yang Dicetak
                 </p>
-                {notesText && (
-                  <button
-                    type="button"
-                    onClick={copyNotes}
-                    className="text-[10px] font-editorial uppercase tracking-[0.1em] text-skin-accent-text hover:underline"
-                  >
-                    {copiedNotes ? "✓ Tersalin" : "Salin"}
-                  </button>
-                )}
-              </div>
-              {notesText ? (
-                <pre className="whitespace-pre-wrap font-editorial text-xs text-skin-text2 bg-skin-raised border border-skin-bdr px-3 py-2 max-h-56 overflow-y-auto lg:max-h-[38vh] lg:text-sm">
-                  {notesText}
-                </pre>
-              ) : (
-                <p className="text-xs text-skin-text4 italic">
-                  Belum ada catatan/diskusi untuk sampel ini.
-                </p>
-              )}
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
-                  Kesimpulan Penting (opsional)
-                </label>
-                <span
-                  className={`text-[10px] font-editorial ${
-                    catatanPenting.length >= maxChars ? "text-red-500" : "text-skin-text4"
-                  }`}
-                >
-                  {catatanPenting.length}/{maxChars}
+                <span className="text-[10px] font-editorial text-skin-text4">
+                  {selectedFotos.length}/{MAX_WO_FOTOS} dipilih
                 </span>
               </div>
-              <textarea
-                rows={8}
-                maxLength={maxChars}
-                value={catatanPenting}
-                onChange={(e) => setCatatanPenting(e.target.value)}
-                placeholder="Baca/salin dari Kumpulan Catatan & Diskusi di atas, lalu tulis kesimpulannya di sini (ringkas — dicetak 2 kolom, maks 1 halaman). Kosongkan kalau ikuti sesuai sampel."
-                className="w-full px-3 py-2 bg-skin-raised border border-skin-bdr text-base text-skin-text placeholder:text-skin-text4 focus:outline-none focus:border-skin-accent transition resize-none lg:h-[34vh]"
+              <div className="flex flex-wrap gap-2">
+                {fotos.map((url, i) => {
+                  const checked = selectedFotos.includes(url);
+                  const atMax = !checked && selectedFotos.length >= MAX_WO_FOTOS;
+                  return (
+                    <button
+                      key={url ?? i}
+                      type="button"
+                      onClick={() => toggleFoto(url)}
+                      className={`relative w-14 h-20 border-2 overflow-hidden transition ${
+                        checked
+                          ? "border-skin-accent"
+                          : atMax
+                          ? "border-skin-bdr opacity-25 cursor-not-allowed"
+                          : "border-skin-bdr opacity-40"
+                      }`}
+                    >
+                      <img
+                        src={cldUrl(url, { width: 112, height: 144, crop: "fill" })}
+                        className="w-full h-full object-cover"
+                        alt={`foto ${i + 1}`}
+                      />
+                      <span
+                        className={`absolute top-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] leading-none ${
+                          checked ? "bg-skin-accent text-skin-on-accent" : "bg-black/50 text-skin-on-accent/70"
+                        }`}
+                      >
+                        {checked ? "✓" : ""}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {refCandidates.length > 0 && (
+            <div data-testid="ref-picker">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
+                  Foto Referensi
+                </p>
+                <span className="text-[10px] font-editorial text-skin-text4">
+                  {selectedRefs.length}/{MAX_WO_REF_FOTOS} dipilih
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {refCandidates.map((url, i) => {
+                  const checked = selectedRefs.includes(url);
+                  const label = refFotos.find((r) => r.url === url)?.label;
+                  const atMax = !checked && selectedRefs.length >= MAX_WO_REF_FOTOS;
+                  return (
+                    <button
+                      key={url}
+                      type="button"
+                      onClick={() => toggleRef(url)}
+                      className={`relative w-14 h-20 border-2 overflow-hidden transition ${
+                        checked
+                          ? "border-skin-accent"
+                          : atMax
+                          ? "border-skin-bdr opacity-25 cursor-not-allowed"
+                          : "border-skin-bdr opacity-40"
+                      }`}
+                    >
+                      <img
+                        src={cldUrl(url, { width: 112, height: 144, crop: "fill" })}
+                        className="w-full h-full object-cover"
+                        alt={`referensi ${i + 1}`}
+                      />
+                      <span
+                        className={`absolute top-0.5 right-0.5 min-w-4 h-4 px-0.5 rounded-full flex items-center justify-center text-[9px] font-bold leading-none ${
+                          checked ? "bg-skin-accent text-skin-on-accent" : "bg-black/50 text-skin-on-accent/70"
+                        }`}
+                      >
+                        {checked ? label ?? "✓" : ""}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {notesText && (
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
+                  Catatan Approve
+                </p>
+                <button
+                  type="button"
+                  onClick={copyNotes}
+                  className="text-[10px] font-editorial uppercase tracking-[0.1em] text-skin-accent-text hover:underline"
+                >
+                  {copiedNotes ? "✓ Tersalin" : "Salin"}
+                </button>
+              </div>
+              <pre className="whitespace-pre-wrap font-editorial text-xs text-skin-text2 bg-skin-raised border border-skin-bdr px-3 py-2 max-h-56 overflow-y-auto lg:max-h-[38vh] lg:text-sm">
+                {notesText}
+              </pre>
+            </div>
+          )}
+          <ZonaChecklist zona={zonaCatatan} onChange={setZona} photos={allFotos} disabled={busy} />
+        </div>
+
+        <div className="bg-skin-raised lg:overflow-y-auto lg:h-full lg:px-6 lg:py-5">
+          <ScaleToFitPreview contentWidth={700}>
+            <div ref={contentRef}>
+              <WorkOrderContent
+                sampel={sampel}
+                fotos={selectedFotos}
+                refFotos={refFotos}
+                sizes={sizes}
+                zona={zonaCatatan}
+                creatorName={creatorName}
+                photosOnPage2={hasFotos}
               />
             </div>
-          </div>
-
-          <div className="bg-skin-raised lg:overflow-y-auto lg:h-full lg:px-6 lg:py-5">
-            <ScaleToFitPreview contentWidth={700}>
-              <div ref={contentRef}>
-                <WorkOrderContent
-                  sampel={sampel}
-                  fotos={selectedFotos}
-                  refFotos={refFotos}
-                  sizes={sizes}
-                  catatanPenting={catatanPenting}
-                  creatorName={creatorName}
-                  photosOnPage2={hasFotos}
-                />
-              </div>
-            </ScaleToFitPreview>
-            {hasFotos && (
-              <>
-                <p className="px-4 pt-3 font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
-                  Halaman 2 — foto
-                </p>
-                <ScaleToFitPreview contentWidth={700}>
-                  <div ref={photoPageRef}>
-                    <WorkOrderPhotoPage sampel={sampel} fotos={selectedFotos} refFotos={refFotos} />
-                  </div>
-                </ScaleToFitPreview>
-              </>
-            )}
-          </div>
+          </ScaleToFitPreview>
+          {hasFotos && (
+            <>
+              <p className="px-4 pt-3 font-editorial text-[10px] tracking-[0.15em] uppercase text-skin-text3">
+                Halaman 2 — foto
+              </p>
+              <ScaleToFitPreview contentWidth={700}>
+                <div ref={photoPageRef}>
+                  <WorkOrderPhotoPage sampel={sampel} fotos={selectedFotos} refFotos={refFotos} />
+                </div>
+              </ScaleToFitPreview>
+            </>
+          )}
+        </div>
         </div>
 
         <div className="flex-shrink-0 border-t-2 border-skin-bdr flex flex-col">

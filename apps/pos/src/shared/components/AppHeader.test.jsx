@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 vi.mock("@deera/shared/features/auth/hooks", () => ({
   signOut: vi.fn(),
@@ -14,8 +14,8 @@ vi.mock("@deera/shared/components/ThemeToggle", () => ({
   ),
 }));
 
-import { signOut } from "@deera/shared/features/auth/hooks";
 import AppHeader from "./AppHeader";
+import { signOut } from "@deera/shared/features/auth/hooks";
 
 const defaultProps = {
   user: { name: "Admin" },
@@ -31,6 +31,10 @@ const defaultProps = {
 };
 
 describe("AppHeader", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("renders DEERA logo", () => {
     render(<AppHeader {...defaultProps} />);
     expect(screen.getByText("DEERA")).toBeInTheDocument();
@@ -53,10 +57,26 @@ describe("AppHeader", () => {
     expect(onSync).toHaveBeenCalled();
   });
 
-  it("calls signOut when Keluar clicked", () => {
+  it("clicking Keluar opens confirm dialog, does not call signOut yet", () => {
     render(<AppHeader {...defaultProps} />);
     fireEvent.click(screen.getByText("Keluar"));
+    expect(screen.getByText("Keluar dari Akun?")).toBeInTheDocument();
+    expect(signOut).not.toHaveBeenCalled();
+  });
+
+  it("calls signOut after confirming 'Ya, Keluar'", () => {
+    render(<AppHeader {...defaultProps} />);
+    fireEvent.click(screen.getByText("Keluar"));
+    fireEvent.click(screen.getByText("Ya, Keluar"));
     expect(signOut).toHaveBeenCalled();
+  });
+
+  it("does not call signOut when confirm dialog is cancelled", () => {
+    render(<AppHeader {...defaultProps} />);
+    fireEvent.click(screen.getByText("Keluar"));
+    fireEvent.click(screen.getByText("Batal"));
+    expect(screen.queryByText("Keluar dari Akun?")).not.toBeInTheDocument();
+    expect(signOut).not.toHaveBeenCalled();
   });
 
   it("shows Gagal when syncError is set", () => {

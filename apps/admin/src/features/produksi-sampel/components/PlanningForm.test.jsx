@@ -1,7 +1,7 @@
+import React from "react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import React from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/mediaUpload", () => ({
   uploadMedia: vi.fn().mockResolvedValue({ url: "https://cld/uploaded.jpg" }),
@@ -23,8 +23,8 @@ vi.mock("../../produksi-hpp", () => ({
   ),
 }));
 
-import { uploadMedia } from "@deera/shared/lib/mediaUpload";
 import PlanningForm from "./PlanningForm";
+import { uploadMedia } from "@deera/shared/lib/mediaUpload";
 
 const bahanWolfis = {
   id: "b1",
@@ -126,29 +126,19 @@ describe("PlanningForm", () => {
       expect.objectContaining({ nama: "Rencana C" }),
       null,
       [],
-      [
-        {
-          nama_bahan: "Wolfis",
-          kode_bahan: "B-01",
-          satuan: "yard",
-          foto: "https://cld/uploaded.jpg",
-        },
-      ],
+      [{ nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard", foto: "https://cld/uploaded.jpg" }],
     );
   });
 
-  it("membatasi model foto maksimal 3 slot", async () => {
+  it("tidak membatasi jumlah foto model (Denny 2026-11-02: 'upload foto semua disana')", async () => {
     const user = userEvent.setup();
     render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
-    for (let i = 0; i < 3; i++) {
-      const modelInput = screen
-        .getByText("Model")
-        .closest("label")
-        .querySelector("input[type=file]");
+    for (let i = 0; i < 5; i++) {
+      const modelInput = screen.getByText("Model").closest("label").querySelector("input[type=file]");
       await user.upload(modelInput, fileList());
       await waitFor(() => expect(uploadMedia).toHaveBeenCalledTimes(i + 1));
     }
-    expect(screen.queryByText("Model")).not.toBeInTheDocument();
+    expect(screen.getByText("Model")).toBeInTheDocument();
   });
 
   describe("multi-bahan dgn foto masing-masing (permintaan Denny 2026-09)", () => {
@@ -248,10 +238,7 @@ describe("PlanningForm", () => {
     it("klik foto model yang sudah diupload juga membuka PhotoLightbox", async () => {
       const user = userEvent.setup();
       const { container } = render(<PlanningForm onSave={vi.fn()} onCancel={vi.fn()} />);
-      const modelInput = screen
-        .getByText("Model")
-        .closest("label")
-        .querySelector("input[type=file]");
+      const modelInput = screen.getByText("Model").closest("label").querySelector("input[type=file]");
       await user.upload(modelInput, fileList());
       await waitFor(() => expect(uploadMedia).toHaveBeenCalled());
       const modelImg = container.querySelector('img[alt=""]');
@@ -286,11 +273,7 @@ describe("PlanningForm — Repeat (acuan = produk jadi, permintaan Denny 2026-10
     await pickBahanForRow(user, 0, bahanWolfis);
     await user.click(screen.getByText("Simpan Planning"));
     expect(onSave).toHaveBeenCalledWith(
-      {
-        nama: "Repeat D-07-OSK",
-        tanggal: expect.any(String),
-        repeat: { id: "p1", kode: "D-07-OSK" },
-      },
+      { nama: "Repeat D-07-OSK", tanggal: expect.any(String), repeat: { id: "p1", kode: "D-07-OSK" } },
       null,
       ["https://cld/main.jpg", "https://cld/d1.jpg"],
       [{ nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard", foto: null }],
@@ -316,9 +299,7 @@ describe("PlanningForm — mode edit (Denny 2026-10-14)", () => {
     id: "p1",
     nama: "Judul Lama",
     tanggal: "2026-10-01",
-    bahan_items: [
-      { nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard", foto: "https://cld/b1.jpg" },
-    ],
+    bahan_items: [{ nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard", foto: "https://cld/b1.jpg" }],
     model_foto: ["https://cld/m1.jpg", "https://cld/m2.jpg"],
   };
   it("mengisi form dari data lama & tombol jadi Simpan Perubahan", () => {
@@ -341,19 +322,10 @@ describe("PlanningForm — mode edit (Denny 2026-10-14)", () => {
     const [entry, , modelUrls, bahanItems] = onSave.mock.calls[0];
     expect(entry.nama).toBe("Judul Baru");
     expect(modelUrls).toEqual(["https://cld/m1.jpg"]);
-    expect(bahanItems[0]).toEqual(
-      expect.objectContaining({ nama_bahan: "Wolfis", foto: "https://cld/b1.jpg" }),
-    );
+    expect(bahanItems[0]).toEqual(expect.objectContaining({ nama_bahan: "Wolfis", foto: "https://cld/b1.jpg" }));
   });
   it("mode edit tidak menampilkan opsi Repeat", () => {
-    render(
-      <PlanningForm
-        initial={initial}
-        repeatOptions={[{ id: "x" }]}
-        onSave={vi.fn()}
-        onCancel={vi.fn()}
-      />,
-    );
+    render(<PlanningForm initial={initial} repeatOptions={[{ id: "x" }]} onSave={vi.fn()} onCancel={vi.fn()} />);
     expect(screen.queryByText(/Repeat produk/)).not.toBeInTheDocument();
   });
 });

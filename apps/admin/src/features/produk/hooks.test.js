@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const useStokMapQuery = vi.fn();
 const useStokWarnaByKodeQuery = vi.fn();
 const useProducedByKodeQuery = vi.fn();
+const useDikirimByKodeQuery = vi.fn();
 const useSalesDetailByKodeQuery = vi.fn();
 const useSaveProductMutation = vi.fn();
 const useDeleteProductCascadeMutation = vi.fn();
@@ -11,6 +12,7 @@ vi.mock("./queries", () => ({
   useStokMapQuery: (...args) => useStokMapQuery(...args),
   useStokWarnaByKodeQuery: (...args) => useStokWarnaByKodeQuery(...args),
   useProducedByKodeQuery: (...args) => useProducedByKodeQuery(...args),
+  useDikirimByKodeQuery: (...args) => useDikirimByKodeQuery(...args),
   useSalesDetailByKodeQuery: (...args) => useSalesDetailByKodeQuery(...args),
   useSaveProductMutation: (...args) => useSaveProductMutation(...args),
   useDeleteProductCascadeMutation: (...args) => useDeleteProductCascadeMutation(...args),
@@ -20,6 +22,7 @@ const {
   useStokMap,
   useStokWarnaByKode,
   useProducedByKode,
+  useDikirimByKode,
   useSalesDetailByKode,
   useSaveProduct,
   useDeleteProductCascade,
@@ -30,6 +33,7 @@ beforeEach(() => {
   useStokMapQuery.mockReset();
   useStokWarnaByKodeQuery.mockReset();
   useProducedByKodeQuery.mockReset();
+  useDikirimByKodeQuery.mockReset();
   useSalesDetailByKodeQuery.mockReset();
   useSaveProductMutation.mockReset();
   useDeleteProductCascadeMutation.mockReset();
@@ -96,6 +100,28 @@ describe("useProducedByKode", () => {
     const { result } = renderHook(() => useProducedByKode(undefined));
 
     expect(result.current.producedBySize).toEqual({});
+    expect(result.current.isLoading).toBe(true);
+  });
+});
+
+describe("useDikirimByKode", () => {
+  it("meneruskan kode ke query, mengembalikan data (per ukuran) & isLoading", () => {
+    const data = { Midi: { gudang: 4, cideng: 2, tegalgubug: 0, total: 6 } };
+    useDikirimByKodeQuery.mockReturnValue({ data, isLoading: false });
+
+    const { result } = renderHook(() => useDikirimByKode("D-01-OSK"));
+
+    expect(useDikirimByKodeQuery).toHaveBeenCalledWith("D-01-OSK");
+    expect(result.current.data).toBe(data);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("fallback data ke {} saat data undefined", () => {
+    useDikirimByKodeQuery.mockReturnValue({ data: undefined, isLoading: true });
+
+    const { result } = renderHook(() => useDikirimByKode(undefined));
+
+    expect(result.current.data).toEqual({});
     expect(result.current.isLoading).toBe(true);
   });
 });

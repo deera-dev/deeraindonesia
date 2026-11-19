@@ -1,23 +1,24 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { AnalyticsPage } from "./features/analytics";
+import ProtectedRoute from "./shared/components/ProtectedRoute";
 import { LoginPage } from "./features/auth";
-import { BukuPotonganPage } from "./features/buku-potongan";
-import { CalonCustomerPage } from "./features/calon-customer";
-import { HistoryPage } from "./features/history";
-import { TokoPage } from "./features/ngorder";
-import { NotifikasiPage } from "./features/notifikasi";
-import { PasarRestockPage } from "./features/pasar-restock";
-import { PelangganPage } from "./features/pelanggan";
 import { AdminPage } from "./features/produk";
-import { ProduksiBahanPage } from "./features/produksi-bahan";
-import { ProduksiHPPPage } from "./features/produksi-hpp";
-import { ProduksiJahitPage } from "./features/produksi-jahit";
-import { ProduksiRecordPage } from "./features/produksi-record";
-import { ProduksiSampelPage } from "./features/produksi-sampel";
-import { StokOpnamePage } from "./features/stok-opname";
+import { HistoryPage } from "./features/history";
+import { NotifikasiPage } from "./features/notifikasi";
 import { TrafikKatalogPage } from "./features/trafik-katalog";
 import { TransferPage } from "./features/transfer";
-import ProtectedRoute from "./shared/components/ProtectedRoute";
+import { StokOpnamePage } from "./features/stok-opname";
+import { BukuPotonganPage } from "./features/buku-potongan";
+import { ProduksiBahanPage } from "./features/produksi-bahan";
+import { ProduksiRecordPage } from "./features/produksi-record";
+import { ProduksiHPPPage } from "./features/produksi-hpp";
+import { ProduksiSampelPage } from "./features/produksi-sampel";
+import { ProduksiJahitPage } from "./features/produksi-jahit";
+import { CmtPage } from "./features/cmt";
+import { AnalyticsPage } from "./features/analytics";
+import { PelangganPage } from "./features/pelanggan";
+import { PasarRestockPage } from "./features/pasar-restock";
+import { CalonCustomerPage } from "./features/calon-customer";
+import { TokoPage } from "./features/ngorder";
 
 export default function App() {
   return (
@@ -160,6 +161,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <ProduksiJahitPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/produksi/cmt"
+          element={
+            <ProtectedRoute>
+              <CmtPage />
             </ProtectedRoute>
           }
         />
