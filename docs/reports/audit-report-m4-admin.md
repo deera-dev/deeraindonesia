@@ -121,7 +121,7 @@ Ditambah ~22 file lain 200-430 baris, mayoritas di grup produksi-*
 
 ## 7. Temuan level database (dicek langsung lewat `pg_policies`/advisor, bukan baca migrasi lama)
 
-**Aman dibereskan sekarang, zero-risk** — `products` dan `product_history`
+**✅ SUDAH DIBERESKAN (2026-11-19)** — `products` dan `product_history`
 masing-masing punya SEPASANG RLS policy yang persis sama fungsinya
 (dibuat di 2 migrasi beda, gak ada yang nyadar sudah ada):
 
@@ -135,8 +135,13 @@ masing-masing punya SEPASANG RLS policy yang persis sama fungsinya
 | `product_history` | INSERT | "Auth: insert history" + "Authenticated users can insert history" |
 
 Postgres meng-OR semua policy permissive, jadi duplikat ini TIDAK
-mengubah behavior apapun — murni overhead evaluasi tiap query. Aman
-di-drop salah satu dari tiap pasangan.
+mengubah behavior apapun — murni overhead evaluasi tiap query. Sudah
+dihapus salah satu dari tiap pasangan (yang berpenamaan "Auth: ...",
+karena pola itu cuma muncul di 6 policy ini, sementara "Authenticated
+users can ..." konsisten dipakai di tabel lain juga). Diverifikasi
+lewat `pg_policies` setelahnya — sisa 1 policy per aksi, kecuali SELECT
+di `products` yang memang sengaja 2 (role `public` utk Catalog + role
+`authenticated`, beda target, bukan duplikat).
 
 **Butuh keputusan terpisah (bukan blocker M4), dicatat biar gak hilang:**
 
