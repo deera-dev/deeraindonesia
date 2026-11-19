@@ -34,7 +34,10 @@ export async function fetchProductAchievements(kode) {
 }
 
 export async function fetchProductBadgeReason(kode) {
-  const { data, error } = await supabase.rpc("get_product_badge_reason", { p_kode: kode, p_days: 30 });
+  const { data, error } = await supabase.rpc("get_product_badge_reason", {
+    p_kode: kode,
+    p_days: 30,
+  });
   if (error || !data || data.length === 0) return null;
   return data[0];
 }
@@ -164,9 +167,7 @@ export async function saveProduct({
     : null;
   const detailUrls = await Promise.all(
     detailImages.map((img) =>
-      img.type === "url"
-        ? img.url
-        : uploadMedia(img.file, { kind: "image" }).then((r) => r.url),
+      img.type === "url" ? img.url : uploadMedia(img.file, { kind: "image" }).then((r) => r.url),
     ),
   );
 
@@ -264,7 +265,8 @@ export async function saveProduct({
     }
     for (const orphanW of orphanedWarnas) {
       let del = supabase.from("stok_warna").delete().eq("kode", finalKode).eq("warna", orphanW);
-      if (orphanW === "_") del = del.eq("gudang", 0).eq("cideng", 0).eq("tegalgubug", 0).eq("ngorder", 0);
+      if (orphanW === "_")
+        del = del.eq("gudang", 0).eq("cideng", 0).eq("tegalgubug", 0).eq("ngorder", 0);
       await del;
       // BUG FIX (November 2026, laporan admin "seharusnya" per lokasi
       // kelihatan lebih besar dari jumlah warna yang tampil di layar) —
@@ -273,6 +275,20 @@ export async function saveProduct({
       // dibersihkan jadi "hantu" yang tetap kehitung di seharusnya per
       // lokasi walau warnanya sendiri sudah tidak ada lagi di produk.
       await supabase.from("expected_stok").delete().eq("kode", finalKode).eq("warna", orphanW);
+    }
+
+    // BUG FIX (November 2026, laporan admin: POS masih nampilin ukuran yang
+    // sudah dihapus dari produk, mis. "Midi Jumbo" padahal cuma "Midi" yang
+    // aktif/ada harganya) — sama seperti warna di atas, ukuran yang
+    // dihapus dari activeSet tapi baris stok_warna/expected_stok-nya tidak
+    // ikut dibersihkan jadi "hantu": apps/pos/.../ProductList.jsx menyusun
+    // daftar ukuran dari union(variants, stokByWarna), jadi ukuran orphan
+    // ini tetap ikut muncul (harga 0, tombol disabled) walau sudah tidak
+    // ada lagi di Edit Produk.
+    const orphanedSizes = Object.keys(stokWarnaMap).filter((s) => !activeSet.has(s));
+    for (const orphanS of orphanedSizes) {
+      await supabase.from("stok_warna").delete().eq("kode", finalKode).eq("size", orphanS);
+      await supabase.from("expected_stok").delete().eq("kode", finalKode).eq("size", orphanS);
     }
   }
 
