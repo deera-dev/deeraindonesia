@@ -1,21 +1,19 @@
-import { displayName, signOut, useAuth } from "@deera/shared/features/auth/hooks";
-import { Button } from "../../../shared/components/ui/Button";
+import { displayName, useAuth } from "@deera/shared/features/auth/hooks";
+import { AppShell } from "../../../shared/components/AppShell";
 
 export default function DashboardPage() {
   const { user } = useAuth();
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-4 text-center">
-      <div>
+    <AppShell>
+      <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
         <p className="font-display text-2xl text-text">Deera Studio</p>
         <p className="mt-2 text-sm text-text-muted">Halo, {displayName(user)}.</p>
         <p className="mt-1 text-xs text-text-faint">
-          Dashboard generate foto & konten masih dalam proses migrasi.
+          Dashboard generate foto & konten masih dalam proses migrasi. Kelola referensi di Models,
+          Poses, dan Presets.
         </p>
       </div>
-      <Button variant="outline" onClick={() => signOut()}>
-        Keluar
-      </Button>
-    </main>
+    </AppShell>
   );
 }

@@ -7,6 +7,9 @@ import {
 } from "@tanstack/react-router";
 import { LoginPage } from "./features/auth";
 import { DashboardPage } from "./features/dashboard";
+import { ModelsPage } from "./features/models";
+import { PosesPage } from "./features/poses";
+import { PresetsPage } from "./features/presets";
 import ProtectedRoute from "./shared/components/ProtectedRoute";
 
 function RootComponent() {
@@ -34,7 +37,43 @@ const indexRoute = createRoute({
   ),
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, loginRoute]);
+const modelsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/models",
+  component: () => (
+    <ProtectedRoute>
+      <ModelsPage />
+    </ProtectedRoute>
+  ),
+});
+
+const posesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/poses",
+  component: () => (
+    <ProtectedRoute>
+      <PosesPage />
+    </ProtectedRoute>
+  ),
+});
+
+const presetsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/presets",
+  component: () => (
+    <ProtectedRoute>
+      <PresetsPage />
+    </ProtectedRoute>
+  ),
+});
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  loginRoute,
+  modelsRoute,
+  posesRoute,
+  presetsRoute,
+]);
 
 export const router = createRouter({ routeTree });
 

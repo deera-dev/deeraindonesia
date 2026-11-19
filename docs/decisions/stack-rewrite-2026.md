@@ -64,7 +64,7 @@ Alasan urutan pengerjaan (termudah/paling-gak-kritis dulu): lihat §3.
 | M3a | Bangun Aurum jadi kode (tokens.css/Tailwind + 6 komponen TSX di `packages/shared`) + setup error tracking | 🔲 Belum mulai | Lihat §4 |
 | — | Retrofit Catalog ke Aurum | 🔲 Belum mulai | Setelah M3a |
 | — | Audit & Optimasi: Catalog (retroaktif) | 🔲 Belum mulai | Catalog selesai sebelum aturan "audit dulu" ada |
-| M3 | Studio: scaffold ✅ (login jalan) + CRUD models/poses/presets + dashboard + Edge Functions + **desain otorisasi studio-publish** | 🟡 Sebagian | Lihat temuan keamanan di §6 |
+| M3 | Studio: scaffold ✅ (login jalan) + CRUD models/poses/presets + dashboard + Edge Functions + **desain otorisasi studio-publish** | 🟡 Sebagian | CRUD models/poses/presets ✅ (2026-11-19): `studio-{models,poses,presets}-crud` Edge Functions di-deploy (forward JWT caller, RLS `authenticated_full_access`), vertical slice lengkap (schema/api/queries/hooks/components) + 136 test + route wiring + AppShell nav. Client masih panggil `supabase.from()` langsung (pola deferred sama kayak M1/M2, lihat §6.10). **Belum**: dashboard generate/history/content (M7), **desain otorisasi studio-publish** (lihat temuan #2 di §6). |
 | M4 | Admin (23 fitur) → TS + Edge Functions + Aurum | 🔲 Belum mulai | App terbesar (±7x Catalog). Audit dulu, lalu porting + rencana code-splitting |
 | M5 | Finance → TS + Edge Functions + Aurum | 🔲 Belum mulai | Audit dulu |
 | M6 | POS (risiko tertinggi, offline-sync) → TS + Edge Functions + Aurum + verifikasi hari pasar beneran | 🔲 Belum mulai | Audit dulu |
@@ -178,6 +178,28 @@ Urut dari paling penting:
 9. Sudah dihapus (2026-11-08, lihat migrasi
    `20261107_drop_stale_stok_warna_backup_tables.sql`): 6 tabel backup
    manual `stok_warna_backup*` yang gak kepake kode manapun.
+10. 🔴 **Dikonfirmasi 2026-11-19, bukan cuma dugaan lagi**: sandbox sesi ini
+    (dan kemungkinan semua sesi cloud serupa) **TIDAK PUNYA jalur network ke
+    `*.supabase.co/functions/v1`** — proxy outbound balikin `403` (policy
+    denial, dicek lewat `curl` langsung + `$HTTPS_PROXY/__agentproxy/status`,
+    host `khpgjfsaucrhihadnewq.supabase.co:443` ketolak eksplisit). Artinya:
+    **SEMUA** Edge Function yang udah di-deploy sejauh ini (`products`,
+    `profiles`, `stok`, `transfers`, `catalog-badges`, dan 3 fungsi baru
+    `studio-{models,poses,presets}-crud`) ADA tapi **BELUM PERNAH
+    benar-benar dipanggil dari client manapun** — tiap `api.ts`/`api.js`
+    yang "katanya" di-front sama Edge Function itu, nyatanya masih
+    `supabase.from(...)` langsung, dengan komentar yang jelasin penundaan
+    ini (grep `functions.invoke` di `apps/`+`packages/` buat verifikasi:
+    HASILNYA KOSONG per 2026-11-19). Ini BUKAN practice yang salah — ini
+    keputusan sadar (§2 aturan "jangan flip Edge Function tanpa verifikasi
+    HTTP beneran") — tapi artinya **cutover-nya beneran-beneran harus
+    kejadian di browser/Vercel preview asli**, bukan "nanti pas sempat".
+    Sebelum M4 (Admin) mulai, user HARUS ngetes minimal 1 Edge Function
+    (saran: `products` yang paling sederhana) dari Vercel preview asli, biar
+    pola `{action,input}` + CORS + auth-forwarding kebukti jalan sebelum
+    numpuk lebih banyak Edge Function yang sama-sama belum pernah dites
+    beneran. Kalau ternyata ADA masalah (CORS, auth header, dll), mending
+    ketauan sekarang pas baru 8 fungsi, bukan nanti pas udah 30+.
 
 ## 7. Peta koneksi lintas-app (ringkas — detail penuh ada di riwayat chat 2026-11-08)
 
