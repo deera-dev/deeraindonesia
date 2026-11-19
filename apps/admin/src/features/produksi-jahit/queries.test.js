@@ -7,7 +7,6 @@ vi.mock("./api", () => ({
   fetchDoneJahitCards: vi.fn().mockResolvedValue([{ id: "c-done" }]),
   fetchJahitCardById: vi.fn().mockResolvedValue({ id: "c1" }),
   fetchKaryawanJahit: vi.fn().mockResolvedValue([{ id: "k1", nama: "Budi" }]),
-  createJahitCardsForBatch: vi.fn().mockResolvedValue([{ id: "c2" }]),
   receiveCard: vi.fn().mockResolvedValue(undefined),
   unassignCard: vi.fn().mockResolvedValue(undefined),
   markCardDone: vi.fn().mockResolvedValue(undefined),
@@ -19,7 +18,6 @@ import {
   doneJahitCardsKeys,
   jahitCardsKeys,
   karyawanJahitKeys,
-  useCreateJahitCardsForBatchMutation,
   useDoneJahitCardsQuery,
   useJahitCardsQuery,
   useKaryawanJahitQuery,
@@ -80,7 +78,6 @@ describe("useDoneJahitCardsQuery", () => {
 });
 
 describe.each([
-  ["useCreateJahitCardsForBatchMutation", useCreateJahitCardsForBatchMutation],
   ["useLookupJahitCardMutation", useLookupJahitCardMutation],
   ["useReceiveCardMutation", useReceiveCardMutation],
   ["useUnassignCardMutation", useUnassignCardMutation],

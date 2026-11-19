@@ -6,7 +6,6 @@ vi.mock("./queries", () => ({
   useJahitCardsQuery: vi.fn(),
   useDoneJahitCardsQuery: vi.fn(),
   useKaryawanJahitQuery: vi.fn(),
-  useCreateJahitCardsForBatchMutation: vi.fn(),
   useLookupJahitCardMutation: vi.fn(),
   useReceiveCardMutation: vi.fn(),
   useUnassignCardMutation: vi.fn(),
@@ -15,7 +14,6 @@ vi.mock("./queries", () => ({
 }));
 
 import {
-  useCreateJahitCardsForBatch,
   useDoneJahitCards,
   useJahitCards,
   useKaryawanJahit,
@@ -26,7 +24,6 @@ import {
   useUnassignCard,
 } from "./hooks";
 import {
-  useCreateJahitCardsForBatchMutation,
   useDoneJahitCardsQuery,
   useJahitCardsQuery,
   useKaryawanJahitQuery,
@@ -45,7 +42,6 @@ beforeEach(() => {
   useJahitCardsQuery.mockReturnValue({ data: [{ id: "c1" }], isLoading: false });
   useDoneJahitCardsQuery.mockReturnValue({ data: [{ id: "c-done" }], isLoading: false });
   useKaryawanJahitQuery.mockReturnValue({ data: [{ id: "k1", nama: "Budi" }], isLoading: false });
-  useCreateJahitCardsForBatchMutation.mockReturnValue({ mutateAsync: mockMutate });
   useLookupJahitCardMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
   useReceiveCardMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
   useUnassignCardMutation.mockReturnValue({ mutateAsync: mockMutate });
@@ -71,14 +67,6 @@ describe("useKaryawanJahit", () => {
     const { result } = renderHook(() => useKaryawanJahit(), { wrapper });
     expect(result.current.karyawanList).toEqual([{ id: "k1", nama: "Budi" }]);
     expect(result.current.loading).toBe(false);
-  });
-});
-
-describe("useCreateJahitCardsForBatch", () => {
-  it("meneruskan params ke mutateAsync", async () => {
-    const { result } = renderHook(() => useCreateJahitCardsForBatch(), { wrapper });
-    await result.current({ batchId: "b1" });
-    expect(mockMutate).toHaveBeenCalledWith({ batchId: "b1" });
   });
 });
 

@@ -1,5 +1,4 @@
 import {
-  useCreateJahitCardsForBatchMutation,
   useDoneJahitCardsQuery,
   useJahitCardsQuery,
   useKaryawanJahitQuery,
@@ -29,11 +28,6 @@ export function useMarkCardDone() {
 export function useKaryawanJahit() {
   const { data, isLoading } = useKaryawanJahitQuery();
   return { karyawanList: data ?? [], loading: isLoading };
-}
-
-export function useCreateJahitCardsForBatch() {
-  const { mutateAsync } = useCreateJahitCardsForBatchMutation();
-  return (params) => mutateAsync(params);
 }
 
 export function useReceiveCard() {

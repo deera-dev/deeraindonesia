@@ -1,11 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../../../../../test/utils";
 
 vi.mock("./queries", () => ({
   useSampelsQuery: vi.fn(),
   useUpdateSampelMutation: vi.fn(),
-  useCreateSampelsMutation: vi.fn(),
   useCreatePlanningMutation: vi.fn(),
   useReorderPlanningMutation: vi.fn(),
   useMarkSampelDibuatMutation: vi.fn(),
@@ -20,20 +19,37 @@ vi.mock("./queries", () => ({
 }));
 
 import {
-  useSampels, useUpdateSampel, useCreateSampels, useCreatePlanning, useReorderPlanning,
-  useMarkSampelDibuat, useApproveRepeat, useSetWoSelesai, useUpdatePlanning, useSaveBatchDecisions, useDeleteSampel,
-  useTogglePinned, useLogWorkOrder, useSaveWoDraft, useWoDraft,
+  useApproveRepeat,
+  useCreatePlanning,
+  useDeleteSampel,
+  useLogWorkOrder,
+  useMarkSampelDibuat,
+  useReorderPlanning,
+  useSampels,
+  useSaveBatchDecisions,
+  useSaveWoDraft,
+  useSetWoSelesai,
+  useTogglePinned,
+  useUpdatePlanning,
+  useUpdateSampel,
+  useWoDraft,
 } from "./hooks";
-import { useWoDraftStore } from "./store";
 import {
-  useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
-  useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
-  useApproveRepeatMutation, useSetWoSelesaiMutation, useUpdatePlanningMutation,
-  useSaveBatchDecisionsMutation, useDeleteSampelMutation,
-  useTogglePinnedMutation,
+  useApproveRepeatMutation,
+  useCreatePlanningMutation,
+  useDeleteSampelMutation,
   useLogWorkOrderMutation,
+  useMarkSampelDibuatMutation,
+  useReorderPlanningMutation,
+  useSampelsQuery,
+  useSaveBatchDecisionsMutation,
   useSaveWoDraftMutation,
+  useSetWoSelesaiMutation,
+  useTogglePinnedMutation,
+  useUpdatePlanningMutation,
+  useUpdateSampelMutation,
 } from "./queries";
+import { useWoDraftStore } from "./store";
 
 const wrapper = createWrapper();
 const mockMutate = vi.fn().mockResolvedValue(undefined);
@@ -42,7 +58,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   useSampelsQuery.mockReturnValue({ data: [{ id: "s1" }], isLoading: false });
   useUpdateSampelMutation.mockReturnValue({ mutateAsync: mockMutate });
-  useCreateSampelsMutation.mockReturnValue({ mutateAsync: mockMutate });
   useCreatePlanningMutation.mockReturnValue({ mutateAsync: mockMutate });
   useReorderPlanningMutation.mockReturnValue({ mutateAsync: mockMutate });
   useMarkSampelDibuatMutation.mockReturnValue({ mutateAsync: mockMutate });
@@ -78,15 +93,14 @@ describe("useUpdateSampel", () => {
     const customMutate = vi.fn().mockResolvedValue(undefined);
     useUpdateSampelMutation.mockReturnValue({ mutateAsync: customMutate });
     const { result } = renderHook(() => useUpdateSampel(), { wrapper });
-    await result.current({ id: "s1", nomor: "SPL-001", nama: "X", tanggal: "2024-01-01", foto: [] });
+    await result.current({
+      id: "s1",
+      nomor: "SPL-001",
+      nama: "X",
+      tanggal: "2024-01-01",
+      foto: [],
+    });
     expect(customMutate).toHaveBeenCalled();
-  });
-});
-
-describe("useCreateSampels", () => {
-  it("returns a callable function", () => {
-    const { result } = renderHook(() => useCreateSampels(), { wrapper });
-    expect(typeof result.current).toBe("function");
   });
 });
 
@@ -146,7 +160,12 @@ describe("useMarkSampelDibuat", () => {
     useMarkSampelDibuatMutation.mockReturnValue({ mutateAsync: customMutate });
     const { result } = renderHook(() => useMarkSampelDibuat(), { wrapper });
     await result.current({ id: "s1", nomor: "SPL-001", nama: "X", foto: ["jadi.jpg"] });
-    expect(customMutate).toHaveBeenCalledWith({ id: "s1", nomor: "SPL-001", nama: "X", foto: ["jadi.jpg"] });
+    expect(customMutate).toHaveBeenCalledWith({
+      id: "s1",
+      nomor: "SPL-001",
+      nama: "X",
+      foto: ["jadi.jpg"],
+    });
   });
 });
 
@@ -156,7 +175,12 @@ describe("useApproveRepeat", () => {
     useApproveRepeatMutation.mockReturnValue({ mutateAsync: customMutate });
     const { result } = renderHook(() => useApproveRepeat(), { wrapper });
     await result.current({ sampel: { id: "p1" }, foto: ["f"], catatan: "c", userEmail: "a@b.com" });
-    expect(customMutate).toHaveBeenCalledWith({ sampel: { id: "p1" }, foto: ["f"], catatan: "c", userEmail: "a@b.com" });
+    expect(customMutate).toHaveBeenCalledWith({
+      sampel: { id: "p1" },
+      foto: ["f"],
+      catatan: "c",
+      userEmail: "a@b.com",
+    });
   });
 });
 

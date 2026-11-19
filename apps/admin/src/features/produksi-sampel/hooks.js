@@ -1,8 +1,6 @@
 import {
   useApproveRepeatMutation,
-  useLanjutWorkOrderMutation,
   useCreatePlanningMutation,
-  useCreateSampelsMutation,
   useDeleteSampelMutation,
   useLogWorkOrderMutation,
   useMarkSampelDibuatMutation,
@@ -13,8 +11,8 @@ import {
   useSaveWoDraftMutation,
   useSetWoSelesaiMutation,
   useTogglePinnedMutation,
-  useUpdateSampelMutation,
   useUpdatePlanningMutation,
+  useUpdateSampelMutation,
 } from "./queries";
 import { useWoDraftStore } from "./store";
 
@@ -56,12 +54,8 @@ export function useMarkSampelDibuat() {
 
 export function useApproveRepeat() {
   const { mutateAsync } = useApproveRepeatMutation();
-  return ({ sampel, foto, catatan, userEmail }) => mutateAsync({ sampel, foto, catatan, userEmail });
-}
-
-export function useLanjutWorkOrder() {
-  const { mutateAsync } = useLanjutWorkOrderMutation();
-  return ({ sampel, userEmail }) => mutateAsync({ sampel, userEmail });
+  return ({ sampel, foto, catatan, userEmail }) =>
+    mutateAsync({ sampel, foto, catatan, userEmail });
 }
 
 export function useSetWoSelesai() {
@@ -69,16 +63,9 @@ export function useSetWoSelesai() {
   return (sampel, selesai) => mutateAsync({ sampel, selesai });
 }
 
-export function useCreateSampels() {
-  const { mutateAsync } = useCreateSampelsMutation();
-  return (entries, urlsArr, userEmail, userName) =>
-    mutateAsync({ entries, urlsArr, userEmail, userName });
-}
-
 export function useSaveBatchDecisions() {
   const { mutateAsync } = useSaveBatchDecisionsMutation();
-  return (decisions, sampelMap, userEmail) =>
-    mutateAsync({ decisions, sampelMap, userEmail });
+  return (decisions, sampelMap, userEmail) => mutateAsync({ decisions, sampelMap, userEmail });
 }
 
 export function useDeleteSampel() {

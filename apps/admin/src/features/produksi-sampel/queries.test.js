@@ -1,11 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../../../../../test/utils";
 
 vi.mock("./api", () => ({
   fetchSampels: vi.fn().mockResolvedValue([{ id: "s1" }]),
   updateSampel: vi.fn().mockResolvedValue(undefined),
-  createSampels: vi.fn().mockResolvedValue([{ nomor: "SPL-001" }]),
   createPlanning: vi.fn().mockResolvedValue({ nomor: "SPL-002" }),
   reorderPlanning: vi.fn().mockResolvedValue(undefined),
   markSampelDibuat: vi.fn().mockResolvedValue(undefined),
@@ -16,21 +15,19 @@ vi.mock("./api", () => ({
   saveWoDraft: vi.fn().mockResolvedValue(undefined),
 }));
 
-import {
-  createPlanning,
-  reorderPlanning,
-  togglePinned,
-  logWorkOrder,
-  saveWoDraft,
-} from "./api";
+import { createPlanning, logWorkOrder, reorderPlanning, saveWoDraft, togglePinned } from "./api";
 import {
   produksiSampelKeys,
-  useSampelsQuery, useUpdateSampelMutation, useCreateSampelsMutation,
-  useCreatePlanningMutation, useReorderPlanningMutation, useMarkSampelDibuatMutation,
-  useSaveBatchDecisionsMutation, useDeleteSampelMutation,
-  useTogglePinnedMutation,
+  useCreatePlanningMutation,
+  useDeleteSampelMutation,
   useLogWorkOrderMutation,
+  useMarkSampelDibuatMutation,
+  useReorderPlanningMutation,
+  useSampelsQuery,
+  useSaveBatchDecisionsMutation,
   useSaveWoDraftMutation,
+  useTogglePinnedMutation,
+  useUpdateSampelMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -57,13 +54,6 @@ describe("useUpdateSampelMutation", () => {
   });
 });
 
-describe("useCreateSampelsMutation", () => {
-  it("has mutateAsync callable", () => {
-    const { result } = renderHook(() => useCreateSampelsMutation(), { wrapper });
-    expect(typeof result.current.mutateAsync).toBe("function");
-  });
-});
-
 describe("useCreatePlanningMutation", () => {
   it("has mutateAsync callable", () => {
     const { result } = renderHook(() => useCreatePlanningMutation(), { wrapper });
@@ -83,14 +73,10 @@ describe("useCreatePlanningMutation", () => {
       userEmail: "a@b.com",
       userName: "A",
     });
-    expect(createPlanning).toHaveBeenCalledWith(
-      entry,
-      "url-bahan",
-      ["url-model"],
-      bahanItems,
-      2,
-      { userEmail: "a@b.com", userName: "A" },
-    );
+    expect(createPlanning).toHaveBeenCalledWith(entry, "url-bahan", ["url-model"], bahanItems, 2, {
+      userEmail: "a@b.com",
+      userName: "A",
+    });
   });
 });
 
@@ -102,7 +88,10 @@ describe("useReorderPlanningMutation", () => {
 
   it("meneruskan updates ke reorderPlanning()", async () => {
     const { result } = renderHook(() => useReorderPlanningMutation(), { wrapper });
-    const updates = [{ id: "s1", urutan: 0 }, { id: "s2", urutan: 1 }];
+    const updates = [
+      { id: "s1", urutan: 0 },
+      { id: "s2", urutan: 1 },
+    ];
     await result.current.mutateAsync(updates);
     expect(reorderPlanning).toHaveBeenCalledWith(updates);
   });
@@ -154,4 +143,3 @@ describe("useSaveWoDraftMutation (Denny 2026-11-02: 'ada simpan sebagai draft ka
     expect(saveWoDraft.mock.calls[0][0]).toEqual(params);
   });
 });
-

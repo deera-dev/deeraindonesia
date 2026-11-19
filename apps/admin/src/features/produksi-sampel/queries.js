@@ -1,21 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  approveRepeat,
   createPlanning,
-  createSampels,
   deleteSampel,
   fetchSampels,
   logWorkOrder,
-  saveWoDraft,
   markSampelDibuat,
   mundurStepSampel,
   reorderPlanning,
   saveBatchDecisions,
-  togglePinned,
-  updateSampel,
-  approveRepeat,
-  lanjutKeWorkOrder,
+  saveWoDraft,
   setWoSelesai,
+  togglePinned,
   updatePlanning,
+  updateSampel,
 } from "./api";
 
 export const produksiSampelKeys = {
@@ -40,7 +38,10 @@ export function useCreatePlanningMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, userEmail, userName }) =>
-      createPlanning(entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, { userEmail, userName }),
+      createPlanning(entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, {
+        userEmail,
+        userName,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
     },
@@ -81,17 +82,6 @@ export function useApproveRepeatMutation() {
   });
 }
 
-export function useLanjutWorkOrderMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ sampel, userEmail }) =>
-      lanjutKeWorkOrder({ id: sampel.id, nomor: sampel.nomor, nama: sampel.nama }, { userEmail }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
-    },
-  });
-}
-
 export function useUpdatePlanningMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -115,17 +105,6 @@ export function useSetWoSelesaiMutation() {
   return useMutation({
     mutationFn: ({ sampel, selesai }) =>
       setWoSelesai({ id: sampel.id, nomor: sampel.nomor, nama: sampel.nama, selesai }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
-    },
-  });
-}
-
-export function useCreateSampelsMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ entries, urlsArr, userEmail, userName }) =>
-      createSampels(entries, urlsArr, { userEmail, userName }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
     },

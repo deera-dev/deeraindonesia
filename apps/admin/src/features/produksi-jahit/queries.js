@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  createJahitCardsForBatch,
   fetchDoneJahitCards,
   fetchJahitCardById,
   fetchJahitCards,
@@ -32,16 +31,6 @@ export function useDoneJahitCardsQuery(filter, enabled) {
 
 export function useKaryawanJahitQuery() {
   return useQuery({ queryKey: karyawanJahitKeys.all, queryFn: fetchKaryawanJahit });
-}
-
-export function useCreateJahitCardsForBatchMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: createJahitCardsForBatch,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: jahitCardsKeys.all });
-    },
-  });
 }
 
 export function useReceiveCardMutation() {
