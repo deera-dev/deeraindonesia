@@ -9,6 +9,7 @@ import {
   useCreateSetoranFullMutation,
   useDeleteCmtFullKirimMutation,
   useSetorKirimCmtJahitMutation,
+  useUpdateHargaUpahKirimMutation,
 } from "./queries";
 
 export function useCmtJahitKirim() {
@@ -34,6 +35,11 @@ export function useSetorKirimCmtJahit() {
 export function useBatalKirimCmtJahit() {
   const { mutateAsync } = useBatalKirimCmtJahitMutation();
   return (params) => mutateAsync(params);
+}
+
+export function useUpdateHargaUpahKirim() {
+  const { mutateAsync, isPending } = useUpdateHargaUpahKirimMutation();
+  return { updateHargaUpah: (params) => mutateAsync(params), saving: isPending };
 }
 
 export function useCmtSetoranFull() {

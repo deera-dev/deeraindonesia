@@ -87,6 +87,16 @@ export function calcTotalUpahSetoranFull(items, hargaUpah) {
   return totalQty * (Number(hargaUpah) || 0);
 }
 
+// Perkiraan total modal yang harus dibayar ke vendor CMT Jahit utk satu
+// kirim — admin: "buat juga perkiraan total modal yang harus dikeluarkan
+// buat bayar cmt nya". Pakai qty_setor kalau baris itu sudah disetor
+// (angka betulan yang balik), fallback ke qty kirim kalau belum (estimasi
+// dari rencana kirim).
+export function calcTotalUpahKirim(group) {
+  const totalQty = (group?.rows ?? []).reduce((s, r) => s + (Number(r.qty_setor ?? r.qty) || 0), 0);
+  return totalQty * (Number(group?.hargaUpah) || 0);
+}
+
 // Kelompokkan baris kirim CMT Jahit per kode produk utk tabel Surat Jalan
 // (SuratJalanCmtModal) — satu kirim bisa berisi beberapa kode sekaligus.
 export function groupRowsByKode(rows) {

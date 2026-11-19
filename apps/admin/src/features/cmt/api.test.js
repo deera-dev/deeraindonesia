@@ -24,6 +24,7 @@ import {
   fetchCmtFullKirim,
   createCmtFullKirim,
   deleteCmtFullKirim,
+  updateHargaUpahKirim,
 } from "./api";
 
 function makeOrderChain(returnVal = { data: [], error: null }) {
@@ -385,6 +386,38 @@ describe("batalKirimCmtJahit", () => {
     );
     await expect(batalKirimCmtJahit({ kirimNo: "CMT-1", ids: ["k1"] })).rejects.toThrow(
       "release fail",
+    );
+  });
+});
+
+describe("updateHargaUpahKirim", () => {
+  it("update harga_upah utk semua baris kirim_no itu, lalu logHistory", async () => {
+    const chain = makeUpdateEqChain({ error: null });
+    supabase.from.mockReturnValue(chain);
+
+    await updateHargaUpahKirim({ kirimNo: "CMT-1", hargaUpah: "7000" });
+
+    expect(supabase.from).toHaveBeenCalledWith("cmt_jahit_kirim");
+    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ harga_upah: 7000 }));
+    expect(chain.eq).toHaveBeenCalledWith("kirim_no", "CMT-1");
+    expect(logHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "cmt-jahit-upah", kode: "CMT-1" }),
+    );
+  });
+
+  it("hargaUpah kosong/bukan angka -> fallback ke 0", async () => {
+    const chain = makeUpdateEqChain({ error: null });
+    supabase.from.mockReturnValue(chain);
+
+    await updateHargaUpahKirim({ kirimNo: "CMT-1", hargaUpah: "" });
+
+    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ harga_upah: 0 }));
+  });
+
+  it("throws kalau update gagal", async () => {
+    supabase.from.mockReturnValue(makeUpdateEqChain({ error: new Error("boom") }));
+    await expect(updateHargaUpahKirim({ kirimNo: "CMT-1", hargaUpah: "7000" })).rejects.toThrow(
+      "boom",
     );
   });
 });

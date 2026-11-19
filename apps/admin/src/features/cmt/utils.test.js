@@ -8,6 +8,7 @@ import {
   calcTotalUpahSetoranFull,
   groupCardsByKodeSizeWarna,
   groupRowsByKode,
+  calcTotalUpahKirim,
 } from "./utils";
 
 describe("newSetoranFullItem / newBahanItem", () => {
@@ -218,5 +219,32 @@ describe("groupRowsByKode", () => {
     ];
     const groups = groupRowsByKode(rows);
     expect(groups.map((g) => g.kode)).toEqual(["D-02", "D-01"]);
+  });
+});
+
+describe("calcTotalUpahKirim", () => {
+  it("pakai qty kirim kalau belum disetor (qty_setor null)", () => {
+    const group = {
+      hargaUpah: 7000,
+      rows: [
+        { qty: 10, qty_setor: null },
+        { qty: 5, qty_setor: null },
+      ],
+    };
+    expect(calcTotalUpahKirim(group)).toBe(105000);
+  });
+
+  it("pakai qty_setor kalau sudah disetor (angka betulan, bukan rencana kirim)", () => {
+    const group = { hargaUpah: 7000, rows: [{ qty: 10, qty_setor: 8 }] };
+    expect(calcTotalUpahKirim(group)).toBe(56000);
+  });
+
+  it("hargaUpah 0 -> total 0", () => {
+    expect(calcTotalUpahKirim({ hargaUpah: 0, rows: [{ qty: 10, qty_setor: null }] })).toBe(0);
+  });
+
+  it("rows kosong/undefined -> 0, tidak crash", () => {
+    expect(calcTotalUpahKirim({ hargaUpah: 7000, rows: [] })).toBe(0);
+    expect(calcTotalUpahKirim({ hargaUpah: 7000 })).toBe(0);
   });
 });

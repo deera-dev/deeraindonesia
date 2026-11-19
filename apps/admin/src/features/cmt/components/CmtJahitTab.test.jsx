@@ -12,6 +12,17 @@ vi.mock("../hooks", () => ({
   useBatalKirimCmtJahit: () => mockBatalKirim,
 }));
 
+vi.mock("./CmtJahitCard", () => ({
+  default: ({ group, onSetor, onBatal, onSuratJalan }) => (
+    <div data-testid={`cmt-jahit-card-${group.kirimNo}`}>
+      <span>{group.namaVendor}</span>
+      <span>{group.kirimNo}</span>
+      <button onClick={() => onSetor(group)}>Setor</button>
+      <button onClick={() => onBatal(group)}>Batalkan</button>
+      <button onClick={() => onSuratJalan(group)}>Surat Jalan</button>
+    </div>
+  ),
+}));
 vi.mock("./KirimForm", () => ({
   default: ({ onClose }) => (
     <div data-testid="kirim-form">
@@ -65,10 +76,10 @@ beforeEach(() => {
 });
 
 describe("CmtJahitTab", () => {
-  it("menampilkan grup kirim dari rows", () => {
+  it("menampilkan satu CmtJahitCard per grup kirim", () => {
     render(<CmtJahitTab />);
+    expect(screen.getByTestId("cmt-jahit-card-CMT-1")).toBeInTheDocument();
     expect(screen.getByText("Vendor A")).toBeInTheDocument();
-    expect(screen.getByText(/CMT-1/)).toBeInTheDocument();
   });
 
   it("loading -> teks Memuat", () => {
@@ -83,46 +94,26 @@ describe("CmtJahitTab", () => {
     expect(screen.getByText(/Belum ada pengiriman/)).toBeInTheDocument();
   });
 
-  it("status dikirim -> tombol Setor & Batalkan muncul", () => {
-    render(<CmtJahitTab />);
-    expect(screen.getByText("Setor")).toBeInTheDocument();
-    expect(screen.getByText("Batalkan")).toBeInTheDocument();
-  });
-
-  it("status selain dikirim -> tombol aksi tidak muncul", () => {
-    mockUseCmtJahitKirim.mockReturnValue({
-      rows: [ROW({ status: "setor", qty_setor: 10 })],
-      loading: false,
-    });
-    render(<CmtJahitTab />);
-    expect(screen.queryByText("Setor")).toBeNull();
-    expect(screen.queryByText("Batalkan")).toBeNull();
-  });
-
   it("klik + Kirim Potongan ke CMT membuka KirimForm", () => {
     render(<CmtJahitTab />);
     fireEvent.click(screen.getByText("+ Kirim Potongan ke CMT"));
     expect(screen.getByTestId("kirim-form")).toBeInTheDocument();
   });
 
-  it("klik Setor membuka SetorModal dengan grup yang benar", () => {
+  it("onSetor dari card membuka SetorModal dengan grup yang benar", () => {
     render(<CmtJahitTab />);
     fireEvent.click(screen.getByText("Setor"));
     expect(screen.getByTestId("setor-modal")).toBeInTheDocument();
   });
 
-  it("klik Surat Jalan membuka SuratJalanCmtModal, tersedia di semua status", () => {
-    mockUseCmtJahitKirim.mockReturnValue({
-      rows: [ROW({ status: "selesai" })],
-      loading: false,
-    });
+  it("onSuratJalan dari card membuka SuratJalanCmtModal", () => {
     render(<CmtJahitTab />);
     fireEvent.click(screen.getByText("Surat Jalan"));
     expect(screen.getByTestId("surat-jalan-modal")).toBeInTheDocument();
-    expect(screen.getByText("CMT-1")).toBeInTheDocument();
+    expect(screen.getAllByText("CMT-1").length).toBeGreaterThan(0);
   });
 
-  it("klik Batalkan (confirm true) memanggil batalKirim dgn id baris yg belum selesai", async () => {
+  it("onBatal dari card (confirm true) memanggil batalKirim dgn id baris yg belum selesai", async () => {
     render(<CmtJahitTab />);
     fireEvent.click(screen.getByText("Batalkan"));
     await vi.waitFor(() =>
@@ -131,7 +122,7 @@ describe("CmtJahitTab", () => {
     expect(mockToast.success).toHaveBeenCalled();
   });
 
-  it("klik Batalkan (confirm false) tidak memanggil batalKirim", () => {
+  it("onBatal dari card (confirm false) tidak memanggil batalKirim", () => {
     vi.stubGlobal(
       "confirm",
       vi.fn(() => false),
