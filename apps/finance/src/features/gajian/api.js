@@ -345,6 +345,7 @@ export async function loadFinishingReconciliation(items) {
         .from("jahit_cards")
         .select("*, stok_masuk_log(id)")
         .eq("kode_produk", kode)
+        .is("cmt_jahit_kirim_id", null)
         .order("created_at"),
       supabase
         .from("cmt_jahit_kirim")
