@@ -71,6 +71,7 @@ Alasan urutan pengerjaan (termudah/paling-gak-kritis dulu): lihat §3.
 | M7 | Studio bagian AI (generate/history/content studio, 23 API routes) → Edge Functions + Aurum | 🔲 Belum mulai | Audit dulu + tambahkan cost-cap fal.ai |
 | M8 | Beres-beres akhir — E2E semua app (termasuk ALUR LINTAS APP, bukan cuma per-app), hapus kode jalur lama, sapu bersih Aurum | 🔲 Belum mulai | |
 | M-later | Tailwind v3 → v4 untuk 4 app lama sekaligus | ⏸️ Ditunda (sengaja) | `packages/shared/styles/index.css` dipakai bareng via postcss — gak bisa upgrade 1 app doang. Studio sudah v4 dari awal (gak numpang stylesheet shared, jadi gak kena batasan ini). |
+| — | Sync pass: merge `origin/master` ke branch rewrite | ✅ Selesai (2026-11-19) | Komit `cda9577`. Porting: catalog geo-tracking (`/api/track`), fix password-lowercase di `shared/features/auth`, kolom `ngorder` di `shared/features/stok` (schema.ts/api.ts + test), retirement fitur komentar/mention sampel (2 Edge Function + `CommentThread`). Sisanya (~125 file, admin/pos/finance) cuma noise format Biome vs kerja nyata master — diambil versi master apa adanya. Lihat §6.11 soal 2 Edge Function mati yang masih ACTIVE di Supabase. Semua 5 test suite (6563 test) + `tsc --noEmit` (catalog/studio/shared) hijau. |
 
 **Kewajiban tetap tiap milestone (bukan item sekali-jalan):**
 - Audit & Optimasi DULU sebelum porting kode (cari fitur/tabel/function yang tumpang-tindih, mati, atau bisa lebih baik — laporkan ke user sebelum eksekusi, JANGAN hapus apapun tanpa konfirmasi eksplisit).
@@ -200,6 +201,14 @@ Urut dari paling penting:
     numpuk lebih banyak Edge Function yang sama-sama belum pernah dites
     beneran. Kalau ternyata ADA masalah (CORS, auth header, dll), mending
     ketauan sekarang pas baru 8 fungsi, bukan nanti pas udah 30+.
+11. 🟡 **2 Edge Function mati di repo, kemungkinan masih ACTIVE di Supabase
+    live** — sync pass 2026-11-19 menghapus `notify-sampel-comment` dan
+    `notify-sampel-mention` dari repo (ikut penghapusan fitur komentar/
+    mention sampel di master), tapi penghapusan FILE di repo TIDAK otomatis
+    undeploy fungsi yang sudah live. Belum dicek ulang `list_edge_functions`
+    setelah sync pass ini — kalau masih ACTIVE, matikan manual lewat
+    Supabase dashboard/MCP (bukan masalah besar, tapi sia-sia kalau
+    dibiarkan nyantol selamanya).
 
 ## 7. Peta koneksi lintas-app (ringkas — detail penuh ada di riwayat chat 2026-11-08)
 
