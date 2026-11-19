@@ -64,7 +64,7 @@ Alasan urutan pengerjaan (termudah/paling-gak-kritis dulu): lihat §3.
 | M3a | Bangun Aurum jadi kode (tokens.css/Tailwind + 6 komponen TSX di `packages/shared`) + setup error tracking | 🔲 Belum mulai | Lihat §4 |
 | — | Retrofit Catalog ke Aurum | 🔲 Belum mulai | Setelah M3a |
 | — | Audit & Optimasi: Catalog (retroaktif) | 🔲 Belum mulai | Catalog selesai sebelum aturan "audit dulu" ada |
-| M3 | Studio: scaffold ✅ (login jalan) + CRUD models/poses/presets + dashboard + Edge Functions + **desain otorisasi studio-publish** | 🟡 Sebagian | CRUD models/poses/presets ✅ (2026-11-19): `studio-{models,poses,presets}-crud` Edge Functions di-deploy (forward JWT caller, RLS `authenticated_full_access`), vertical slice lengkap (schema/api/queries/hooks/components) + 136 test + route wiring + AppShell nav. Client masih panggil `supabase.from()` langsung (pola deferred sama kayak M1/M2, lihat §6.10). **Belum**: dashboard generate/history/content (M7), **desain otorisasi studio-publish** (lihat temuan #2 di §6). |
+| M3 | Studio: scaffold ✅ (login jalan) + CRUD models/poses/presets + dashboard + Edge Functions + **desain otorisasi studio-publish** | 🟡 Sebagian | CRUD models/poses/presets ✅ (2026-11-19): `studio-{models,poses,presets}-crud` Edge Functions di-deploy (forward JWT caller, RLS `authenticated_full_access`), vertical slice lengkap (schema/api/queries/hooks/components) + 136 test + route wiring + AppShell nav. **Otorisasi studio-publish ✅ (2026-11-19)**: `studio-publish` Edge Function di-deploy, lihat §6.2 (resolved) untuk desain lengkapnya — perlu 3 secret Cloudinary diisi MANUAL dulu (Supabase otomatis menolak `create_edge_function_secret` dari MCP: "Storing keys is paused"), belum bisa dites end-to-end. Client masih panggil `supabase.from()` langsung di CRUD models/poses/presets (pola deferred sama kayak M1/M2, lihat §6.10). **Belum**: dashboard generate/history/content (M7), halaman generate yang benar-benar memanggil `studio-publish` (juga M7 — function-nya sudah ada tapi belum ada caller). |
 | M4 | Admin (23 fitur) → TS + Edge Functions + Aurum | 🔲 Belum mulai | App terbesar (±7x Catalog). Audit dulu, lalu porting + rencana code-splitting |
 | M5 | Finance → TS + Edge Functions + Aurum | 🔲 Belum mulai | Audit dulu |
 | M6 | POS (risiko tertinggi, offline-sync) → TS + Edge Functions + Aurum + verifikasi hari pasar beneran | 🔲 Belum mulai | Audit dulu |
@@ -150,14 +150,43 @@ Urut dari paling penting:
    hasilnya di tempat AMAN — JANGAN commit ke repo publik, isinya data
    pelanggan/payroll). Tawarkan ini ke user kalau sesi mendatang belum ada
    progress soal backup.
-2. Studio→`products` punya celah otorisasi nyata: route publish (di
+2. ✅ **RESOLVED (2026-11-19)** — ~~Studio→`products` punya celah otorisasi
+   nyata~~: route publish lama (di
    `deerastudio/app/api/generation-sets/[id]/publish/route.ts`) nulis pakai
    service-role key (bypass RLS total) TANPA cek otorisasi sendiri — cuma
    "kebetulan" lolos kalau baca tabel lain (`ai_generation_sets`) duluan
-   berhasil. Risiko terbatas (semua akun staff internal, bukan publik),
-   sengaja DITUNDA sampai M3/M7 biar didesain benar (Edge Function dengan
-   auth check eksplisit), bukan ditambal di kode Next.js lama yang bakal
-   dibuang.
+   berhasil. Didesain ulang jadi `supabase/functions/studio-publish/index.ts`
+   (dideploy, ACTIVE):
+   - **Dicek ulang `pg_policies` LIVE dulu** (bukan cuma baca migrasi lama) —
+     ternyata `products` SUDAH punya policy authenticated (SELECT/INSERT/
+     UPDATE/DELETE, `qual: true`), sama longgarnya dengan
+     `authenticated_full_access` di `ai_generation_sets`/`ai_generations`,
+     dan `product_history` sudah authenticated-insert juga. Jadi **service-role
+     TIDAK PERLU SAMA SEKALI** — function forward JWT caller apa adanya (pola
+     sama kayak `studio-{models,poses,presets}-crud`), zero privilege
+     escalation. Gerbang otorisasinya: `verify_jwt: true` di platform (semua
+     Edge Function di repo ini pakai ini) + RLS Postgres di tiap tabel.
+   - Ditambah cek eksplisit `supabase.auth.getUser()` di awal function (dulu
+     TIDAK ADA — cuma "kebetulan lolos"), dipakai juga buat audit log.
+   - **Perbaikan data-integrity ikutan**: query `ai_generations` sekarang
+     WAJIB `generation_set_id = input.generationSetId` (dulu cuma
+     `.in("id", allIds)` tanpa ikat ke set-nya — generation id dari set/produk
+     LAIN bisa ikut lolos kalau caller tahu/nebak UUID).
+   - **Audit trail baru**: insert ke `product_history` (action
+     `studio-publish`) — dulu publish AI sama sekali TIDAK tercatat di audit
+     log yang sama dengan semua perubahan `products` lainnya. `ACTION_META`
+     di `apps/admin/src/features/history/utils.js` sudah ditambah entrinya.
+   - **Belum bisa dites end-to-end**: perlu 3 Edge Function secret
+     (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`)
+     — BUKAN sama dengan `VITE_CLOUDINARY_UPLOAD_PRESET` yang dipakai
+     admin/pos (itu unsigned preset, gak butuh api_key/api_secret). Supabase
+     menolak `create_edge_function_secret` dari MCP session ini ("Storing
+     keys is paused — Supabase has turned this off for now"), user sudah
+     konfirmasi harus diisi MANUAL lewat dashboard Supabase (Edge Functions →
+     Secrets). Juga belum ada caller (halaman generate/publish ada di M7,
+     lihat §2) dan belum ada test Deno (lihat §6.6 — gak ada tooling `deno`
+     lokal buat jalanin test di sandbox manapun sejauh ini, 3 function CRUD
+     studio M3 lainnya juga belum ada test-nya, retroaktif).
 3. RLS baru dicek sebagian (products, transfers, tabel `ai_*`) — belum
    sapu bersih ~70 tabel. Ada task tersendiri buat ini.
 4. Biaya generate AI Studio (`ai_cost_log`, nyata dari fal.ai) gak pernah

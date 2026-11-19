@@ -97,6 +97,12 @@ export const ACTION_META = {
     badgeCls:
       "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/20 dark:border-amber-800",
   },
+  "studio-publish": {
+    label: "Publish dari Studio",
+    color: "#ec4899",
+    badgeCls:
+      "text-pink-700 bg-pink-50 border-pink-200 dark:text-pink-400 dark:bg-pink-900/20 dark:border-pink-800",
+  },
   "sampel-tandai-dibuat": {
     label: "Ditandai Sudah Dibuat",
     color: "#8b5cf6",
