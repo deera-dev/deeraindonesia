@@ -64,7 +64,7 @@ Alasan urutan pengerjaan (termudah/paling-gak-kritis dulu): lihat §3.
 | M3a | Bangun Aurum jadi kode (tokens.css/Tailwind + 6 komponen TSX di `packages/shared`) + setup error tracking | 🔲 Belum mulai | Lihat §4 |
 | — | Retrofit Catalog ke Aurum | 🔲 Belum mulai | Setelah M3a |
 | — | Audit & Optimasi: Catalog (retroaktif) | 🔲 Belum mulai | Catalog selesai sebelum aturan "audit dulu" ada |
-| M3 | Studio: scaffold ✅ (login jalan) + CRUD models/poses/presets + dashboard + Edge Functions + **desain otorisasi studio-publish** | 🟡 Sebagian | CRUD models/poses/presets ✅ (2026-11-19): `studio-{models,poses,presets}-crud` Edge Functions di-deploy (forward JWT caller, RLS `authenticated_full_access`), vertical slice lengkap (schema/api/queries/hooks/components) + 136 test + route wiring + AppShell nav. **Otorisasi studio-publish ✅ (2026-11-19)**: `studio-publish` Edge Function di-deploy, lihat §6.2 (resolved) untuk desain lengkapnya — perlu 3 secret Cloudinary diisi MANUAL dulu (Supabase otomatis menolak `create_edge_function_secret` dari MCP: "Storing keys is paused"), belum bisa dites end-to-end. Client masih panggil `supabase.from()` langsung di CRUD models/poses/presets (pola deferred sama kayak M1/M2, lihat §6.10). **Belum**: dashboard generate/history/content (M7), halaman generate yang benar-benar memanggil `studio-publish` (juga M7 — function-nya sudah ada tapi belum ada caller). |
+| M3 | Studio: scaffold ✅ (login jalan) + CRUD models/poses/presets + dashboard + Edge Functions + **desain otorisasi studio-publish** | 🟡 Sebagian | CRUD models/poses/presets ✅ (2026-11-19): `studio-{models,poses,presets}-crud` Edge Functions di-deploy (forward JWT caller, RLS `authenticated_full_access`), vertical slice lengkap (schema/api/queries/hooks/components) + 136 test + route wiring + AppShell nav. **Otorisasi studio-publish ✅ (2026-11-19)**: `studio-publish` Edge Function di-deploy + 3 secret Cloudinary sudah diisi user manual, lihat §6.2 (resolved) untuk desain lengkapnya. Masih belum dites end-to-end (nunggu M7 atau tes manual). Client masih panggil `supabase.from()` langsung di CRUD models/poses/presets (pola deferred sama kayak M1/M2, lihat §6.10). **Belum**: dashboard generate/history/content (M7), halaman generate yang benar-benar memanggil `studio-publish` (juga M7 — function-nya sudah ada tapi belum ada caller). |
 | M4 | Admin (23 fitur) → TS + Edge Functions + Aurum | 🔲 Belum mulai | App terbesar (±7x Catalog). Audit dulu, lalu porting + rencana code-splitting |
 | M5 | Finance → TS + Edge Functions + Aurum | 🔲 Belum mulai | Audit dulu |
 | M6 | POS (risiko tertinggi, offline-sync) → TS + Edge Functions + Aurum + verifikasi hari pasar beneran | 🔲 Belum mulai | Audit dulu |
@@ -176,17 +176,22 @@ Urut dari paling penting:
      `studio-publish`) — dulu publish AI sama sekali TIDAK tercatat di audit
      log yang sama dengan semua perubahan `products` lainnya. `ACTION_META`
      di `apps/admin/src/features/history/utils.js` sudah ditambah entrinya.
-   - **Belum bisa dites end-to-end**: perlu 3 Edge Function secret
-     (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`)
-     — BUKAN sama dengan `VITE_CLOUDINARY_UPLOAD_PRESET` yang dipakai
-     admin/pos (itu unsigned preset, gak butuh api_key/api_secret). Supabase
-     menolak `create_edge_function_secret` dari MCP session ini ("Storing
-     keys is paused — Supabase has turned this off for now"), user sudah
-     konfirmasi harus diisi MANUAL lewat dashboard Supabase (Edge Functions →
-     Secrets). Juga belum ada caller (halaman generate/publish ada di M7,
-     lihat §2) dan belum ada test Deno (lihat §6.6 — gak ada tooling `deno`
-     lokal buat jalanin test di sandbox manapun sejauh ini, 3 function CRUD
-     studio M3 lainnya juga belum ada test-nya, retroaktif).
+   - 3 secret (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`,
+     `CLOUDINARY_API_SECRET` — BUKAN sama dengan `VITE_CLOUDINARY_UPLOAD_PRESET`
+     yang dipakai admin/pos, itu unsigned preset, gak butuh api_key/api_secret)
+     sudah diisi user manual lewat dashboard Supabase (2026-11-19, MCP
+     `create_edge_function_secret` ditolak Supabase: "Storing keys is paused").
+     **Masih belum dites end-to-end** (user pilih tunggu M7, bukan tes manual
+     curl sekarang) — sandbox mana pun di environment ini juga gak punya
+     jalur network ke `*.supabase.co/functions/v1` (§6.10), jadi verifikasi
+     HTTP beneran nunggu halaman generate/publish Studio jadi (M7, caller
+     pertama) atau tes manual dari browser/Vercel preview asli. Ada data
+     sampel siap pakai kalau mau tes manual sewaktu-waktu: generation set
+     `00173215-2ca2-4916-a4d4-12a356e5adb2` (produk `D-085-PRS`, 3 gambar
+     `completed`, sudah pernah dipublish sebelumnya jadi aman diulang). Belum
+     ada test Deno (lihat §6.6 — gak ada tooling `deno` lokal di sandbox
+     manapun sejauh ini, 3 function CRUD studio M3 lainnya juga belum ada
+     test-nya, retroaktif).
 3. RLS baru dicek sebagian (products, transfers, tabel `ai_*`) — belum
    sapu bersih ~70 tabel. Ada task tersendiri buat ini.
 4. Biaya generate AI Studio (`ai_cost_log`, nyata dari fal.ai) gak pernah
