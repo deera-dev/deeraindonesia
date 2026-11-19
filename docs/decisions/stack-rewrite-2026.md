@@ -213,28 +213,40 @@ Urut dari paling penting:
 9. Sudah dihapus (2026-11-08, lihat migrasi
    `20261107_drop_stale_stok_warna_backup_tables.sql`): 6 tabel backup
    manual `stok_warna_backup*` yang gak kepake kode manapun.
-10. 🔴 **Dikonfirmasi 2026-11-19, bukan cuma dugaan lagi**: sandbox sesi ini
-    (dan kemungkinan semua sesi cloud serupa) **TIDAK PUNYA jalur network ke
-    `*.supabase.co/functions/v1`** — proxy outbound balikin `403` (policy
-    denial, dicek lewat `curl` langsung + `$HTTPS_PROXY/__agentproxy/status`,
-    host `khpgjfsaucrhihadnewq.supabase.co:443` ketolak eksplisit). Artinya:
-    **SEMUA** Edge Function yang udah di-deploy sejauh ini (`products`,
-    `profiles`, `stok`, `transfers`, `catalog-badges`, dan 3 fungsi baru
-    `studio-{models,poses,presets}-crud`) ADA tapi **BELUM PERNAH
-    benar-benar dipanggil dari client manapun** — tiap `api.ts`/`api.js`
-    yang "katanya" di-front sama Edge Function itu, nyatanya masih
-    `supabase.from(...)` langsung, dengan komentar yang jelasin penundaan
-    ini (grep `functions.invoke` di `apps/`+`packages/` buat verifikasi:
-    HASILNYA KOSONG per 2026-11-19). Ini BUKAN practice yang salah — ini
-    keputusan sadar (§2 aturan "jangan flip Edge Function tanpa verifikasi
-    HTTP beneran") — tapi artinya **cutover-nya beneran-beneran harus
-    kejadian di browser/Vercel preview asli**, bukan "nanti pas sempat".
-    Sebelum M4 (Admin) mulai, user HARUS ngetes minimal 1 Edge Function
-    (saran: `products` yang paling sederhana) dari Vercel preview asli, biar
-    pola `{action,input}` + CORS + auth-forwarding kebukti jalan sebelum
-    numpuk lebih banyak Edge Function yang sama-sama belum pernah dites
-    beneran. Kalau ternyata ADA masalah (CORS, auth header, dll), mending
-    ketauan sekarang pas baru 8 fungsi, bukan nanti pas udah 30+.
+10. ✅ **RESOLVED (2026-11-19)** — ~~sandbox TIDAK PUNYA jalur network ke
+    Supabase, semua Edge Function belum pernah dites beneran~~: dikonfirmasi
+    ulang bahwa SELURUH host `*.supabase.co` (bukan cuma `/functions/v1`)
+    ketutup dari sandbox sesi cloud manapun (proxy outbound nolak eksplisit,
+    dicek `curl` langsung — berlaku juga buat `/rest/v1/rpc/...`, jadi RPC
+    langsung sama sekali gak lebih "testable" dari sandbox dibanding Edge
+    Function). Karena itu, verifikasi WAJIB dari browser asli user sendiri,
+    bukan dari sini. **Sudah dites user (2026-11-19) dari Console browser
+    beneran, 2 percobaan gagal dulu sebelum berhasil** — berguna dicatat
+    penyebabnya biar gak keulang:
+    1. Percobaan pertama gagal dgn `TypeError: ... non ISO-8859-1 code
+       point` — token JWT panjang yang di-paste dari chat ke aplikasi
+       catatan user ketukar jadi karakter bullet (●) oleh fitur
+       penyamaran-rahasia aplikasi itu, bukan masalah di Edge Function-nya.
+    2. Percobaan kedua gagal dgn CSP `Refused to connect` — browser yang
+       dipakai masih di tab `claude.ai` (atau sejenis), yang CSP-nya sendiri
+       cuma izinin daftar domain tertentu (vercel/sentry/pusher/dll),
+       TIDAK termasuk Supabase-nya Deera. Bukan masalah di Edge
+       Function-nya juga.
+    3. **Fix**: pindah ke tab yang alamatnya beneran `catalog.deera.id`,
+       pakai fetch tanpa header auth (sempat di-redeploy `products` dgn
+       `verify_jwt:false` khusus buat tes ini — data `products` emang
+       udah publik, aman — lalu dikunci lagi `verify_jwt:true` begitu tes
+       selesai). **Hasilnya SUKSES**: 192 produk kebaca lengkap
+       (`kode`/`nama`/`image`/`detail`/`position`, dst) lewat
+       `fetch(".../functions/v1/products", {method:"POST", body:
+       {action:"list"}})` — pola `{action,input}` + CORS + response shape
+       `{data: [...]}` TERBUKTI jalan betulan di browser nyata, bukan
+       cuma lolos TypeScript/deploy. M4 (Admin) boleh lanjut.
+    **Pelajaran buat tes manual Edge Function selanjutnya**: (a) jangan
+    suruh user paste token panjang lewat aplikasi catatan pihak ketiga,
+    tes tanpa auth header dulu kalau actionnya baca data publik; (b)
+    pastikan tab browser yang dipakai beneran domain Deera (`catalog.
+    deera.id`/`admin.deera.id`), bukan tab lain yang CSP-nya ketat.
 11. 🟡 **2 Edge Function mati di repo, kemungkinan masih ACTIVE di Supabase
     live** — sync pass 2026-11-19 menghapus `notify-sampel-comment` dan
     `notify-sampel-mention` dari repo (ikut penghapusan fitur komentar/
