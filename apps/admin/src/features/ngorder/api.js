@@ -1,4 +1,5 @@
 import { supabase } from "@deera/shared/lib/supabase";
+import { markTokoVisitedInActiveTrips } from "../ngorder-jadwal/api";
 
 export async function fetchTokoList() {
   const { data, error } = await supabase.from("toko").select("*").order("nama");
@@ -230,7 +231,54 @@ export async function updateKunjungan({ row, patch, user }) {
       data.toko_id,
       data.kesan ? { status_approach: "sudah", kesan: data.kesan } : { status_approach: "sudah" },
     );
+    // Best-effort — jangan gagalkan update kunjungan cuma karena sinkron
+    // checklist trip-nya gagal.
+    markTokoVisitedInActiveTrips(data.toko_id).catch((err) =>
+      console.warn("markTokoVisitedInActiveTrips error:", err),
+    );
   }
+  return data;
+}
+
+// Sinkronisasi dgn checklist trip (fitur ngorder-jadwal) — begitu toko
+// dicentang "dikunjungi" di checklist, tercatat juga sbg kunjungan selesai
+// di sini (tanpa hasil/kesan — itu bisa diisi belakangan lewat tab Peta).
+// Kalau toko ini sudah pernah ditandai selesai, gak diapa-apain lagi.
+// Dipanggil dari ngorder-jadwal/api.js saat toggle checklist.
+export async function markTokoVisitedViaTrip(tokoId, user) {
+  if (!tokoId) return null;
+  const { data: existing, error: fetchErr } = await supabase
+    .from("toko_kunjungan")
+    .select("*")
+    .eq("toko_id", tokoId)
+    .eq("aktif", true)
+    .maybeSingle();
+  if (fetchErr) throw fetchErr;
+
+  if (existing) {
+    if (existing.status === "selesai") return existing;
+    return updateKunjungan({ row: existing, patch: { status: "selesai" }, user });
+  }
+
+  const now = new Date().toISOString();
+  const a = actor(user);
+  const { data, error } = await supabase
+    .from("toko_kunjungan")
+    .insert({
+      toko_id: tokoId,
+      status: "selesai",
+      aktif: true,
+      dipilih_oleh_email: a.email,
+      dipilih_oleh_nama: a.nama,
+      diubah_oleh_email: a.email,
+      diubah_oleh_nama: a.nama,
+      mulai_at: now,
+      selesai_at: now,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  await updateToko(data.toko_id, { status_approach: "sudah" });
   return data;
 }
 

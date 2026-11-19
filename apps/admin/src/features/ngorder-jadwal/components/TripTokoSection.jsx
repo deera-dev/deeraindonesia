@@ -1,8 +1,15 @@
 import { useMemo, useState } from "react";
-import { addTokoToTrip, groupTripToko, removeTokoFromTrip, toggleTokoVisited } from "../hooks";
+import { addTokoToTrip, groupTripToko, removeTokoFromTrip } from "../hooks";
 import TripTokoRow from "./TripTokoRow";
 
-export default function TripTokoSection({ trip, tokoList, save, opens = [], onSaveNoHp }) {
+export default function TripTokoSection({
+  trip,
+  tokoList,
+  save,
+  onToggleVisited,
+  opens = [],
+  onSaveNoHp,
+}) {
   const [search, setSearch] = useState("");
   const [opened, setOpened] = useState({});
   const list = trip.toko ?? [];
@@ -57,7 +64,7 @@ export default function TripTokoSection({ trip, tokoList, save, opens = [], onSa
                     trip={trip}
                     toko={t}
                     info={openByToko.get(String(t.toko_id))}
-                    onToggle={() => save({ toko: toggleTokoVisited(list, t.toko_id) })}
+                    onToggle={() => onToggleVisited(t.toko_id)}
                     onRemove={() => save({ toko: removeTokoFromTrip(list, t.toko_id) })}
                     onSaveNoHp={onSaveNoHp}
                   />

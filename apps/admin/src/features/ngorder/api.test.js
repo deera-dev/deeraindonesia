@@ -22,6 +22,7 @@ const {
   addRencana,
   removeRencana,
   updateKunjungan,
+  markTokoVisitedViaTrip,
   markGeocodeFailed,
   subscribeNgorder,
   resolveGoogleMapsLink,
@@ -347,11 +348,14 @@ describe("rencana kunjungan (toko_kunjungan)", () => {
       user: null,
     });
     expect(kunj.update.mock.calls[0][0].selesai_at).toBeTruthy();
-    expect(supabaseMock.from).toHaveBeenLastCalledWith("toko");
+    expect(supabaseMock.from).toHaveBeenNthCalledWith(2, "toko");
     expect(toko.update.mock.calls[0][0]).toMatchObject({
       status_approach: "sudah",
       kesan: "tertarik",
     });
+    // Best-effort (fire-and-forget): juga coba sinkron checklist trip --
+    // lihat markTokoVisitedInActiveTrips di ngorder-jadwal/api.js.
+    expect(supabaseMock.from).toHaveBeenNthCalledWith(3, "ngorder_trip");
   });
 
   it("markGeocodeFailed menandai geocode_source 'gagal'", async () => {
@@ -368,6 +372,62 @@ describe("rencana kunjungan (toko_kunjungan)", () => {
     expect(tables).toEqual(["toko_kunjungan", "toko"]);
     unsub();
     expect(supabaseMock.removeChannel).toHaveBeenCalledWith(channel);
+  });
+});
+
+describe("markTokoVisitedViaTrip (sinkron dari checklist trip, ngorder-jadwal)", () => {
+  it("tanpa tokoId: tidak menyentuh Supabase, return null", async () => {
+    expect(await markTokoVisitedViaTrip(null, { email: "a@b.com" })).toBeNull();
+    expect(supabaseMock.from).not.toHaveBeenCalled();
+  });
+
+  it("belum ada kunjungan aktif -> insert baru langsung berstatus selesai + toko.status_approach", async () => {
+    const selectBuilder = makeBuilder({ data: null, error: null });
+    const insertBuilder = makeBuilder({ data: { id: "k2", toko_id: "t1" }, error: null });
+    const tokoBuilder = makeBuilder({ data: null, error: null });
+    supabaseMock.from
+      .mockReturnValueOnce(selectBuilder)
+      .mockReturnValueOnce(insertBuilder)
+      .mockReturnValueOnce(tokoBuilder);
+
+    const result = await markTokoVisitedViaTrip("t1", { email: "a@b.com" });
+
+    expect(selectBuilder.eq).toHaveBeenCalledWith("aktif", true);
+    expect(insertBuilder.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ toko_id: "t1", status: "selesai", aktif: true }),
+    );
+    expect(tokoBuilder.update.mock.calls[0][0]).toMatchObject({ status_approach: "sudah" });
+    expect(result).toEqual({ id: "k2", toko_id: "t1" });
+  });
+
+  it("ada kunjungan aktif status rencana -> ditandai selesai lewat updateKunjungan (bukan insert baru)", async () => {
+    const existing = { id: "k1", toko_id: "t1", status: "rencana", mulai_at: null };
+    const selectBuilder = makeBuilder({ data: existing, error: null });
+    const updateKunjBuilder = makeBuilder({
+      data: { id: "k1", toko_id: "t1", status: "selesai", kesan: null },
+      error: null,
+    });
+    const tokoBuilder = makeBuilder({ data: null, error: null });
+    supabaseMock.from
+      .mockReturnValueOnce(selectBuilder)
+      .mockReturnValueOnce(updateKunjBuilder)
+      .mockReturnValueOnce(tokoBuilder);
+
+    const result = await markTokoVisitedViaTrip("t1", { email: "a@b.com" });
+
+    expect(updateKunjBuilder.update.mock.calls[0][0]).toMatchObject({ status: "selesai" });
+    expect(tokoBuilder.update.mock.calls[0][0]).toMatchObject({ status_approach: "sudah" });
+    expect(result.status).toBe("selesai");
+  });
+
+  it("kunjungan aktif sudah selesai -> gak ngapa-ngapain lagi", async () => {
+    const existing = { id: "k1", toko_id: "t1", status: "selesai" };
+    supabaseMock.from.mockReturnValueOnce(makeBuilder({ data: existing, error: null }));
+
+    const result = await markTokoVisitedViaTrip("t1", { email: "a@b.com" });
+
+    expect(supabaseMock.from).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(existing);
   });
 });
 

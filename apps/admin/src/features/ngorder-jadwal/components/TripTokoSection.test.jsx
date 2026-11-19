@@ -84,6 +84,27 @@ describe("TripTokoSection", () => {
       expect(screen.queryByLabelText("Nomor Toko Tinggi")).not.toBeInTheDocument(),
     );
   });
+  it("klik tombol centang memanggil onToggleVisited dengan toko_id-nya, bukan save langsung", () => {
+    const onToggleVisited = vi.fn();
+    const save = vi.fn();
+    const single = {
+      daerah: [],
+      toko: [{ toko_id: "a", nama: "Toko Rendah", daerah: "BOGOR", dikunjungi: false }],
+    };
+    render(
+      <TripTokoSection
+        trip={single}
+        tokoList={tokoList}
+        save={save}
+        onToggleVisited={onToggleVisited}
+      />,
+    );
+    openGroup();
+    fireEvent.click(screen.getByLabelText("Tandai dikunjungi"));
+    expect(onToggleVisited).toHaveBeenCalledWith("a");
+    expect(save).not.toHaveBeenCalled();
+  });
+
   it("toko yang sudah membuka link ditandai 'Dibuka' beserta jumlah produk", () => {
     const opens = [
       { toko_id: "b", first_opened_at: "2026-10-20T03:00:00Z", opens: 2, produk: ["D-1", "D-2"] },

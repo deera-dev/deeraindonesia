@@ -2,6 +2,7 @@ export { parseSosmed, useUpdateTokoMutation } from "../ngorder/hooks";
 export {
   useCreateTripMutation,
   useDeleteTripMutation,
+  useToggleTripTokoVisitedMutation,
   useTripOpensQuery,
   useTripsQuery,
   useUpdateTripMutation,

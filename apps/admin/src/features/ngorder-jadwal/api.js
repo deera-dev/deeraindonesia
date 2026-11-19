@@ -1,5 +1,6 @@
 import { supabase } from "@deera/shared/lib/supabase";
-import { validateTrip } from "./utils";
+import { markTokoVisitedViaTrip } from "../ngorder/api";
+import { toggleTokoVisited, validateTrip } from "./utils";
 
 const TABLE = "ngorder_trip";
 
@@ -70,4 +71,48 @@ export async function fetchTripOpens(tripId) {
   const { data, error } = await supabase.rpc("get_ngorder_trip_opens", { p_trip_id: tripId });
   if (error) throw error;
   return data ?? [];
+}
+
+// Centang "dikunjungi" di checklist trip -> ikut tercatat sbg kunjungan
+// selesai di toko_kunjungan (tab Peta, fitur ngorder), biar gak perlu
+// dicatat 2x. Uncheck TIDAK membatalkan catatan kunjungan itu (sengaja --
+// lihat §2 docs/reports/audit-report-m4-admin.md, hindari ngilangin
+// catatan kunjungan nyata cuma gara-gara klik salah di checklist).
+export async function toggleTripTokoVisited(tripId, toko, tokoId, user) {
+  const next = toggleTokoVisited(toko, tokoId);
+  const trip = await updateTrip(tripId, { toko: next });
+
+  const justVisited = next.find((t) => t.toko_id === tokoId)?.dikunjungi;
+  if (justVisited) {
+    markTokoVisitedViaTrip(tokoId, user).catch((err) =>
+      console.warn("markTokoVisitedViaTrip error:", err),
+    );
+  }
+  return trip;
+}
+
+// Sinkronisasi dgn toko_kunjungan (fitur ngorder, tab Peta) — begitu toko
+// ditandai "selesai" di sana, checklist di trip manapun yang masih aktif
+// (rencana/berjalan) dan belum centang toko itu ikut tercentang otomatis.
+// Trip yang sudah selesai/batal TIDAK disentuh (laporan histori gak
+// berubah sendiri). Dipanggil dari ngorder/api.js (updateKunjungan).
+export async function markTokoVisitedInActiveTrips(tokoId) {
+  if (!tokoId) return;
+  const { data: trips, error } = await supabase
+    .from(TABLE)
+    .select("id, toko")
+    .in("status", ["rencana", "berjalan"]);
+  if (error) throw error;
+
+  for (const trip of trips ?? []) {
+    const list = trip.toko ?? [];
+    const idx = list.findIndex((t) => t.toko_id === tokoId && !t.dikunjungi);
+    if (idx === -1) continue;
+    const next = list.map((t, i) => (i === idx ? { ...t, dikunjungi: true } : t));
+    const { error: updateErr } = await supabase
+      .from(TABLE)
+      .update({ toko: next, updated_at: new Date().toISOString() })
+      .eq("id", trip.id);
+    if (updateErr) throw updateErr;
+  }
 }

@@ -8,9 +8,25 @@ import {
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
 
-const { fetchTrips, createTrip, updateTrip, deleteTrip, fetchTripOpens } = await import("./api");
+const markTokoVisitedViaTrip = vi.fn().mockResolvedValue({ id: "k1" });
+vi.mock("../ngorder/api", () => ({
+  markTokoVisitedViaTrip: (...args) => markTokoVisitedViaTrip(...args),
+}));
 
-beforeEach(() => resetSupabaseMock(supabaseMock));
+const {
+  fetchTrips,
+  createTrip,
+  updateTrip,
+  deleteTrip,
+  fetchTripOpens,
+  markTokoVisitedInActiveTrips,
+  toggleTripTokoVisited,
+} = await import("./api");
+
+beforeEach(() => {
+  resetSupabaseMock(supabaseMock);
+  markTokoVisitedViaTrip.mockClear();
+});
 
 describe("fetchTrips", () => {
   it("ambil semua dari ngorder_trip", async () => {
@@ -98,5 +114,76 @@ describe("fetchTripOpens", () => {
   it("melempar error", async () => {
     supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: new Error("x") });
     await expect(fetchTripOpens("trip1")).rejects.toThrow("x");
+  });
+});
+
+describe("markTokoVisitedInActiveTrips (sinkron dari toko_kunjungan 'selesai')", () => {
+  it("tanpa tokoId: tidak menyentuh Supabase", async () => {
+    await markTokoVisitedInActiveTrips(null);
+    expect(supabaseMock.from).not.toHaveBeenCalled();
+  });
+
+  it("centang toko_id yang cocok & belum dikunjungi di trip rencana/berjalan, skip yang sudah/gak cocok", async () => {
+    const trips = [
+      {
+        id: "trip1",
+        toko: [
+          { toko_id: "t1", dikunjungi: false },
+          { toko_id: "t2", dikunjungi: false },
+        ],
+      },
+      { id: "trip2", toko: [{ toko_id: "t1", dikunjungi: true }] },
+      { id: "trip3", toko: [{ toko_id: "t9", dikunjungi: false }] },
+    ];
+    const selectBuilder = makeBuilder({ data: trips, error: null });
+    const updateBuilder = makeBuilder({ data: null, error: null });
+    supabaseMock.from.mockReturnValueOnce(selectBuilder).mockReturnValueOnce(updateBuilder);
+
+    await markTokoVisitedInActiveTrips("t1");
+
+    expect(selectBuilder.in).toHaveBeenCalledWith("status", ["rencana", "berjalan"]);
+    expect(supabaseMock.from).toHaveBeenCalledTimes(2);
+    expect(updateBuilder.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toko: [
+          { toko_id: "t1", dikunjungi: true },
+          { toko_id: "t2", dikunjungi: false },
+        ],
+      }),
+    );
+    expect(updateBuilder.eq).toHaveBeenCalledWith("id", "trip1");
+  });
+});
+
+describe("toggleTripTokoVisited (checklist trip)", () => {
+  const toko = [
+    { toko_id: "t1", dikunjungi: false },
+    { toko_id: "t2", dikunjungi: true },
+  ];
+
+  it("centang jadi true -> ikut panggil markTokoVisitedViaTrip", async () => {
+    const updateBuilder = makeBuilder({ data: { id: "trip1", toko: [] }, error: null });
+    supabaseMock.from.mockReturnValueOnce(updateBuilder);
+
+    await toggleTripTokoVisited("trip1", toko, "t1", { email: "a@b.com" });
+
+    expect(updateBuilder.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toko: [
+          { toko_id: "t1", dikunjungi: true },
+          { toko_id: "t2", dikunjungi: true },
+        ],
+      }),
+    );
+    expect(markTokoVisitedViaTrip).toHaveBeenCalledWith("t1", { email: "a@b.com" });
+  });
+
+  it("uncheck (jadi false) -> TIDAK panggil markTokoVisitedViaTrip", async () => {
+    const updateBuilder = makeBuilder({ data: { id: "trip1", toko: [] }, error: null });
+    supabaseMock.from.mockReturnValueOnce(updateBuilder);
+
+    await toggleTripTokoVisited("trip1", toko, "t2", { email: "a@b.com" });
+
+    expect(markTokoVisitedViaTrip).not.toHaveBeenCalled();
   });
 });

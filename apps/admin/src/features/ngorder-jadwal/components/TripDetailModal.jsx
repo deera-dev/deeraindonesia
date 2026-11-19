@@ -12,6 +12,7 @@ import {
   TRIP_STATUSES,
   useCreateTripMutation,
   useDeleteTripMutation,
+  useToggleTripTokoVisitedMutation,
   useTripOpensQuery,
   useTripsQuery,
   useUpdateTokoMutation,
@@ -42,6 +43,7 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
   const createMutation = useCreateTripMutation();
   const deleteMutation = useDeleteTripMutation();
   const updateTokoMutation = useUpdateTokoMutation();
+  const toggleVisitedMutation = useToggleTripTokoVisitedMutation();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const trip = trips.find((t) => t.id === tripId);
   const { data: opens = [] } = useTripOpensQuery(trip?.id);
@@ -53,6 +55,19 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
   async function save(patch) {
     try {
       await updateMutation.mutateAsync({ id: trip.id, patch });
+    } catch (err) {
+      toast.error(err.message ?? "Gagal menyimpan.");
+    }
+  }
+
+  async function toggleVisited(tokoId) {
+    try {
+      await toggleVisitedMutation.mutateAsync({
+        tripId: trip.id,
+        toko: trip.toko ?? [],
+        tokoId,
+        user,
+      });
     } catch (err) {
       toast.error(err.message ?? "Gagal menyimpan.");
     }
@@ -185,6 +200,7 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
               trip={trip}
               tokoList={tokoList}
               save={save}
+              onToggleVisited={toggleVisited}
               opens={opens}
               onSaveNoHp={saveNoHp}
             />

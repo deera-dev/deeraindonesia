@@ -77,10 +77,34 @@ porting.
   yang sama — bukan lewat fungsi `produksi-jahit`. Dua fitur, query
   logic independen, 1 tabel. Risiko drift kalau salah satu berubah tanpa
   yang lain ikut.
-- Dua tracker "sudah dikunjungi" yang gak sinkron: `ngorder_trip.toko[].dikunjungi`
+- **✅ SUDAH DISATUKAN (2026-11-19, konfirmasi user)**: dua tracker "sudah
+  dikunjungi" yang tadinya gak sinkron — `ngorder_trip.toko[].dikunjungi`
   (checklist per-trip, `ngorder-jadwal`) vs tabel `toko_kunjungan` (shared,
-  Realtime, `ngorder` tab Peta). Centang toko di satu tempat gak
-  mempengaruhi yang lain.
+  Realtime, `ngorder` tab Peta). Disinkron 2 arah, dieksekusi sekarang
+  (bukan ditunda ke M4, karena cuma nyentuh kode aplikasi, gak nyentuh
+  desain Edge Function):
+  - **toko_kunjungan "selesai" → checklist trip**: `updateKunjungan()`
+    manggil `markTokoVisitedInActiveTrips(tokoId)` baru (punya
+    `ngorder-jadwal/api.js`) best-effort — centang toko itu di trip
+    manapun yang masih `rencana`/`berjalan` & belum tercentang. Trip yang
+    sudah `selesai`/`batal` TIDAK disentuh.
+  - **checklist trip → toko_kunjungan**: toggle "dikunjungi" sekarang
+    lewat `toggleTripTokoVisited()` baru (ganti akses langsung
+    `save({toko: toggleTokoVisited(...)})` dari komponen) — begitu
+    dicentang TRUE, best-effort manggil `markTokoVisitedViaTrip()` baru
+    (punya `ngorder/api.js`): kalau toko itu udah punya kunjungan aktif,
+    ditandai selesai lewat `updateKunjungan()` yang sudah ada (efek
+    sampingnya — `toko.status_approach` — otomatis ikut, gak ditulis
+    ulang); kalau belum ada sama sekali, insert baris baru berstatus
+    "selesai" tanpa hasil/kesan (bisa diisi belakangan lewat tab Peta).
+    **Uncheck SENGAJA TIDAK** membatalkan catatan kunjungan — menghindari
+    kehilangan catatan nyata gara-gara klik salah di checklist.
+  - Kedua arah saling impor `api.js`-ke-`api.js` lintas fitur (pola yang
+    sudah disahkan CLAUDE.md §4) — aman dari circular-import nyata karena
+    keduanya cuma `export async function` (hoisted, binding live) dan
+    gak pernah dipanggil di top-level modul.
+  - Test baru: `ngorder-jadwal/api.test.js`, `ngorder/api.test.js`,
+    `TripTokoSection.test.jsx`. Semua 3468 test admin hijau.
 
 **Dicek, TERNYATA BUKAN duplikasi** (good, gak perlu konsolidasi):
 

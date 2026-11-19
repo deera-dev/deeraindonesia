@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createTrip, deleteTrip, fetchTripOpens, fetchTrips, updateTrip } from "./api";
+import {
+  createTrip,
+  deleteTrip,
+  fetchTripOpens,
+  fetchTrips,
+  toggleTripTokoVisited,
+  updateTrip,
+} from "./api";
 
 export const tripKeys = {
   all: ["ngorder-jadwal", "trips"],
@@ -34,6 +41,18 @@ export function useUpdateTripMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, patch }) => updateTrip(id, patch),
+    onSuccess: (row) => {
+      qc.setQueryData(tripKeys.all, (old) => (old ?? []).map((t) => (t.id === row.id ? row : t)));
+      qc.invalidateQueries({ queryKey: tripKeys.all });
+    },
+  });
+}
+
+export function useToggleTripTokoVisitedMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tripId, toko, tokoId, user }) =>
+      toggleTripTokoVisited(tripId, toko, tokoId, user),
     onSuccess: (row) => {
       qc.setQueryData(tripKeys.all, (old) => (old ?? []).map((t) => (t.id === row.id ? row : t)));
       qc.invalidateQueries({ queryKey: tripKeys.all });
