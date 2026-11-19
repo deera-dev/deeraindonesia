@@ -13,6 +13,7 @@ vi.mock("./queries", () => ({
   useCmtFullKirimQuery: vi.fn(),
   useCreateCmtFullKirimMutation: vi.fn(),
   useDeleteCmtFullKirimMutation: vi.fn(),
+  useUpdateHargaUpahKirimMutation: vi.fn(),
 }));
 
 import {
@@ -26,6 +27,7 @@ import {
   useCmtFullKirim,
   useCreateCmtFullKirim,
   useDeleteCmtFullKirim,
+  useUpdateHargaUpahKirim,
 } from "./hooks";
 import {
   useCmtJahitKirimQuery,
@@ -38,6 +40,7 @@ import {
   useCmtFullKirimQuery,
   useCreateCmtFullKirimMutation,
   useDeleteCmtFullKirimMutation,
+  useUpdateHargaUpahKirimMutation,
 } from "./queries";
 
 const wrapper = createWrapper();
@@ -56,6 +59,7 @@ beforeEach(() => {
   useCmtFullKirimQuery.mockReturnValue({ data: [{ id: "b1" }], isLoading: false });
   useCreateCmtFullKirimMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
   useDeleteCmtFullKirimMutation.mockReturnValue({ mutateAsync: mockMutate });
+  useUpdateHargaUpahKirimMutation.mockReturnValue({ mutateAsync: mockMutate, isPending: false });
 });
 
 describe("useCmtJahitKirim", () => {
@@ -155,5 +159,14 @@ describe("useDeleteCmtFullKirim", () => {
     const { result } = renderHook(() => useDeleteCmtFullKirim(), { wrapper });
     await result.current("b1");
     expect(mockMutate).toHaveBeenCalledWith("b1");
+  });
+});
+
+describe("useUpdateHargaUpahKirim", () => {
+  it("expose updateHargaUpah() + saving flag", async () => {
+    const { result } = renderHook(() => useUpdateHargaUpahKirim(), { wrapper });
+    expect(result.current.saving).toBe(false);
+    await result.current.updateHargaUpah({ kirimNo: "CMT-1", hargaUpah: "7000" });
+    expect(mockMutate).toHaveBeenCalledWith({ kirimNo: "CMT-1", hargaUpah: "7000" });
   });
 });

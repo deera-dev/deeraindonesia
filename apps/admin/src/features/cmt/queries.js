@@ -10,6 +10,7 @@ import {
   fetchCmtJahitKirim,
   fetchCmtSetoranFull,
   setorKirimCmtJahit,
+  updateHargaUpahKirim,
 } from "./api";
 
 export const cmtJahitKirimKeys = { all: ["cmt-jahit-kirim"] };
@@ -44,6 +45,14 @@ export function useBatalKirimCmtJahitMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: batalKirimCmtJahit,
+    onSuccess: () => qc.invalidateQueries({ queryKey: cmtJahitKirimKeys.all }),
+  });
+}
+
+export function useUpdateHargaUpahKirimMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: updateHargaUpahKirim,
     onSuccess: () => qc.invalidateQueries({ queryKey: cmtJahitKirimKeys.all }),
   });
 }

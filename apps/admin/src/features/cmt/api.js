@@ -38,6 +38,26 @@ export async function fetchAvailablePotonganByKode(kode) {
   return data ?? [];
 }
 
+// Upah/pcs bisa diisi belakangan (opsional saat Kirim, lihat KirimForm.jsx)
+// -- ini aksi utk mengisi/mengoreksi upah setelah kirim dibuat, berlaku
+// utk semua baris kirim_no itu sekaligus (satu kirim = satu kesepakatan
+// harga dgn vendor).
+export async function updateHargaUpahKirim({ kirimNo, hargaUpah }) {
+  const { error } = await supabase
+    .from("cmt_jahit_kirim")
+    .update({ harga_upah: Number(hargaUpah) || 0, updated_at: new Date().toISOString() })
+    .eq("kirim_no", kirimNo);
+  if (error) throw error;
+
+  logHistory({
+    action: "cmt-jahit-upah",
+    category: "produksi",
+    kode: kirimNo,
+    nama: `Upah/pcs diisi ${Number(hargaUpah) || 0}`,
+    snapshot: { kirim_no: kirimNo, harga_upah: Number(hargaUpah) || 0 },
+  }).catch(() => {});
+}
+
 export async function createKirimCmtJahit({
   namaVendor,
   tanggalKirim,
