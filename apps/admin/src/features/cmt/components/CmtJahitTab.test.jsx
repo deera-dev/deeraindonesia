@@ -27,6 +27,14 @@ vi.mock("./SetorModal", () => ({
     </div>
   ),
 }));
+vi.mock("./SuratJalanCmtModal", () => ({
+  default: ({ group, onClose }) => (
+    <div data-testid="surat-jalan-modal">
+      <span>{group.kirimNo}</span>
+      <button onClick={onClose}>Close</button>
+    </div>
+  ),
+}));
 
 import CmtJahitTab from "./CmtJahitTab";
 
@@ -101,6 +109,17 @@ describe("CmtJahitTab", () => {
     render(<CmtJahitTab />);
     fireEvent.click(screen.getByText("Setor"));
     expect(screen.getByTestId("setor-modal")).toBeInTheDocument();
+  });
+
+  it("klik Surat Jalan membuka SuratJalanCmtModal, tersedia di semua status", () => {
+    mockUseCmtJahitKirim.mockReturnValue({
+      rows: [ROW({ status: "selesai" })],
+      loading: false,
+    });
+    render(<CmtJahitTab />);
+    fireEvent.click(screen.getByText("Surat Jalan"));
+    expect(screen.getByTestId("surat-jalan-modal")).toBeInTheDocument();
+    expect(screen.getByText("CMT-1")).toBeInTheDocument();
   });
 
   it("klik Batalkan (confirm true) memanggil batalKirim dgn id baris yg belum selesai", async () => {
