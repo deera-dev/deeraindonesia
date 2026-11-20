@@ -17,6 +17,10 @@
 -- cuma kirim p_kode (produk-crud dari halaman Admin) — HARUS drop versi
 -- lama dulu, baru create versi baru (sama kayak fix move_stok_lokasi/
 -- approve_transfer sebelumnya di sesi ini).
+--
+-- SUDAH DIJALANKAN ke production (2026-11-20): drop + create berhasil,
+-- diverifikasi lewat BEGIN/ROLLBACK (panggilan p_kode saja & p_kode+
+-- p_sumber, keduanya resolve tanpa ambigu, history ikut benar).
 drop function if exists public.delete_product_cascade(text);
 
 create or replace function public.delete_product_cascade(p_kode text, p_sumber text default null)
