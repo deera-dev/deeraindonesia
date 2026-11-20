@@ -1,6 +1,7 @@
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
+import { deleteProductCascade } from "../produk/api";
 import { createJahitCardsForBatch, renameJahitCardsForBatch } from "../produksi-jahit/api";
 
 export async function fetchBatches() {
@@ -68,20 +69,14 @@ export async function resyncBahanDipakai(batch) {
   return bahanDipakai;
 }
 
+// Dulu 5 panggilan supabase.from() berurutan, duplikat PERSIS cascade
+// delete_product_cascade tanpa cek error sama sekali. Sekarang delegasi
+// ke deleteProductCascade() yang sudah ada (atomik, 1 RPC) — sumber:
+// "produksi" dipertahankan lewat p_sumber supaya history tetap tampil
+// "Dari: produksi" (lihat
+// supabase/migrations/20261120_delete_product_cascade_sumber.sql).
 export async function deleteBatchAndProduct(batch) {
-  const kode = batch.kode_produk;
-  await supabase.from("produksi_batch").delete().eq("kode_produk", kode);
-  await supabase.from("expected_stok").delete().eq("kode", kode);
-  await supabase.from("hpp_template").delete().eq("kode_produk", kode);
-  await supabase.from("stok_warna").delete().eq("kode", kode);
-  await supabase.from("products").delete().eq("kode", kode);
-  logHistory({
-    action: "hapus",
-    category: "produk",
-    kode,
-    nama: batch.nama_produk ?? kode,
-    snapshot: { kode, sumber: "produksi" },
-  }).catch(() => {});
+  await deleteProductCascade(batch.kode_produk, "produksi");
 }
 
 async function saveEntry({

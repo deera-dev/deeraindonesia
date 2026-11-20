@@ -59,9 +59,15 @@ async function saveProduct(supabase: SupabaseClient, input: SaveInput) {
   return data;
 }
 
-async function deleteProduct(supabase: SupabaseClient, input: { kode: string }) {
+async function deleteProduct(
+  supabase: SupabaseClient,
+  input: { kode: string; sumber?: string | null },
+) {
   if (!input?.kode) throw new Error("kode wajib diisi");
-  const { data, error } = await supabase.rpc("delete_product_cascade", { p_kode: input.kode });
+  const { data, error } = await supabase.rpc("delete_product_cascade", {
+    p_kode: input.kode,
+    p_sumber: input.sumber ?? null,
+  });
   if (error) throw error;
   return data;
 }
@@ -69,7 +75,8 @@ async function deleteProduct(supabase: SupabaseClient, input: { kode: string }) 
 const handler = createActionHandler(
   {
     save: (input, { supabase }) => saveProduct(supabase, input as SaveInput),
-    delete: (input, { supabase }) => deleteProduct(supabase, input as { kode: string }),
+    delete: (input, { supabase }) =>
+      deleteProduct(supabase, input as { kode: string; sumber?: string | null }),
   },
   getClient,
 );

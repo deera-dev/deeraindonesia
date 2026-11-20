@@ -221,9 +221,12 @@ export async function saveProduct({
   return payload;
 }
 
-export async function deleteProductCascade(kode) {
+// sumber opsional — marker "Dari: produksi" di history waktu dipanggil
+// dari produksi-record/api.js (hapus batch sekaligus produknya), lihat
+// supabase/migrations/20261120_delete_product_cascade_sumber.sql.
+export async function deleteProductCascade(kode, sumber) {
   const { data, error } = await supabase.functions.invoke("produk-crud", {
-    body: { action: "delete", input: { kode } },
+    body: { action: "delete", input: { kode, sumber: sumber ?? null } },
   });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);

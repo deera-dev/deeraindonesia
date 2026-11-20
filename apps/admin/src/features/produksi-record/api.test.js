@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@deera/shared/lib/supabase", () => ({ supabase: { from: vi.fn() } }));
+vi.mock("@deera/shared/lib/supabase", () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }));
 vi.mock("../history/api", () => ({ logHistory: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("../produk/api", () => ({ deleteProductCascade: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("../produksi-jahit/api", () => ({
   createJahitCardsForBatch: vi.fn().mockResolvedValue([]),
   renameJahitCardsForBatch: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { supabase } from "@deera/shared/lib/supabase";
+import { deleteProductCascade } from "../produk/api";
 import { createJahitCardsForBatch, renameJahitCardsForBatch } from "../produksi-jahit/api";
 import {
   createBatches,
@@ -95,13 +97,13 @@ describe("fetchHppTemplate", () => {
 });
 
 describe("deleteBatchAndProduct", () => {
-  it("calls delete on multiple tables", async () => {
-    const chain = makeEqChain();
-    supabase.from.mockReturnValue(chain);
+  // Delegasi ke deleteProductCascade() (RPC atomik, sudah dipakai
+  // produk-crud) dengan sumber "produksi" supaya history tetap
+  // ketandai asalnya — lihat
+  // supabase/migrations/20261120_delete_product_cascade_sumber.sql.
+  it("memanggil deleteProductCascade dengan kode & sumber produksi", async () => {
     await deleteBatchAndProduct({ kode_produk: "D-01-OSK", nama_produk: "Gamis" });
-    expect(supabase.from).toHaveBeenCalledWith("produksi_batch");
-    expect(supabase.from).toHaveBeenCalledWith("products");
-    expect(chain.delete).toHaveBeenCalled();
+    expect(deleteProductCascade).toHaveBeenCalledWith("D-01-OSK", "produksi");
   });
 });
 

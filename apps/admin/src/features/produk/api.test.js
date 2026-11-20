@@ -620,7 +620,15 @@ describe("deleteProductCascade", () => {
     await deleteProductCascade("D-01-OSK");
 
     expect(supabaseMock.functions.invoke).toHaveBeenCalledWith("produk-crud", {
-      body: { action: "delete", input: { kode: "D-01-OSK" } },
+      body: { action: "delete", input: { kode: "D-01-OSK", sumber: null } },
+    });
+  });
+
+  it("meneruskan sumber kalau diberikan (dipakai produksi-record)", async () => {
+    await deleteProductCascade("D-01-OSK", "produksi");
+
+    expect(supabaseMock.functions.invoke).toHaveBeenCalledWith("produk-crud", {
+      body: { action: "delete", input: { kode: "D-01-OSK", sumber: "produksi" } },
     });
   });
 
