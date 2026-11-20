@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@deera/shared/lib/supabase", () => ({
   supabase: {
     from: vi.fn(),
+    rpc: vi.fn(),
   },
 }));
 vi.mock("../history/api", () => ({
@@ -219,9 +220,11 @@ describe("detectDupes", () => {
 });
 
 describe("mergeDupeGroups", () => {
-  it("updates master and deletes rest, returns 0 errors", async () => {
-    const chain = makeChain({ error: null });
-    supabase.from.mockReturnValue(chain);
+  // Merge (update master + delete duplikat) dilakukan 1 panggilan RPC
+  // atomik per grup (merge_bahan_dupe_group) — lihat
+  // supabase/migrations/20261120_merge_bahan_dupe_group.sql.
+  it("memanggil merge_bahan_dupe_group dengan master+dupe id & total gabungan, 0 errors", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
     const groups = [
       [
         { id: "aaa", jumlah: 5, total_harga: 50000 },
@@ -230,13 +233,16 @@ describe("mergeDupeGroups", () => {
     ];
     const errors = await mergeDupeGroups("bahan_pembelian", groups);
     expect(errors).toBe(0);
-    expect(chain.update).toHaveBeenCalled();
-    expect(chain.delete).toHaveBeenCalled();
+    expect(supabase.rpc).toHaveBeenCalledWith("merge_bahan_dupe_group", {
+      p_table: "bahan_pembelian",
+      p_master_id: "aaa",
+      p_dupe_ids: ["bbb"],
+      p_jumlah: 8,
+      p_total_harga: 80000,
+    });
   });
-  it("counts errors when update fails", async () => {
-    const chain = makeChain({ error: new Error("fail"), data: null });
-    supabase.from.mockReturnValue(chain);
-    chain.eq.mockResolvedValue({ error: new Error("fail") });
+  it("counts errors when RPC fails", async () => {
+    supabase.rpc.mockResolvedValue({ error: new Error("fail") });
     const result = await mergeDupeGroups("bahan_pembelian", [[{ id: "a" }, { id: "b" }]]);
     expect(result).toBeGreaterThan(0);
   });

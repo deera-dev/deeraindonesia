@@ -91,20 +91,14 @@ export async function mergeDupeGroups(table, groups) {
     const totalJumlah = group.reduce((s, r) => s + Number(r.jumlah ?? 0), 0);
     const totalHarga = group.reduce((s, r) => s + Number(r.total_harga ?? 0), 0);
 
-    const { error: updateErr } = await supabase
-      .from(table)
-      .update({ jumlah: totalJumlah, total_harga: totalHarga })
-      .eq("id", master.id);
-
-    if (updateErr) {
-      errors++;
-      continue;
-    }
-
-    for (const dup of rest) {
-      const { error: delErr } = await supabase.from(table).delete().eq("id", dup.id);
-      if (delErr) errors++;
-    }
+    const { error } = await supabase.rpc("merge_bahan_dupe_group", {
+      p_table: table,
+      p_master_id: master.id,
+      p_dupe_ids: rest.map((r) => r.id),
+      p_jumlah: totalJumlah,
+      p_total_harga: totalHarga,
+    });
+    if (error) errors++;
   }
   return errors;
 }
