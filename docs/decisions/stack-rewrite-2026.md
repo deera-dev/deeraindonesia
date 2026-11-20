@@ -65,7 +65,7 @@ Alasan urutan pengerjaan (termudah/paling-gak-kritis dulu): lihat §3.
 | — | Retrofit Catalog ke Aurum | 🔲 Belum mulai | Setelah M3a |
 | — | Audit & Optimasi: Catalog (retroaktif) | 🔲 Belum mulai | Catalog selesai sebelum aturan "audit dulu" ada |
 | M3 | Studio: scaffold ✅ (login jalan) + CRUD models/poses/presets + dashboard + Edge Functions + **desain otorisasi studio-publish** | 🟡 Sebagian | CRUD models/poses/presets ✅ (2026-11-19): `studio-{models,poses,presets}-crud` Edge Functions di-deploy (forward JWT caller, RLS `authenticated_full_access`), vertical slice lengkap (schema/api/queries/hooks/components) + 136 test + route wiring + AppShell nav. **Otorisasi studio-publish ✅ (2026-11-19)**: `studio-publish` Edge Function di-deploy + 3 secret Cloudinary sudah diisi user manual, lihat §6.2 (resolved) untuk desain lengkapnya. Masih belum dites end-to-end (nunggu M7 atau tes manual). Client masih panggil `supabase.from()` langsung di CRUD models/poses/presets (pola deferred sama kayak M1/M2, lihat §6.10). **Belum**: dashboard generate/history/content (M7), halaman generate yang benar-benar memanggil `studio-publish` (juga M7 — function-nya sudah ada tapi belum ada caller). |
-| M4 | Admin (24 fitur) → TS + Edge Functions + Aurum | 🟡 Sebagian | App terbesar (±7x Catalog). Audit ✅ (2026-11-19, `docs/reports/audit-report-m4-admin.md`) + 3 temuan dieksekusi (3 dead hook dihapus, 6 RLS policy dobel dihapus, sinkron 2-arah `toko_kunjungan`↔checklist trip `ngorder-jadwal`). **Pertama kali Edge Function dites beneran dari browser asli (2026-11-19)** sebelum porting mulai — lihat §6.10 (resolved). Porting kode: **produk** (`produk-crud` Edge Function + RPC atomik `save_product`/`delete_product_cascade`, ✅) dan **stok-opname** (`stok-opname-crud` + RPC `save_stok_opname`, ✅) — keduanya langsung di-cutover (bukan deferred, karena RPC-nya fix bug atomicity nyata) + ditest langsung di DB production (bukan cuma lolos compile) sebelum Edge Function ditulis. Belum: konversi TS penuh fitur manapun (masih `.js`/`.jsx`, cuma fungsi tulis-DB-nya yang diubah), 22 fitur admin lain. |
+| M4 | Admin (24 fitur) → TS + Edge Functions + Aurum | 🟡 Sebagian | App terbesar (±7x Catalog). Audit ✅ (2026-11-19, `docs/reports/audit-report-m4-admin.md`) + 3 temuan dieksekusi (3 dead hook dihapus, 6 RLS policy dobel dihapus, sinkron 2-arah `toko_kunjungan`↔checklist trip `ngorder-jadwal`). **Pertama kali Edge Function dites beneran dari browser asli (2026-11-19)** sebelum porting mulai — lihat §6.10 (resolved). Porting kode: **produk** (`produk-crud` Edge Function + RPC atomik `save_product`/`delete_product_cascade`, ✅), **stok-opname** (`stok-opname-crud` + RPC `save_stok_opname`, ✅), **pindah-stok-lokasi** (`move_stok_lokasi` identitas dari `auth.uid()`, ✅ — lihat insiden #12), **transfer** (`approve_transfer` identitas dari `auth.uid()`, ✅), **buku-potongan** (dicek, sudah atomik dari sananya, tidak ada perubahan), **produksi-bahan** (RPC `merge_bahan_dupe_group`, ✅), **produksi-hpp** (RPC `save_hpp_template`/`save_hpp_config_value`, ✅), **produksi-record** (RPC `create_produksi_batch`/`update_produksi_batch` + `deleteBatchAndProduct` delegasi ke `delete_product_cascade`, ✅ — lihat insiden #13). Semua RPC di atas ditest langsung di DB production (BEGIN/ROLLBACK, bukan cuma lolos compile) sebelum dianggap selesai. Belum: konversi TS penuh fitur manapun (masih `.js`/`.jsx`, cuma fungsi tulis-DB-nya yang diubah), 16 fitur admin lain (produksi-jahit, produksi-sampel, cmt, ngorder, ngorder-jadwal, pasar-restock, pelanggan, calon-customer, blast, analytics, trafik-katalog, notifikasi, cetak-label, pengiriman, auth, history). |
 | M5 | Finance → TS + Edge Functions + Aurum | 🔲 Belum mulai | Audit dulu |
 | M6 | POS (risiko tertinggi, offline-sync) → TS + Edge Functions + Aurum + verifikasi hari pasar beneran | 🔲 Belum mulai | Audit dulu |
 | M7 | Studio bagian AI (generate/history/content studio, 23 API routes) → Edge Functions + Aurum | 🔲 Belum mulai | Audit dulu + tambahkan cost-cap fal.ai |
@@ -295,6 +295,30 @@ Urut dari paling penting:
     dengan detail operasional yang saya gak tahu (jadwal pasar, transfer
     mana yang relevan) — data pasti rusak permanen kalau user gak
     kasih konteks itu.
+13. 🟡 **INSIDEN KECIL (2026-11-20, M4 cluster produksi-bahan/produksi-hpp/
+    produksi-record)** — nambah parameter baru (`p_sumber`, ada default)
+    ke `delete_product_cascade` lewat `CREATE OR REPLACE FUNCTION` TIDAK
+    me-replace fungsi lama, malah bikin OVERLOAD baru (2 fungsi
+    `delete_product_cascade` sekaligus: 1-arg lama + 2-arg baru) — beda
+    dari asumsi awal. Akibatnya tombol "Hapus Produk" di halaman Admin
+    **sempat rusak** (PostgREST manggil RPC pakai named parameter, jadi
+    ambigu fungsi mana yang dipanggil kalau 2 overload sama-sama cocok) —
+    bukan masalah data (gak ada yang hilang/salah), cuma aksi delete-nya
+    gagal total (fail-safe). Ketahuan & dibereskan dalam hitungan menit
+    lewat `DROP FUNCTION IF EXISTS` (signature lama) sebelum
+    `CREATE OR REPLACE` (signature baru), diverifikasi `pg_proc` cuma
+    sisa 1 fungsi + tes BEGIN/ROLLBACK kedua cara panggil (dengan/tanpa
+    parameter baru). **Pelajaran tambahan di luar risiko #12**: menambah
+    PARAMETER ke fungsi existing (bukan cuma mengubah definisi) juga
+    perlu `DROP FUNCTION IF EXISTS <signature lama>` dulu — `CREATE OR
+    REPLACE` cuma aman kalau signature (nama+tipe+urutan parameter)
+    PERSIS sama dengan yang sudah ada, titik.
+
+    Sisa cluster (`merge_bahan_dupe_group`, `save_hpp_template`/
+    `save_hpp_config_value`, `create_produksi_batch`/
+    `update_produksi_batch`) semuanya fungsi BARU (gak ada isu overload)
+    — diverifikasi BEGIN/ROLLBACK seperti biasa, semua ✅. Detail lengkap
+    di commit message masing-masing, bukan diulang di sini.
 
 ## 7. Peta koneksi lintas-app (ringkas — detail penuh ada di riwayat chat 2026-11-08)
 
