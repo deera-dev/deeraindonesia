@@ -22,8 +22,14 @@ export default defineConfig({
       provider: "v8",
       reportsDirectory: path.resolve(__dirname, "coverage"),
       reporter: ["text", "html", "lcov"],
-      include: ["**/*.{js,jsx}"],
-      exclude: ["**/*.{test,spec}.{js,jsx}", "vitest.config.js", "README.md", "**/index.js"],
+      include: ["**/*.{js,jsx,ts,tsx}"],
+      exclude: [
+        "**/*.{test,spec}.{js,jsx,ts,tsx}",
+        "vitest.config.js",
+        "README.md",
+        "**/index.{js,ts}",
+        "**/*.d.ts",
+      ],
       thresholds: {
         statements: 85,
         branches: 78,

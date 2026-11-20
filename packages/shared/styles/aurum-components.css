@@ -1,0 +1,328 @@
+/* Aurum component styles. Every color/spacing/radius/shadow reads from aurum-tokens.css custom properties. */
+
+.aurum-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease-out,
+    border-color 150ms ease-out,
+    box-shadow 150ms ease-out,
+    opacity 150ms ease-out;
+}
+.aurum-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.aurum-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.aurum-btn--sm {
+  height: 34px;
+  padding: 0 var(--space-3);
+  font-size: 13px;
+}
+.aurum-btn--md {
+  height: 42px;
+  padding: 0 var(--space-4);
+}
+.aurum-btn--lg {
+  height: 52px;
+  padding: 0 var(--space-6);
+  font-size: 15px;
+}
+
+.aurum-btn--primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.aurum-btn--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.aurum-btn--primary.aurum-btn--glow {
+  box-shadow: var(--shadow-glow-accent);
+}
+
+.aurum-btn--outline {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.aurum-btn--outline:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.aurum-btn--ghost {
+  background: transparent;
+  color: var(--text-muted);
+}
+.aurum-btn--ghost:hover:not(:disabled) {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.aurum-btn--danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.aurum-btn--danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+}
+
+.aurum-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: aurum-spin 700ms linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aurum-spinner {
+    animation-duration: 1400ms;
+  }
+}
+@keyframes aurum-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.aurum-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.aurum-field__label {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.aurum-field__input {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  transition:
+    border-color 150ms ease-out,
+    box-shadow 150ms ease-out;
+}
+.aurum-field__input::placeholder {
+  color: var(--text-muted);
+}
+.aurum-field__input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.aurum-field__input--error {
+  border-color: var(--danger);
+}
+.aurum-field__msg {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.aurum-field__msg--error {
+  color: var(--danger);
+}
+
+.aurum-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+}
+.aurum-badge--success {
+  color: var(--success);
+  background: var(--success-soft);
+}
+.aurum-badge--warning {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+.aurum-badge--danger {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+.aurum-badge--info {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.aurum-badge--info .aurum-badge-pulse {
+  animation: aurum-badge-pulse 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aurum-badge--info .aurum-badge-pulse {
+    animation: none;
+  }
+}
+@keyframes aurum-badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.aurum-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.aurum-card--pad-sm {
+  padding: var(--space-4);
+}
+.aurum-card--pad-md {
+  padding: var(--space-5);
+}
+.aurum-card--pad-lg {
+  padding: var(--space-6);
+}
+.aurum-card--elevated {
+  box-shadow: var(--shadow-sm);
+  border-color: transparent;
+}
+
+.aurum-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.aurum-modal-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 9, 7, 0.55);
+  backdrop-filter: blur(2px);
+}
+.aurum-modal {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: var(--shadow-modal);
+}
+@media (min-width: 640px) {
+  .aurum-modal-overlay {
+    align-items: center;
+  }
+  .aurum-modal {
+    max-height: 85dvh;
+    border-radius: var(--radius-lg);
+  }
+}
+.aurum-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+.aurum-modal__title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+.aurum-modal__close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.aurum-modal__close:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+.aurum-modal__body {
+  padding: var(--space-5);
+  overflow-y: auto;
+  flex: 1;
+  color: var(--text);
+  font-family: var(--font-body);
+}
+.aurum-modal__footer {
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: var(--space-3);
+}
+
+.aurum-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.aurum-stepper__btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 150ms ease-out;
+}
+.aurum-stepper__btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.aurum-stepper__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.aurum-stepper__value {
+  min-width: 22px;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.aurum-tabular {
+  font-variant-numeric: tabular-nums;
+}
