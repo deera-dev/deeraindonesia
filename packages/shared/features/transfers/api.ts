@@ -119,11 +119,12 @@ export async function createTransfer({
   return data;
 }
 
-export async function approveTransfer(transfer: Transfer, user: User | null | undefined) {
+// Identitas approver (user_email/user_name) diambil RPC dari
+// auth.uid() -> profiles, bukan parameter client lagi — lihat
+// supabase/migrations/20261120_approve_transfer_identity.sql.
+export async function approveTransfer(transfer: Transfer) {
   const { error } = await supabase.rpc("approve_transfer", {
     p_transfer_id: transfer.id,
-    p_approver_email: user?.email ?? null,
-    p_approver_name: displayName(user),
   });
 
   if (error) throw new Error(error.message);

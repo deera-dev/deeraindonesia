@@ -58,10 +58,9 @@ export function useCreateTransferMutation() {
 }
 
 export function useApproveTransferMutation() {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (transfer: Transfer) => approveTransferApi(transfer, user),
+    mutationFn: (transfer: Transfer) => approveTransferApi(transfer),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: transferKeys.all }),
   });
 }

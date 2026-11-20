@@ -100,7 +100,10 @@ describe("useCreateTransferMutation", () => {
 });
 
 describe("useApproveTransferMutation", () => {
-  it("memanggil approveTransfer dengan transfer & user, invalidate query", async () => {
+  // Identitas approver diambil RPC dari auth.uid() -> profiles, bukan
+  // dikirim dari sini lagi — lihat
+  // supabase/migrations/20261120_approve_transfer_identity.sql.
+  it("memanggil approveTransfer dengan transfer saja, invalidate query", async () => {
     const queryClient = createTestQueryClient();
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
     const wrapper = createQueryWrapper(queryClient);
@@ -110,7 +113,7 @@ describe("useApproveTransferMutation", () => {
 
     await result.current.mutateAsync(transfer);
 
-    expect(approveTransferApi).toHaveBeenCalledWith(transfer, { email: "admin@deera.id" });
+    expect(approveTransferApi).toHaveBeenCalledWith(transfer);
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: transferKeys.all });
   });
 });

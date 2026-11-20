@@ -282,39 +282,23 @@ describe("approveTransfer", () => {
     items: [{ kode: "D-01-OSK", size: "Midi", warna: "HITAM", qty: 5 }],
   };
 
-  it("memanggil rpc('approve_transfer', ...) dengan parameter yang benar", async () => {
+  // Identitas approver diambil RPC dari auth.uid() -> profiles, bukan
+  // parameter client lagi — lihat
+  // supabase/migrations/20261120_approve_transfer_identity.sql.
+  it("memanggil rpc('approve_transfer', ...) dengan p_transfer_id saja", async () => {
     supabaseMock.rpc.mockResolvedValueOnce({ data: { success: true }, error: null });
 
-    await approveTransfer(baseTransfer, {
-      email: "lain@deera.id",
-      user_metadata: { full_name: "Admin Lain" },
-    });
+    await approveTransfer(baseTransfer);
 
     expect(supabaseMock.rpc).toHaveBeenCalledWith("approve_transfer", {
       p_transfer_id: "tr1",
-      p_approver_email: "lain@deera.id",
-      p_approver_name: "ADMIN LAIN",
-    });
-  });
-
-  it("tanpa user -> p_approver_email null, p_approver_name '-'", async () => {
-    supabaseMock.rpc.mockResolvedValueOnce({ data: { success: true }, error: null });
-
-    await approveTransfer(baseTransfer, undefined);
-
-    expect(supabaseMock.rpc).toHaveBeenCalledWith("approve_transfer", {
-      p_transfer_id: "tr1",
-      p_approver_email: null,
-      p_approver_name: "-",
     });
   });
 
   it("sukses -> tidak melempar error", async () => {
     supabaseMock.rpc.mockResolvedValueOnce({ data: { success: true }, error: null });
 
-    await expect(
-      approveTransfer(baseTransfer, { email: "lain@deera.id" }),
-    ).resolves.toBeUndefined();
+    await expect(approveTransfer(baseTransfer)).resolves.toBeUndefined();
   });
 
   it("RPC menolak karena status bukan pending -> error diteruskan ke caller", async () => {
@@ -323,9 +307,9 @@ describe("approveTransfer", () => {
       error: new Error("Transfer sudah tidak bisa di-approve."),
     });
 
-    await expect(
-      approveTransfer({ ...baseTransfer, status: "approved" }, { email: "lain@deera.id" }),
-    ).rejects.toThrow("Transfer sudah tidak bisa di-approve.");
+    await expect(approveTransfer({ ...baseTransfer, status: "approved" })).rejects.toThrow(
+      "Transfer sudah tidak bisa di-approve.",
+    );
   });
 
   it("RPC menolak self-approve -> error diteruskan ke caller", async () => {
