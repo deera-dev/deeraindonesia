@@ -22,7 +22,7 @@
   cursor: not-allowed;
 }
 .aurum-btn:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid rgb(var(--accent));
   outline-offset: 2px;
 }
 
@@ -42,11 +42,11 @@
 }
 
 .aurum-btn--primary {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: rgb(var(--accent));
+  color: rgb(var(--on-accent));
 }
 .aurum-btn--primary:hover:not(:disabled) {
-  background: var(--accent-hover);
+  background: rgb(var(--accent-hover));
 }
 .aurum-btn--primary.aurum-btn--glow {
   box-shadow: var(--shadow-glow-accent);
@@ -54,27 +54,27 @@
 
 .aurum-btn--outline {
   background: transparent;
-  color: var(--text);
-  border-color: var(--border-strong);
+  color: rgb(var(--text));
+  border-color: rgb(var(--border-strong));
 }
 .aurum-btn--outline:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: rgb(var(--accent));
+  color: rgb(var(--accent));
 }
 
 .aurum-btn--ghost {
   background: transparent;
-  color: var(--text-muted);
+  color: rgb(var(--text-muted));
 }
 .aurum-btn--ghost:hover:not(:disabled) {
-  background: var(--surface-raised);
-  color: var(--text);
+  background: rgb(var(--surface-raised));
+  color: rgb(var(--text));
 }
 
 .aurum-btn--danger {
   background: transparent;
-  color: var(--danger);
-  border-color: var(--danger);
+  color: rgb(var(--danger));
+  border-color: rgb(var(--danger));
 }
 .aurum-btn--danger:hover:not(:disabled) {
   background: var(--danger-soft);
@@ -110,14 +110,14 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: rgb(var(--text-muted));
 }
 .aurum-field__input {
   font-family: var(--font-body);
   font-size: 14px;
-  color: var(--text);
-  background: var(--surface-raised);
-  border: 1px solid var(--border-strong);
+  color: rgb(var(--text));
+  background: rgb(var(--surface-raised));
+  border: 1px solid rgb(var(--border-strong));
   border-radius: var(--radius-sm);
   padding: var(--space-3);
   transition:
@@ -125,23 +125,23 @@
     box-shadow 150ms ease-out;
 }
 .aurum-field__input::placeholder {
-  color: var(--text-muted);
+  color: rgb(var(--text-muted));
 }
 .aurum-field__input:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: rgb(var(--accent));
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .aurum-field__input--error {
-  border-color: var(--danger);
+  border-color: rgb(var(--danger));
 }
 .aurum-field__msg {
   font-family: var(--font-body);
   font-size: 13px;
-  color: var(--text-muted);
+  color: rgb(var(--text-muted));
 }
 .aurum-field__msg--error {
-  color: var(--danger);
+  color: rgb(var(--danger));
 }
 
 .aurum-badge {
@@ -155,19 +155,19 @@
   border-radius: var(--radius-full);
 }
 .aurum-badge--success {
-  color: var(--success);
+  color: rgb(var(--success));
   background: var(--success-soft);
 }
 .aurum-badge--warning {
-  color: var(--warning);
+  color: rgb(var(--warning));
   background: var(--warning-soft);
 }
 .aurum-badge--danger {
-  color: var(--danger);
+  color: rgb(var(--danger));
   background: var(--danger-soft);
 }
 .aurum-badge--info {
-  color: var(--accent);
+  color: rgb(var(--accent));
   background: var(--accent-soft);
 }
 .aurum-badge--info .aurum-badge-pulse {
@@ -189,8 +189,8 @@
 }
 
 .aurum-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgb(var(--surface));
+  border: 1px solid rgb(var(--border));
   border-radius: var(--radius-md);
 }
 .aurum-card--pad-sm {
@@ -228,7 +228,7 @@
   max-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
+  background: rgb(var(--surface));
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   box-shadow: var(--shadow-modal);
 }
@@ -246,13 +246,13 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-5) var(--space-5) var(--space-4);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgb(var(--border));
 }
 .aurum-modal__title {
   font-family: var(--font-display);
   font-size: 20px;
   font-weight: 600;
-  color: var(--text);
+  color: rgb(var(--text));
   margin: 0;
 }
 .aurum-modal__close {
@@ -264,23 +264,23 @@
   border-radius: var(--radius-full);
   border: none;
   background: transparent;
-  color: var(--text-muted);
+  color: rgb(var(--text-muted));
   cursor: pointer;
 }
 .aurum-modal__close:hover {
-  background: var(--surface-raised);
-  color: var(--text);
+  background: rgb(var(--surface-raised));
+  color: rgb(var(--text));
 }
 .aurum-modal__body {
   padding: var(--space-5);
   overflow-y: auto;
   flex: 1;
-  color: var(--text);
+  color: rgb(var(--text));
   font-family: var(--font-body);
 }
 .aurum-modal__footer {
   padding: var(--space-4) var(--space-5);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgb(var(--border));
   display: flex;
   gap: var(--space-3);
 }
@@ -294,9 +294,9 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-full);
-  border: 1px solid var(--border-strong);
-  background: var(--surface-raised);
-  color: var(--text);
+  border: 1px solid rgb(var(--border-strong));
+  background: rgb(var(--surface-raised));
+  color: rgb(var(--text));
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
@@ -306,8 +306,8 @@
   transition: border-color 150ms ease-out;
 }
 .aurum-stepper__btn:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: rgb(var(--accent));
+  color: rgb(var(--accent));
 }
 .aurum-stepper__btn:disabled {
   opacity: 0.4;
@@ -319,7 +319,7 @@
   font-family: var(--font-body);
   font-size: 15px;
   font-weight: 600;
-  color: var(--text);
+  color: rgb(var(--text));
   font-variant-numeric: tabular-nums;
 }
 

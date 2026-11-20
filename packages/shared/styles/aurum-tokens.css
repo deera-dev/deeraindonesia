@@ -1,26 +1,28 @@
-/* Aurum design tokens. Dormant until an app imports this file — none do yet
-   (see docs/decisions/stack-rewrite-2026.md §4 + M3a). Light is :root,
-   dark is html.dark, same selector the existing theme store already
-   toggles (packages/shared/features/theme/store.ts) so retrofitting an
-   app needs no new theme-switch mechanism. */
+/* Aurum design tokens. Light is :root, dark is html.dark, same selector
+   the existing theme store already toggles (features/theme/store.ts) so
+   retrofitting an app needs no new theme-switch mechanism. Solid colors
+   are space-separated RGB triples (not hex) so both plain CSS (wrapped
+   in rgb(...)) and Tailwind's color-opacity modifiers (rgb(var(--x) /
+   <alpha-value>)) can read the same variable — same convention as
+   packages/shared/styles/index.css's --skin-* tokens. */
 
 :root {
-  --bg: #f7f4ed;
-  --surface: #ffffff;
-  --surface-raised: #fbf9f3;
-  --border: #e4dfd2;
-  --border-strong: #cfc8b6;
-  --text: #201e18;
-  --text-muted: #716a5c;
-  --accent: #4549b8;
-  --accent-hover: #363aa0;
+  --bg: 247 244 237;
+  --surface: 255 255 255;
+  --surface-raised: 251 249 243;
+  --border: 228 223 210;
+  --border-strong: 207 200 182;
+  --text: 32 30 24;
+  --text-muted: 113 106 92;
+  --accent: 69 73 184;
+  --accent-hover: 54 58 160;
   --accent-soft: rgba(69, 73, 184, 0.1);
-  --on-accent: #ffffff;
-  --success: #2e6b4b;
+  --on-accent: 255 255 255;
+  --success: 46 107 75;
   --success-soft: rgba(46, 107, 75, 0.12);
-  --danger: #b14836;
+  --danger: 177 72 54;
   --danger-soft: rgba(177, 72, 54, 0.12);
-  --warning: #9c7a1f;
+  --warning: 156 122 31;
   --warning-soft: rgba(156, 122, 31, 0.12);
 
   --shadow-sm: 0 2px 10px -4px rgba(32, 30, 24, 0.12);
@@ -49,22 +51,22 @@
 }
 
 html.dark {
-  --bg: #15141a;
-  --surface: #1f1e26;
-  --surface-raised: #272631;
-  --border: #35333f;
-  --border-strong: #46434f;
-  --text: #f3efe8;
-  --text-muted: #b6b0a6;
-  --accent: #8b8ff0;
-  --accent-hover: #a3a6f5;
+  --bg: 21 20 26;
+  --surface: 31 30 38;
+  --surface-raised: 39 38 49;
+  --border: 53 51 63;
+  --border-strong: 70 67 79;
+  --text: 243 239 232;
+  --text-muted: 182 176 166;
+  --accent: 139 143 240;
+  --accent-hover: 163 166 245;
   --accent-soft: rgba(139, 143, 240, 0.16);
-  --on-accent: #1a1812;
-  --success: #4b9470;
+  --on-accent: 26 24 18;
+  --success: 75 148 112;
   --success-soft: rgba(75, 148, 112, 0.16);
-  --danger: #d9705f;
+  --danger: 217 112 95;
   --danger-soft: rgba(217, 112, 95, 0.16);
-  --warning: #d6a94a;
+  --warning: 214 169 74;
   --warning-soft: rgba(214, 169, 74, 0.16);
 
   --shadow-sm: 0 2px 10px -4px rgba(0, 0, 0, 0.4);

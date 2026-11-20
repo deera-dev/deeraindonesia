@@ -3,12 +3,14 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@deera/shared/styles/index.css";
+import "@deera/shared/styles/aurum-tokens.css";
+import "@deera/shared/styles/aurum-components.css";
 import "./catalog-animations.css";
 import App from "./App";
 
 // Catalog has no light/dark toggle - it's always dark, so it always
-// carries the shared skin-token dark class (html.dark reads the dark
-// token set in packages/shared/styles/index.css).
+// carries the shared dark class (html.dark reads the dark token set in
+// both packages/shared/styles/index.css and aurum-tokens.css).
 document.documentElement.classList.add("dark");
 
 const queryClient = createAppQueryClient();

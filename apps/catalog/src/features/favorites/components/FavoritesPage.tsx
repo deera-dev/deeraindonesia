@@ -23,33 +23,33 @@ export default function FavoritesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-skin-page text-skin-text px-6 py-10 sm:px-10 md:px-16">
+    <main className="min-h-screen bg-aurum-bg text-aurum-text px-6 py-10 sm:px-10 md:px-16">
       <div className="flex items-center justify-between mb-8">
         <Link
           to="/catalog"
-          className="font-editorial text-sm tracking-[0.3em] text-skin-text/30 uppercase hover:text-skin-text/60 transition py-2"
+          className="font-body text-sm tracking-[0.3em] text-aurum-text/30 uppercase hover:text-aurum-text/60 transition py-2"
         >
           ← Katalog
         </Link>
-        <p className="font-editorial text-xs tracking-[0.2em] text-skin-text/40 uppercase">
+        <p className="font-body text-xs tracking-[0.2em] text-aurum-text/40 uppercase">
           {count} favorit
         </p>
       </div>
 
-      <p className="font-headline text-skin-accent-text text-4xl mb-8">Favorit Saya</p>
+      <p className="font-display text-aurum-accent text-4xl mb-8">Favorit Saya</p>
 
       {loading && (
-        <p className="font-editorial text-skin-text/30 text-xs tracking-[0.2em]">MEMUAT...</p>
+        <p className="font-body text-aurum-text/30 text-xs tracking-[0.2em]">MEMUAT...</p>
       )}
 
       {!loading && favoriteProducts.length === 0 && (
         <div className="py-16 text-center">
-          <p className="font-editorial text-skin-text/30 text-xs tracking-[0.25em] mb-6">
+          <p className="font-body text-aurum-text/30 text-xs tracking-[0.25em] mb-6">
             BELUM ADA PRODUK FAVORIT
           </p>
           <Link
             to="/catalog"
-            className="inline-block px-6 py-3 font-editorial text-xs tracking-[0.3em] uppercase border border-skin-bdr/25 text-skin-text/70 hover:border-skin-bdr hover:text-skin-text transition"
+            className="inline-block px-6 py-3 font-body text-xs tracking-[0.3em] uppercase border border-aurum-border/25 text-aurum-text/70 hover:border-aurum-border hover:text-aurum-text transition"
           >
             Jelajahi Katalog
           </Link>
@@ -67,8 +67,8 @@ export default function FavoritesPage() {
                     alt={p.nama}
                     className="w-full aspect-[3/4] object-cover"
                   />
-                  <p className="mt-2 font-headline text-skin-accent-text text-sm">{p.kode}</p>
-                  <p className="font-script text-skin-text/50 text-sm truncate">{p.nama}</p>
+                  <p className="mt-2 font-display text-aurum-accent text-sm">{p.kode}</p>
+                  <p className="font-display text-aurum-text/50 text-sm truncate">{p.nama}</p>
                 </Link>
                 <FavoriteButton
                   active
@@ -83,13 +83,13 @@ export default function FavoritesPage() {
             <button
               onClick={handleShareAll}
               disabled={sharing}
-              className="flex-1 py-4 font-editorial text-sm tracking-[0.2em] uppercase border border-skin-accent/60 text-skin-accent-text hover:bg-skin-accent hover:text-skin-on-accent transition disabled:opacity-40"
+              className="flex-1 py-4 font-body text-sm tracking-[0.2em] uppercase border border-aurum-accent/60 text-aurum-accent hover:bg-aurum-accent hover:text-aurum-on-accent transition disabled:opacity-40"
             >
               {sharing ? "MEMBAGIKAN..." : `Share ${favoriteProducts.length} Produk`}
             </button>
             <button
               onClick={clear}
-              className="py-4 px-6 font-editorial text-sm tracking-[0.2em] uppercase border border-skin-bdr/20 text-skin-text/40 hover:text-skin-text/80 hover:border-skin-bdr/40 transition"
+              className="py-4 px-6 font-body text-sm tracking-[0.2em] uppercase border border-aurum-border/20 text-aurum-text/40 hover:text-aurum-text/80 hover:border-aurum-border/40 transition"
             >
               Hapus Semua
             </button>

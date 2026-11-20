@@ -46,21 +46,21 @@ describe("MenuButton", () => {
 
   it("tidak menampilkan titik indikator saat tidak ada filter aktif & favorit kosong", async () => {
     const { container } = await renderMenu({ hasActiveFilter: false, favoriteCount: 0 });
-    expect(container.querySelector(".bg-skin-accent.rounded-full")).toBeNull();
+    expect(container.querySelector(".bg-aurum-accent.rounded-full")).toBeNull();
   });
 
   it("menampilkan titik indikator saat filter aktif", async () => {
     await renderMenu({ hasActiveFilter: true });
     fireEvent.click(screen.getByRole("button", { name: "Menu" }));
     expect(
-      screen.getByRole("button", { name: "Menu" }).querySelector("span.bg-skin-accent"),
+      screen.getByRole("button", { name: "Menu" }).querySelector("span.bg-aurum-accent"),
     ).toBeTruthy();
   });
 
   it("menampilkan titik indikator saat ada favorit", async () => {
     await renderMenu({ favoriteCount: 2 });
     expect(
-      screen.getByRole("button", { name: "Menu" }).querySelector("span.bg-skin-accent"),
+      screen.getByRole("button", { name: "Menu" }).querySelector("span.bg-aurum-accent"),
     ).toBeTruthy();
   });
 
