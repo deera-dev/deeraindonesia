@@ -281,6 +281,21 @@ Urut dari paling penting:
     manual (`BEGIN; ...; ROLLBACK;`) kalau cuma mau lihat hasil tanpa
     commit.
 
+    **✅ PEMULIHAN BERHASIL (2026-11-20, hari yang sama)**: dari 224
+    baris yang kena, **222 berhasil direkonstruksi & dikembalikan**,
+    tervalidasi 2 metode independen (angka stok-opname terakhir +
+    transfer yang approved di antara waktu opname & insiden, VS hasil
+    sisa matematis dari `cideng_now` — insiden ini cuma mindahin
+    gudang→cideng, jadi total per baris harus konservasi; kedua metode
+    cocok persis di 222/222 baris, 0 yang beda — keyakinan tinggi bukan
+    tebakan). 1 baris data tes (`ZZTEST-MOVE`) dihapus. **1 baris produk
+    asli** (`D-085-PRS`, Midi, HIJAU) TIDAK punya histori stok-opname
+    sama sekali — dibiarkan apa adanya (`gudang:0, cideng:8`), nunggu
+    user cek fisik manual. User (toko) yang menyelamatkan situasi ini
+    dengan detail operasional yang saya gak tahu (jadwal pasar, transfer
+    mana yang relevan) — data pasti rusak permanen kalau user gak
+    kasih konteks itu.
+
 ## 7. Peta koneksi lintas-app (ringkas — detail penuh ada di riwayat chat 2026-11-08)
 
 Tabel yang dipakai 2+ app, wajib dicek dampaknya tiap kali salah satu app
