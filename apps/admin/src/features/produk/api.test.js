@@ -13,11 +13,6 @@ vi.mock("@deera/shared/lib/mediaUpload", () => ({
   uploadMedia: (...args) => uploadMediaMock(...args),
 }));
 
-const logHistoryMock = vi.fn();
-vi.mock("../history/api", () => ({
-  logHistory: (...args) => logHistoryMock(...args),
-}));
-
 const {
   fetchStokMap,
   fetchStokWarnaByKode,
@@ -38,7 +33,6 @@ function setupFromMock(buildersByTable) {
 beforeEach(() => {
   resetSupabaseMock(supabaseMock);
   uploadMediaMock.mockReset();
-  logHistoryMock.mockReset();
 });
 
 describe("fetchStokMap", () => {
@@ -180,12 +174,19 @@ describe("fetchProducedByKode", () => {
 });
 
 describe("saveProduct", () => {
-  it("insert produk baru (mainImage/detail bertipe url), existingKeys memfilter kombinasi stok yang sudah ada", async () => {
-    const productsBuilder = makeBuilder({ data: null, error: null });
-    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+  // Tulis-DB (products/stok_warna/product_history/rename warna) sekarang
+  // atomik lewat Edge Function produk-crud -> RPC save_product (lihat
+  // supabase/migrations/20261120_save_product_delete_product_cascade.sql
+  // utk test SQL-nya langsung: insert/edit/rename/orphan-cleanup/guard "_"
+  // semua sudah diverifikasi di level RPC). Test di sini fokus ke logika
+  // yang TETAP di JS: upload media & bentuk payload yang dikirim.
+  it("insert produk baru (mainImage/detail bertipe url) -> kirim action 'save' dgn payload yg benar, tanpa upload", async () => {
+    supabaseMock.functions.invoke.mockResolvedValueOnce({
+      data: { data: { kode: "D-50-OSK" } },
+      error: null,
+    });
 
-    const result = await saveProduct({
+    await saveProduct({
       isEdit: false,
       originalKode: undefined,
       finalKode: "D-50-OSK",
@@ -195,54 +196,33 @@ describe("saveProduct", () => {
       warna: ["HITAM", "MERAH"],
       activeSet: new Set(["Midi", "Gamis"]),
       hargaMap: { Midi: "150000", Gamis: "180000" },
-      stokWarnaMap: { Midi: { HITAM: { gudang: 0, cideng: 0, tegalgubug: 0 } } },
-      productBefore: undefined,
     });
 
-    expect(productsBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kode: "D-50-OSK",
-        nama: "Gamis Aisyah",
-        image: "main.jpg",
-        detail: ["d1.jpg"],
-        bahan: "Ceruti",
-        hpp: 75000,
-        warna: ["HITAM", "MERAH"],
-        variants: [
-          { size: "Midi", ld: 110, pb: 130, harga: 150000 },
-          { size: "Gamis", ld: 110, pb: 140, harga: 180000 },
-        ],
-      }),
-    );
     expect(uploadMediaMock).not.toHaveBeenCalled();
-    expect(logHistoryMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "tambah",
-        category: "produk",
-        kode: "D-50-OSK",
-        snapshot: result,
-      }),
-    );
-
-    const insertedRows = stokWarnaBuilder.insert.mock.calls[0][0];
-    expect(insertedRows).toHaveLength(3);
-    expect(insertedRows).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ size: "Midi", warna: "HITAM" })]),
-    );
-    expect(insertedRows).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kode: "D-50-OSK", size: "Midi", warna: "MERAH" }),
-        expect.objectContaining({ kode: "D-50-OSK", size: "Gamis", warna: "HITAM" }),
-        expect.objectContaining({ kode: "D-50-OSK", size: "Gamis", warna: "MERAH" }),
-      ]),
-    );
+    expect(supabaseMock.functions.invoke).toHaveBeenCalledWith("produk-crud", {
+      body: {
+        action: "save",
+        input: expect.objectContaining({
+          isEdit: false,
+          originalKode: null,
+          finalKode: "D-50-OSK",
+          nama: "Gamis Aisyah",
+          image: "main.jpg",
+          detail: ["d1.jpg"],
+          bahan: "Ceruti",
+          hpp: 75000,
+          warna: ["HITAM", "MERAH"],
+          variants: [
+            { size: "Midi", ld: 110, pb: 130, harga: 150000 },
+            { size: "Gamis", ld: 110, pb: 140, harga: 180000 },
+          ],
+          warnaRenames: [],
+        }),
+      },
+    });
   });
 
   it("seri_warna: null saat seriWarnaImage tidak diberikan (undefined)", async () => {
-    const productsBuilder = makeBuilder({ data: null, error: null });
-    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
-
     const result = await saveProduct({
       isEdit: false,
       finalKode: "D-51-OSK",
@@ -252,7 +232,6 @@ describe("saveProduct", () => {
       warna: [],
       activeSet: new Set(["Midi"]),
       hargaMap: { Midi: "100000" },
-      stokWarnaMap: {},
     });
 
     expect(result.seri_warna).toBeNull();
@@ -260,10 +239,6 @@ describe("saveProduct", () => {
   });
 
   it("seri_warna: memakai URL langsung saat seriWarnaImage bertipe url (tanpa upload)", async () => {
-    const productsBuilder = makeBuilder({ data: null, error: null });
-    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
-
     const result = await saveProduct({
       isEdit: false,
       finalKode: "D-52-OSK",
@@ -274,21 +249,22 @@ describe("saveProduct", () => {
       warna: [],
       activeSet: new Set(["Midi"]),
       hargaMap: { Midi: "100000" },
-      stokWarnaMap: {},
     });
 
     expect(result.seri_warna).toBe("seri-warna-existing.jpg");
     expect(uploadMediaMock).not.toHaveBeenCalled();
-    expect(productsBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ seri_warna: "seri-warna-existing.jpg" }),
+    expect(supabaseMock.functions.invoke).toHaveBeenCalledWith(
+      "produk-crud",
+      expect.objectContaining({
+        body: expect.objectContaining({
+          input: expect.objectContaining({ seriWarna: "seri-warna-existing.jpg" }),
+        }),
+      }),
     );
   });
 
   it("seri_warna: upload file ke Cloudinary saat seriWarnaImage bertipe file", async () => {
     uploadMediaMock.mockResolvedValue({ url: "seri-warna-uploaded.jpg" });
-    const productsBuilder = makeBuilder({ data: null, error: null });
-    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
 
     const result = await saveProduct({
       isEdit: false,
@@ -300,17 +276,13 @@ describe("saveProduct", () => {
       warna: [],
       activeSet: new Set(["Midi"]),
       hargaMap: { Midi: "100000" },
-      stokWarnaMap: {},
     });
 
     expect(uploadMediaMock).toHaveBeenCalledWith({ name: "seri.png" }, { kind: "image" });
     expect(result.seri_warna).toBe("seri-warna-uploaded.jpg");
   });
 
-  it("insert produk baru: upload file utk mainImage & detailImages, fallback harga kosong & hpp tidak valid, warna kosong -> ['_']", async () => {
-    const productsBuilder = makeBuilder({ data: null, error: null });
-    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+  it("insert produk baru: upload file utk mainImage & detailImages, fallback harga kosong & hpp tidak valid, warna kosong -> []", async () => {
     uploadMediaMock.mockResolvedValue({ url: "uploaded.jpg" });
 
     const result = await saveProduct({
@@ -325,8 +297,6 @@ describe("saveProduct", () => {
       warna: [],
       activeSet: new Set(["Midi", "Gamis Jumbo"]),
       hargaMap: { Midi: "150000" },
-      stokWarnaMap: {},
-      productBefore: undefined,
     });
 
     expect(uploadMediaMock).toHaveBeenCalledWith({ name: "main.png" }, { kind: "image" });
@@ -341,76 +311,9 @@ describe("saveProduct", () => {
       { size: "Midi", ld: 110, pb: 130, harga: 150000 },
       { size: "Gamis Jumbo", ld: 120, pb: 140, harga: 0 },
     ]);
-
-    const insertedRows = stokWarnaBuilder.insert.mock.calls[0][0];
-    expect(insertedRows).toHaveLength(2);
-    expect(insertedRows).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kode: "D-60-OSK", size: "Midi", warna: "_" }),
-        expect.objectContaining({ kode: "D-60-OSK", size: "Gamis Jumbo", warna: "_" }),
-      ]),
-    );
   });
 
-  it("update produk (isEdit=true): tanpa kombinasi stok baru, hapus orphan warna, mainImage null & tanpa detail", async () => {
-    const productsBuilder = makeBuilder({ data: null, error: null });
-    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    const expectedStokBuilder = makeBuilder({ data: null, error: null });
-    setupFromMock({
-      products: productsBuilder,
-      stok_warna: stokWarnaBuilder,
-      expected_stok: expectedStokBuilder,
-    });
-    const productBefore = { kode: "D-10-OSK", nama: "Old" };
-
-    const result = await saveProduct({
-      isEdit: true,
-      originalKode: "D-10-OSK",
-      finalKode: "D-10-OSK",
-      fields: { nama: "New Name", bahan: "Bahan", hpp: "100000" },
-      mainImage: null,
-      detailImages: [],
-      warna: ["HITAM"],
-      activeSet: new Set(["Midi"]),
-      hargaMap: { Midi: "150000" },
-      stokWarnaMap: { Midi: { HITAM: {}, MERAH: {} } },
-      productBefore,
-    });
-
-    expect(result.image).toBeNull();
-    expect(result.detail).toEqual([]);
-    expect(productsBuilder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ kode: "D-10-OSK" }),
-    );
-    expect(productsBuilder.eq).toHaveBeenCalledWith("kode", "D-10-OSK");
-    expect(logHistoryMock).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "edit", kode: "D-10-OSK", before: productBefore }),
-    );
-    expect(stokWarnaBuilder.insert).not.toHaveBeenCalled();
-    expect(stokWarnaBuilder.delete).toHaveBeenCalledTimes(1);
-    expect(stokWarnaBuilder.eq).toHaveBeenCalledWith("warna", "MERAH");
-    // BUG FIX (November 2026) — warna yang dihapus dari produk juga harus
-    // ikut dibersihkan dari expected_stok (termasuk baseline_* seharusnya
-    // per lokasi), supaya tidak jadi "hantu" yang tetap kehitung walau
-    // warnanya sudah tidak ada lagi di produk (lihat D-075-TEN/HITAM).
-    expect(expectedStokBuilder.delete).toHaveBeenCalledTimes(1);
-    expect(expectedStokBuilder.eq).toHaveBeenCalledWith("kode", "D-10-OSK");
-    expect(expectedStokBuilder.eq).toHaveBeenCalledWith("warna", "MERAH");
-  });
-
-  // Baris warna "_" (belum dibagi warna) cuma dihapus kalau SEMUA lokasi
-  // 0 — termasuk ngorder. Tanpa cek ngorder=0 ini, baris yang masih punya
-  // stok ngorder bisa kehapus diam2 (data hilang) padahal belum kosong.
-  it("orphan warna '_' cuma dihapus kalau gudang+cideng+tegalgubug+ngorder semua 0", async () => {
-    const productsBuilder = makeBuilder({ data: null, error: null });
-    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    const expectedStokBuilder = makeBuilder({ data: null, error: null });
-    setupFromMock({
-      products: productsBuilder,
-      stok_warna: stokWarnaBuilder,
-      expected_stok: expectedStokBuilder,
-    });
-
+  it("update produk (isEdit=true) -> isEdit/originalKode/warnaRenames diteruskan apa adanya ke Edge Function", async () => {
     await saveProduct({
       isEdit: true,
       originalKode: "D-10-OSK",
@@ -419,27 +322,30 @@ describe("saveProduct", () => {
       mainImage: null,
       detailImages: [],
       warna: ["HITAM"],
+      warnaRenames: [{ from: "HITAMLAMA", to: "HITAM" }],
       activeSet: new Set(["Midi"]),
       hargaMap: { Midi: "150000" },
-      stokWarnaMap: { Midi: { HITAM: {}, _: { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 } } },
-      productBefore: { kode: "D-10-OSK", nama: "Old" },
     });
 
-    expect(stokWarnaBuilder.delete).toHaveBeenCalledTimes(1);
-    expect(stokWarnaBuilder.eq).toHaveBeenCalledWith("warna", "_");
-    expect(stokWarnaBuilder.eq).toHaveBeenCalledWith("ngorder", 0);
-    // expected_stok dibersihkan tanpa syarat (bukan pending bucket stok
-    // fisik seperti stok_warna "_" — kalau warna-nya sudah orphan, angka
-    // expected/baseline lama buat warna itu tidak relevan lagi).
-    expect(expectedStokBuilder.delete).toHaveBeenCalledTimes(1);
-    expect(expectedStokBuilder.eq).toHaveBeenCalledWith("warna", "_");
+    expect(supabaseMock.functions.invoke).toHaveBeenCalledWith("produk-crud", {
+      body: {
+        action: "save",
+        input: expect.objectContaining({
+          isEdit: true,
+          originalKode: "D-10-OSK",
+          finalKode: "D-10-OSK",
+          warna: ["HITAM"],
+          warnaRenames: [{ from: "HITAMLAMA", to: "HITAM" }],
+        }),
+      },
+    });
   });
 
-  it("insert gagal saat simpan products -> melempar error, tidak lanjut ke logHistory/stok_warna", async () => {
-    const error = new Error("insert gagal");
-    const productsBuilder = makeBuilder({ data: null, error });
-    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
+  it("Edge Function balikin error di level network -> melempar error", async () => {
+    supabaseMock.functions.invoke.mockResolvedValueOnce({
+      data: null,
+      error: new Error("network gagal"),
+    });
 
     await expect(
       saveProduct({
@@ -451,26 +357,19 @@ describe("saveProduct", () => {
         warna: [],
         activeSet: new Set(["Midi"]),
         hargaMap: { Midi: "1000" },
-        stokWarnaMap: {},
       }),
-    ).rejects.toThrow("insert gagal");
-
-    expect(logHistoryMock).not.toHaveBeenCalled();
-    expect(stokWarnaBuilder.insert).not.toHaveBeenCalled();
+    ).rejects.toThrow("network gagal");
   });
 
-  it("update gagal saat simpan products -> melempar error", async () => {
-    const error = new Error("update gagal");
-    const productsBuilder = makeBuilder({ data: null, error });
-    setupFromMock({
-      products: productsBuilder,
-      stok_warna: makeBuilder({ data: null, error: null }),
+  it("Edge Function balikin {error} di body (RPC melempar exception) -> melempar error dgn pesannya", async () => {
+    supabaseMock.functions.invoke.mockResolvedValueOnce({
+      data: { error: "Nama produk wajib diisi" },
+      error: null,
     });
 
     await expect(
       saveProduct({
-        isEdit: true,
-        originalKode: "D-71-OSK",
+        isEdit: false,
         finalKode: "D-71-OSK",
         fields: { nama: "X", bahan: "Y", hpp: "1000" },
         mainImage: null,
@@ -478,37 +377,12 @@ describe("saveProduct", () => {
         warna: [],
         activeSet: new Set(["Midi"]),
         hargaMap: { Midi: "1000" },
-        stokWarnaMap: {},
       }),
-    ).rejects.toThrow("update gagal");
-  });
-
-  it("stok_warna insert gagal -> melempar error", async () => {
-    const stokErr = new Error("stok gagal");
-    const productsBuilder = makeBuilder({ data: null, error: null });
-    const stokWarnaBuilder = makeBuilder({ data: null, error: stokErr });
-    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
-
-    await expect(
-      saveProduct({
-        isEdit: false,
-        finalKode: "D-72-OSK",
-        fields: { nama: "X", bahan: "Y", hpp: "1000" },
-        mainImage: null,
-        detailImages: [],
-        warna: ["HITAM"],
-        activeSet: new Set(["Midi"]),
-        hargaMap: { Midi: "100000" },
-        stokWarnaMap: {},
-      }),
-    ).rejects.toThrow("stok gagal");
+    ).rejects.toThrow("Nama produk wajib diisi");
   });
 
   it("upload video saat videoFile bertipe file", async () => {
     uploadMediaMock.mockResolvedValue({ url: "video.mp4" });
-    const productsBuilder = makeBuilder({ data: null, error: null });
-    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
 
     const result = await saveProduct({
       isEdit: false,
@@ -520,7 +394,6 @@ describe("saveProduct", () => {
       warna: [],
       activeSet: new Set(["Midi"]),
       hargaMap: { Midi: "200000" },
-      stokWarnaMap: {},
     });
 
     expect(uploadMediaMock).toHaveBeenCalledWith({ name: "vid.mp4" }, { kind: "video" });
@@ -528,10 +401,6 @@ describe("saveProduct", () => {
   });
 
   it("simpan video url langsung tanpa upload saat videoFile bertipe url", async () => {
-    const productsBuilder = makeBuilder({ data: null, error: null });
-    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
-
     const result = await saveProduct({
       isEdit: false,
       finalKode: "D-81-OSK",
@@ -542,17 +411,12 @@ describe("saveProduct", () => {
       warna: [],
       activeSet: new Set(["Midi"]),
       hargaMap: { Midi: "200000" },
-      stokWarnaMap: {},
     });
 
     expect(result.video).toBe("https://res.cloudinary.com/x/vid.mp4");
   });
 
   it("video null saat videoFile tidak diberikan", async () => {
-    const productsBuilder = makeBuilder({ data: null, error: null });
-    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
-
     const result = await saveProduct({
       isEdit: false,
       finalKode: "D-82-OSK",
@@ -562,149 +426,32 @@ describe("saveProduct", () => {
       warna: [],
       activeSet: new Set(["Midi"]),
       hargaMap: { Midi: "200000" },
-      stokWarnaMap: {},
     });
 
     expect(result.video).toBeNull();
   });
 
-  describe("warnaRenames (rename warna ditunda sampai Simpan)", () => {
-    it("memanggil RPC rename_produk_warna dengan originalKode+from+to & tidak insert stok_warna duplikat", async () => {
-      const productsBuilder = makeBuilder({ data: null, error: null });
-      const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-      setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
-      supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: null });
-
-      await saveProduct({
-        isEdit: true,
-        originalKode: "D-90-OSK",
-        finalKode: "D-90-OSK",
-        fields: { nama: "Produk Rename", bahan: "Ceruti", hpp: "100000" },
-        mainImage: null,
-        detailImages: [],
-        warna: ["NAVY"],
-        warnaRenames: [{ from: "HITAM", to: "NAVY" }],
-        activeSet: new Set(["Midi"]),
-        hargaMap: { Midi: "150000" },
-        stokWarnaMap: { Midi: { HITAM: { gudang: 3, cideng: 0, tegalgubug: 0 } } },
-      });
-
-      expect(supabaseMock.rpc).toHaveBeenCalledWith("rename_produk_warna", {
-        p_kode: "D-90-OSK",
-        p_old_warna: "HITAM",
-        p_new_warna: "NAVY",
-      });
-      expect(stokWarnaBuilder.insert).not.toHaveBeenCalled();
+  it("default warnaRenames=[] saat tidak diberikan", async () => {
+    await saveProduct({
+      isEdit: true,
+      originalKode: "D-94-OSK",
+      finalKode: "D-94-OSK",
+      fields: { nama: "Produk Tanpa Rename", bahan: "Ceruti", hpp: "100000" },
+      mainImage: null,
+      detailImages: [],
+      warna: ["HITAM"],
+      activeSet: new Set(["Midi"]),
+      hargaMap: { Midi: "150000" },
     });
 
-    it("beberapa entri rename masing-masing memanggil RPC", async () => {
-      const productsBuilder = makeBuilder({ data: null, error: null });
-      const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-      setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
-      supabaseMock.rpc.mockResolvedValue({ data: null, error: null });
-
-      await saveProduct({
-        isEdit: true,
-        originalKode: "D-91-OSK",
-        finalKode: "D-91-OSK",
-        fields: { nama: "Produk Multi Rename", bahan: "Ceruti", hpp: "100000" },
-        mainImage: null,
-        detailImages: [],
-        warna: ["NAVY", "MAROON"],
-        warnaRenames: [
-          { from: "HITAM", to: "NAVY" },
-          { from: "MERAH", to: "MAROON" },
-        ],
-        activeSet: new Set(["Midi"]),
-        hargaMap: { Midi: "150000" },
-        stokWarnaMap: {
-          Midi: {
-            HITAM: { gudang: 1, cideng: 0, tegalgubug: 0 },
-            MERAH: { gudang: 2, cideng: 0, tegalgubug: 0 },
-          },
-        },
-      });
-
-      expect(supabaseMock.rpc).toHaveBeenCalledWith("rename_produk_warna", {
-        p_kode: "D-91-OSK",
-        p_old_warna: "HITAM",
-        p_new_warna: "NAVY",
-      });
-      expect(supabaseMock.rpc).toHaveBeenCalledWith("rename_produk_warna", {
-        p_kode: "D-91-OSK",
-        p_old_warna: "MERAH",
-        p_new_warna: "MAROON",
-      });
-      expect(supabaseMock.rpc).toHaveBeenCalledTimes(2);
-    });
-
-    it("RPC rename gagal -> melempar error, tidak lanjut ke insert stok_warna", async () => {
-      const productsBuilder = makeBuilder({ data: null, error: null });
-      const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-      setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
-      const renameErr = new Error("rename gagal");
-      supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: renameErr });
-
-      await expect(
-        saveProduct({
-          isEdit: true,
-          originalKode: "D-92-OSK",
-          finalKode: "D-92-OSK",
-          fields: { nama: "Produk Rename Gagal", bahan: "Ceruti", hpp: "100000" },
-          mainImage: null,
-          detailImages: [],
-          warna: ["NAVY"],
-          warnaRenames: [{ from: "HITAM", to: "NAVY" }],
-          activeSet: new Set(["Midi"]),
-          hargaMap: { Midi: "150000" },
-          stokWarnaMap: { Midi: { HITAM: { gudang: 1, cideng: 0, tegalgubug: 0 } } },
+    expect(supabaseMock.functions.invoke).toHaveBeenCalledWith(
+      "produk-crud",
+      expect.objectContaining({
+        body: expect.objectContaining({
+          input: expect.objectContaining({ warnaRenames: [] }),
         }),
-      ).rejects.toThrow("rename gagal");
-
-      expect(stokWarnaBuilder.insert).not.toHaveBeenCalled();
-    });
-
-    it("isEdit=false: RPC TIDAK dipanggil meskipun warnaRenames diberikan", async () => {
-      const productsBuilder = makeBuilder({ data: null, error: null });
-      const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-      setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
-
-      await saveProduct({
-        isEdit: false,
-        finalKode: "D-93-OSK",
-        fields: { nama: "Produk Baru", bahan: "Ceruti", hpp: "100000" },
-        mainImage: null,
-        detailImages: [],
-        warna: ["NAVY"],
-        warnaRenames: [{ from: "HITAM", to: "NAVY" }],
-        activeSet: new Set(["Midi"]),
-        hargaMap: { Midi: "150000" },
-        stokWarnaMap: {},
-      });
-
-      expect(supabaseMock.rpc).not.toHaveBeenCalledWith("rename_produk_warna", expect.anything());
-    });
-
-    it("default warnaRenames=[] -> RPC TIDAK dipanggil", async () => {
-      const productsBuilder = makeBuilder({ data: null, error: null });
-      const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-      setupFromMock({ products: productsBuilder, stok_warna: stokWarnaBuilder });
-
-      await saveProduct({
-        isEdit: true,
-        originalKode: "D-94-OSK",
-        finalKode: "D-94-OSK",
-        fields: { nama: "Produk Tanpa Rename", bahan: "Ceruti", hpp: "100000" },
-        mainImage: null,
-        detailImages: [],
-        warna: ["HITAM"],
-        activeSet: new Set(["Midi"]),
-        hargaMap: { Midi: "150000" },
-        stokWarnaMap: { Midi: { HITAM: { gudang: 1, cideng: 0, tegalgubug: 0 } } },
-      });
-
-      expect(supabaseMock.rpc).not.toHaveBeenCalledWith("rename_produk_warna", expect.anything());
-    });
+      }),
+    );
   });
 });
 
@@ -864,31 +611,35 @@ describe("fetchSalesDetailByKode", () => {
 });
 
 describe("deleteProductCascade", () => {
-  it("menghapus semua data terkait dan mencatat audit log hapus", async () => {
-    const { deleteProductCascade } = await import("./api");
-    const prodBatchBuilder = makeBuilder({ data: null, error: null });
-    const expectedStokBuilder = makeBuilder({ data: null, error: null });
-    const hppTplBuilder = makeBuilder({ data: null, error: null });
-    const stokWarnaBuilder = makeBuilder({ data: null, error: null });
-    const productsBuilder = makeBuilder({ data: { kode: "D-01-OSK", nama: "Gamis" }, error: null });
-
-    setupFromMock({
-      produksi_batch: prodBatchBuilder,
-      expected_stok: expectedStokBuilder,
-      hpp_template: hppTplBuilder,
-      stok_warna: stokWarnaBuilder,
-      products: productsBuilder,
-    });
-
+  // Cascade delete (produksi_batch/expected_stok/hpp_template/stok_warna/
+  // products) + audit log sekarang atomik lewat Edge Function produk-crud
+  // -> RPC delete_product_cascade (sudah diverifikasi langsung di DB saat
+  // nulis migrationnya). Di sini cuma tes JS-nya manggil dgn action/input
+  // yang benar & meneruskan error.
+  it("mengirim action 'delete' dengan kode yang benar", async () => {
     await deleteProductCascade("D-01-OSK");
 
-    expect(prodBatchBuilder.eq).toHaveBeenCalledWith("kode_produk", "D-01-OSK");
-    expect(expectedStokBuilder.eq).toHaveBeenCalledWith("kode", "D-01-OSK");
-    expect(hppTplBuilder.eq).toHaveBeenCalledWith("kode_produk", "D-01-OSK");
-    expect(stokWarnaBuilder.eq).toHaveBeenCalledWith("kode", "D-01-OSK");
-    expect(logHistoryMock).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "hapus", category: "produk", kode: "D-01-OSK" }),
-    );
+    expect(supabaseMock.functions.invoke).toHaveBeenCalledWith("produk-crud", {
+      body: { action: "delete", input: { kode: "D-01-OSK" } },
+    });
+  });
+
+  it("Edge Function balikin error di level network -> melempar error", async () => {
+    supabaseMock.functions.invoke.mockResolvedValueOnce({
+      data: null,
+      error: new Error("network gagal"),
+    });
+
+    await expect(deleteProductCascade("D-02-OSK")).rejects.toThrow("network gagal");
+  });
+
+  it("Edge Function balikin {error} di body -> melempar error dgn pesannya", async () => {
+    supabaseMock.functions.invoke.mockResolvedValueOnce({
+      data: { error: "Produk tidak ditemukan" },
+      error: null,
+    });
+
+    await expect(deleteProductCascade("D-03-OSK")).rejects.toThrow("Produk tidak ditemukan");
   });
 });
 

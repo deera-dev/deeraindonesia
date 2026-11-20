@@ -1,7 +1,6 @@
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { uploadMedia } from "@deera/shared/lib/mediaUpload";
 import { supabase } from "@deera/shared/lib/supabase";
-import { logHistory } from "../history/api";
 
 export async function fetchStokMap() {
   const { data, error } = await supabase.rpc("get_stock_summary");
@@ -147,8 +146,6 @@ export async function saveProduct({
   warnaRenames = [],
   activeSet,
   hargaMap,
-  stokWarnaMap,
-  productBefore,
 }) {
   const mainUrl = mainImage
     ? mainImage.type === "url"
@@ -191,112 +188,43 @@ export async function saveProduct({
     warna,
   };
 
-  if (isEdit) {
-    const { error } = await supabase.from("products").update(payload).eq("kode", originalKode);
-    if (error) throw error;
-    await logHistory({
-      action: "edit",
-      category: "produk",
-      kode: finalKode,
-      nama: payload.nama,
-      snapshot: payload,
-      before: productBefore,
-    });
-  } else {
-    const { error } = await supabase.from("products").insert(payload);
-    if (error) throw error;
-    await logHistory({
-      action: "tambah",
-      category: "produk",
-      kode: finalKode,
-      nama: payload.nama,
-      snapshot: payload,
-    });
-  }
-
-  if (isEdit && warnaRenames.length > 0) {
-    for (const { from, to } of warnaRenames) {
-      const { error: renameErr } = await supabase.rpc("rename_produk_warna", {
-        p_kode: originalKode,
-        p_old_warna: from,
-        p_new_warna: to,
-      });
-      if (renameErr) throw renameErr;
-    }
-  }
-
-  const warnaList = warna.length > 0 ? warna : ["_"];
-  const existingKeys = new Set();
-  for (const [size, warnaMap] of Object.entries(stokWarnaMap)) {
-    for (const w of Object.keys(warnaMap)) existingKeys.add(`${size}__${w}`);
-  }
-  for (const { from, to } of warnaRenames) {
-    for (const key of [...existingKeys]) {
-      const suffix = `__${from}`;
-      if (key.endsWith(suffix)) {
-        const size = key.slice(0, -suffix.length);
-        existingKeys.add(`${size}__${to}`);
-      }
-    }
-  }
-  const newRows = SIZE_PRESETS.filter((p) => activeSet.has(p.size))
-    .flatMap((p) => warnaList.map((w) => ({ size: p.size, warna: w })))
-    .filter((c) => !existingKeys.has(`${c.size}__${c.warna}`))
-    .map((c) => ({
-      kode: finalKode,
-      size: c.size,
-      warna: c.warna,
-      gudang: 0,
-      cideng: 0,
-      tegalgubug: 0,
-      ngorder: 0,
-      updated_at: new Date().toISOString(),
-    }));
-  if (newRows.length > 0) {
-    const { error: stokErr } = await supabase.from("stok_warna").insert(newRows);
-    if (stokErr) throw stokErr;
-  }
-
-  if (isEdit) {
-    const currentSet = new Set(warnaList);
-    const orphanedWarnas = new Set();
-    for (const warnaMap of Object.values(stokWarnaMap)) {
-      for (const w of Object.keys(warnaMap)) if (!currentSet.has(w)) orphanedWarnas.add(w);
-    }
-    for (const orphanW of orphanedWarnas) {
-      let del = supabase.from("stok_warna").delete().eq("kode", finalKode).eq("warna", orphanW);
-      if (orphanW === "_")
-        del = del.eq("gudang", 0).eq("cideng", 0).eq("tegalgubug", 0).eq("ngorder", 0);
-      await del;
-      // BUG FIX (November 2026, laporan admin "seharusnya" per lokasi
-      // kelihatan lebih besar dari jumlah warna yang tampil di layar) —
-      // warna yang dihapus dari produk tapi baris expected_stok-nya
-      // (termasuk baseline_* dari migrasi anchor SO) tidak ikut
-      // dibersihkan jadi "hantu" yang tetap kehitung di seharusnya per
-      // lokasi walau warnanya sendiri sudah tidak ada lagi di produk.
-      await supabase.from("expected_stok").delete().eq("kode", finalKode).eq("warna", orphanW);
-    }
-  }
+  // Tulis DB-nya (products + stok_warna baru/orphan + product_history +
+  // rename warna) sekarang 1 panggilan atomik lewat RPC save_product
+  // (supabase/migrations/20261120_save_product_delete_product_cascade.sql)
+  // — dulu ini 4-6 panggilan supabase.from() berurutan tanpa transaction.
+  // stokWarnaMap TIDAK dikirim lagi — RPC baca state stok_warna LANGSUNG
+  // dari tabel di dalam transaction yang sama, bukan percaya snapshot
+  // client yang bisa basi.
+  const { data, error } = await supabase.functions.invoke("produk-crud", {
+    body: {
+      action: "save",
+      input: {
+        isEdit,
+        originalKode: originalKode || null,
+        finalKode,
+        nama: payload.nama,
+        image: payload.image,
+        seriWarna: payload.seri_warna,
+        video: payload.video,
+        detail: payload.detail,
+        bahan: payload.bahan,
+        variants: payload.variants,
+        hpp: payload.hpp,
+        warna: payload.warna,
+        warnaRenames,
+      },
+    },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
 
   return payload;
 }
 
 export async function deleteProductCascade(kode) {
-  await supabase.from("produksi_batch").delete().eq("kode_produk", kode);
-  await supabase.from("expected_stok").delete().eq("kode", kode);
-  await supabase.from("hpp_template").delete().eq("kode_produk", kode);
-  await supabase.from("stok_warna").delete().eq("kode", kode);
-  const { data: produk } = await supabase
-    .from("products")
-    .select("kode, nama")
-    .eq("kode", kode)
-    .single();
-  await supabase.from("products").delete().eq("kode", kode);
-  await logHistory({
-    action: "hapus",
-    category: "produk",
-    kode,
-    nama: produk?.nama ?? kode,
-    snapshot: null,
+  const { data, error } = await supabase.functions.invoke("produk-crud", {
+    body: { action: "delete", input: { kode } },
   });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
 }

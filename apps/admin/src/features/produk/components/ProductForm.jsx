@@ -1,12 +1,12 @@
-import { useState } from "react";
 import { buildKode } from "@deera/shared/lib/constants";
 import { MAX_VIDEO_MB, validateMedia } from "@deera/shared/lib/mediaUpload";
-import { useStokWarnaByKode, useSaveProduct } from "../hooks";
-import SizeSection from "./SizeSection";
-import ImageSection from "./ImageSection";
-import WarnaSection from "./WarnaSection";
+import { useState } from "react";
+import { useSaveProduct, useStokWarnaByKode } from "../hooks";
 import HppSection from "./HppSection";
+import ImageSection from "./ImageSection";
 import OrphanStokConfirmModal from "./OrphanStokConfirmModal";
+import SizeSection from "./SizeSection";
+import WarnaSection from "./WarnaSection";
 
 const inputCls =
   "w-full bg-skin-card border-2 border-skin-bdr px-4 py-3 text-skin-text text-base tracking-wide focus:outline-none focus:border-skin-accent disabled:opacity-40 disabled:bg-skin-page placeholder:text-skin-text4 transition";
@@ -130,21 +130,6 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
         warnaRenames,
         activeSet,
         hargaMap,
-        stokWarnaMap,
-        productBefore: isEdit
-          ? {
-              kode: product.kode,
-              nama: product.nama,
-              bahan: product.bahan,
-              hpp: product.hpp,
-              variants: product.variants,
-              warna: product.warna,
-              image: product.image,
-              video: product.video,
-              seri_warna: product.seri_warna,
-              detail: product.detail,
-            }
-          : undefined,
       });
 
       onSaved(product ? `${finalKode} berhasil diperbarui.` : `${finalKode} berhasil ditambahkan.`);
@@ -177,7 +162,11 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     for (const warnaMap of Object.values(stokWarnaMap)) {
       for (const [w, stok] of Object.entries(warnaMap)) {
         if (!orphanWarnas.has(w)) continue;
-        const qty = (stok?.gudang ?? 0) + (stok?.cideng ?? 0) + (stok?.tegalgubug ?? 0) + (stok?.ngorder ?? 0);
+        const qty =
+          (stok?.gudang ?? 0) +
+          (stok?.cideng ?? 0) +
+          (stok?.tegalgubug ?? 0) +
+          (stok?.ngorder ?? 0);
         if (qty <= 0) continue;
         qtyByWarna.set(w, (qtyByWarna.get(w) ?? 0) + qty);
       }
