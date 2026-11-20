@@ -1,13 +1,11 @@
-import { useState } from "react";
-import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
+import { useState } from "react";
 import { useCreateSetoranFull } from "../hooks";
 import { calcTotalUpahSetoranFull, newSetoranFullItem } from "../utils";
 
 export default function SetoranFullForm({ onClose }) {
-  const { user } = useAuth();
   const { products } = useProducts();
   const { createSetoranFull, creating } = useCreateSetoranFull();
 
@@ -37,7 +35,6 @@ export default function SetoranFullForm({ onClose }) {
         hargaUpah,
         items,
         catatan,
-        user,
       });
       toast.success("Setoran CMT Full dicatat — stok Gudang bertambah.");
       onClose();

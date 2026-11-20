@@ -1,13 +1,9 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
-
-vi.mock("@deera/shared/features/auth/hooks", () => ({
-  useAuth: () => ({ user: { email: "a@b.com" } }),
-}));
 
 const mockUseProducts = vi.fn();
 vi.mock("@deera/shared/features/products/hooks", () => ({
@@ -74,7 +70,7 @@ describe("KirimForm", () => {
     expect(await screen.findByText(/Tidak ada potongan tersedia/)).toBeInTheDocument();
   });
 
-  it("submit mengirim semua kartu yang terkumpul dari buku potongan + user, upah opsional", async () => {
+  it("submit mengirim semua kartu yang terkumpul dari buku potongan, upah opsional", async () => {
     const onClose = vi.fn();
     render(<KirimForm onClose={onClose} />);
     await pickKode();
@@ -93,7 +89,6 @@ describe("KirimForm", () => {
     expect(args.namaVendor).toBe("Vendor A");
     expect(args.hargaUpah).toBe("");
     expect(args.cards).toEqual(CARDS);
-    expect(args.user).toEqual({ email: "a@b.com" });
     expect(mockToast.success).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });

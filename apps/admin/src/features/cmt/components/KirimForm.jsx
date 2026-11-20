@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { useAvailablePotongan, useCreateKirimCmtJahit } from "../hooks";
 
 function newBlock() {
@@ -9,7 +8,6 @@ function newBlock() {
 }
 
 export default function KirimForm({ onClose }) {
-  const { user } = useAuth();
   const { products } = useProducts();
   const { fetchPotongan } = useAvailablePotongan();
   const { createKirim, creating } = useCreateKirimCmtJahit();
@@ -54,7 +52,6 @@ export default function KirimForm({ onClose }) {
         hargaUpah,
         catatan,
         cards: allCards,
-        user,
       });
       toast.success("Pengiriman ke CMT dicatat.");
       onClose();

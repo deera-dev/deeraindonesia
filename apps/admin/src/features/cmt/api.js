@@ -1,5 +1,4 @@
 import { supabase } from "@deera/shared/lib/supabase";
-import { displayName } from "@deera/shared/features/auth/api";
 import { logHistory } from "../history/api";
 import { groupCardsByKodeSizeWarna } from "./utils";
 
@@ -58,6 +57,11 @@ export async function updateHargaUpahKirim({ kirimNo, hargaUpah }) {
   }).catch(() => {});
 }
 
+// Dulu insert cmt_jahit_kirim (N baris) lalu loop update jahit_cards
+// (link per grup) — 2 jenis tulis terpisah tanpa transaction. created_by
+// juga dulu dari objek `user` client, bisa dipalsukan. Sekarang 1 RPC
+// atomik (create_kirim_cmt_jahit), identitas dari auth.uid() -> profiles
+// — lihat supabase/migrations/20261120_cmt_crud.sql.
 export async function createKirimCmtJahit({
   namaVendor,
   tanggalKirim,
@@ -65,99 +69,51 @@ export async function createKirimCmtJahit({
   hargaUpah,
   cards,
   catatan,
-  user,
 }) {
   if (!namaVendor?.trim()) throw new Error("Nama vendor wajib diisi.");
   if (!cards?.length) throw new Error("Tambahkan minimal 1 produk.");
 
   const groups = groupCardsByKodeSizeWarna(cards);
   const kirimNo = generateKirimNo();
-  const rows = groups.map((g) => ({
-    kirim_no: kirimNo,
-    nama_vendor: namaVendor.trim(),
-    kode_produk: g.kode_produk,
-    nama_produk: g.nama_produk ?? null,
-    size: g.size,
-    warna: g.warna || "_",
-    qty: g.qty,
-    harga_upah: Number(hargaUpah) || 0,
-    status: "dikirim",
-    tanggal_kirim: tanggalKirim,
-    estimasi_selesai: estimasiSelesai || null,
-    catatan: catatan || null,
-    created_by: user?.email ?? null,
-    created_by_name: displayName(user),
-  }));
 
-  const { data, error } = await supabase.from("cmt_jahit_kirim").insert(rows).select();
-  if (error) throw error;
+  const { error } = await supabase.rpc("create_kirim_cmt_jahit", {
+    p_kirim_no: kirimNo,
+    p_nama_vendor: namaVendor.trim(),
+    p_tanggal_kirim: tanggalKirim,
+    p_estimasi_selesai: estimasiSelesai || null,
+    p_harga_upah: Number(hargaUpah) || 0,
+    p_catatan: catatan || null,
+    p_groups: groups,
+  });
+  if (error) throw new Error(error.message);
 
-  for (let i = 0; i < groups.length; i++) {
-    const { error: linkErr } = await supabase
-      .from("jahit_cards")
-      .update({ cmt_jahit_kirim_id: data[i].id })
-      .in("id", groups[i].cardIds);
-    if (linkErr) throw linkErr;
-  }
-
-  const totalQty = rows.reduce((s, r) => s + r.qty, 0);
-  logHistory({
-    action: "cmt-jahit-kirim",
-    category: "produksi",
-    kode: kirimNo,
-    nama: `${namaVendor.trim()} · ${totalQty} pcs`,
-    snapshot: { kirim_no: kirimNo, nama_vendor: namaVendor.trim(), groups },
-  }).catch(() => {});
-
-  return data ?? rows;
+  return { kirim_no: kirimNo };
 }
 
+// Dulu loop update per baris tanpa transaction — sebagian baris bisa
+// jadi "setor" sementara sisanya gagal. Sekarang 1 RPC atomik.
 export async function setorKirimCmtJahit({ kirimNo, tanggalSetor, itemsSetor, catatan }) {
   if (!itemsSetor?.length) throw new Error("Tidak ada baris untuk disetor.");
-  const now = new Date().toISOString();
-  for (const it of itemsSetor) {
-    const payload = {
-      status: "setor",
-      qty_setor: Number(it.qtySetor) || 0,
-      tanggal_setor: tanggalSetor,
-      updated_at: now,
-    };
-    if (catatan) payload.catatan = catatan;
-    const { error } = await supabase.from("cmt_jahit_kirim").update(payload).eq("id", it.id);
-    if (error) throw error;
-  }
 
-  logHistory({
-    action: "cmt-jahit-setor",
-    category: "produksi",
-    kode: kirimNo,
-    nama: `Setor ${itemsSetor.length} baris`,
-    snapshot: { kirim_no: kirimNo, items: itemsSetor },
-  }).catch(() => {});
+  const { error } = await supabase.rpc("setor_kirim_cmt_jahit", {
+    p_kirim_no: kirimNo,
+    p_tanggal_setor: tanggalSetor,
+    p_items: itemsSetor,
+    p_catatan: catatan || null,
+  });
+  if (error) throw new Error(error.message);
 }
 
+// Dulu update cmt_jahit_kirim (status) lalu update jahit_cards (lepas
+// link) — 2 langkah terpisah tanpa transaction. Sekarang 1 RPC atomik.
 export async function batalKirimCmtJahit({ kirimNo, ids }) {
   if (!ids?.length) return;
-  const { error } = await supabase
-    .from("cmt_jahit_kirim")
-    .update({ status: "batal", updated_at: new Date().toISOString() })
-    .in("id", ids);
-  if (error) throw error;
 
-  // Lepas kartu yg tertaut supaya balik tersedia dikirim/dijahit lagi.
-  const { error: releaseErr } = await supabase
-    .from("jahit_cards")
-    .update({ cmt_jahit_kirim_id: null })
-    .in("cmt_jahit_kirim_id", ids);
-  if (releaseErr) throw releaseErr;
-
-  logHistory({
-    action: "cmt-jahit-batal",
-    category: "produksi",
-    kode: kirimNo,
-    nama: "Dibatalkan",
-    snapshot: { kirim_no: kirimNo, ids },
-  }).catch(() => {});
+  const { error } = await supabase.rpc("batal_kirim_cmt_jahit", {
+    p_kirim_no: kirimNo,
+    p_ids: ids,
+  });
+  if (error) throw new Error(error.message);
 }
 
 export async function fetchCmtSetoranFull() {
@@ -170,6 +126,11 @@ export async function fetchCmtSetoranFull() {
   return data ?? [];
 }
 
+// Dulu insert cmt_setoran_full lalu loop (increment_stok_gudang + insert
+// stok_masuk_log) per item, tanpa transaction — paling berisiko di file
+// ini karena nyentuh stok produksi langsung (bisa nambah stok setengah
+// kalau gagal di tengah loop). Sekarang 1 RPC atomik, identitas dari
+// auth.uid().
 export async function createSetoranFull({
   namaVendor,
   kodeProduk,
@@ -178,65 +139,22 @@ export async function createSetoranFull({
   items,
   hargaUpah,
   catatan,
-  user,
 }) {
   if (!namaVendor?.trim()) throw new Error("Nama vendor wajib diisi.");
   if (!kodeProduk?.trim()) throw new Error("Kode produk wajib diisi.");
   const cleanItems = (items ?? []).filter((it) => it.size && Number(it.qty) > 0);
   if (!cleanItems.length) throw new Error("Isi minimal 1 baris size/warna dengan qty > 0.");
 
-  const totalQty = cleanItems.reduce((s, it) => s + (Number(it.qty) || 0), 0);
-  const totalUpah = totalQty * (Number(hargaUpah) || 0);
-
-  const row = {
-    nama_vendor: namaVendor.trim(),
-    kode_produk: kodeProduk.trim(),
-    nama_produk: namaProduk || null,
-    tanggal_setor: tanggalSetor,
-    items: cleanItems,
-    harga_upah: Number(hargaUpah) || 0,
-    total_upah: totalUpah,
-    catatan: catatan || null,
-    created_by: user?.email ?? null,
-    created_by_name: displayName(user),
-  };
-
-  const { data, error } = await supabase.from("cmt_setoran_full").insert(row).select().single();
-  if (error) throw error;
-
-  for (const it of cleanItems) {
-    const warna = it.warna || "_";
-    const qty = Number(it.qty) || 0;
-    const { error: incErr } = await supabase.rpc("increment_stok_gudang", {
-      p_kode: row.kode_produk,
-      p_size: it.size,
-      p_warna: warna,
-      p_delta: qty,
-    });
-    if (incErr) throw incErr;
-
-    const { error: logErr } = await supabase.from("stok_masuk_log").insert({
-      kode: row.kode_produk,
-      size: it.size,
-      warna,
-      qty_kartu: qty,
-      stok_sebelum: 0,
-      terjual_sebelum: 0,
-      qty_ditambahkan: qty,
-      cmt_setoran_full_id: data.id,
-      created_by: user?.email ?? null,
-      created_by_name: displayName(user),
-    });
-    if (logErr) throw logErr;
-  }
-
-  logHistory({
-    action: "cmt-full-setor",
-    category: "produksi",
-    kode: row.kode_produk,
-    nama: `${namaVendor.trim()} · ${totalQty} pcs`,
-    snapshot: row,
-  }).catch(() => {});
+  const { data, error } = await supabase.rpc("create_setoran_full", {
+    p_nama_vendor: namaVendor.trim(),
+    p_kode_produk: kodeProduk.trim(),
+    p_nama_produk: namaProduk || null,
+    p_tanggal_setor: tanggalSetor,
+    p_items: cleanItems,
+    p_harga_upah: Number(hargaUpah) || 0,
+    p_catatan: catatan || null,
+  });
+  if (error) throw new Error(error.message);
 
   return data;
 }
@@ -255,13 +173,15 @@ export async function fetchCmtFullKirim() {
   return data ?? [];
 }
 
+// Insert tunggal, sudah atomik dari sananya — cuma identitas yang
+// diperbaiki (created_by dulu dari objek `user` client, sekarang dari
+// auth.uid()).
 export async function createCmtFullKirim({
   namaVendor,
   tanggalKirim,
   estimasiSelesai,
   bahan,
   catatan,
-  user,
 }) {
   if (!namaVendor?.trim()) throw new Error("Nama vendor wajib diisi.");
   const cleanBahan = (bahan ?? [])
@@ -274,26 +194,14 @@ export async function createCmtFullKirim({
     }));
   if (!cleanBahan.length) throw new Error("Isi minimal 1 bahan dengan jumlah > 0.");
 
-  const row = {
-    nama_vendor: namaVendor.trim(),
-    tanggal_kirim: tanggalKirim,
-    estimasi_selesai: estimasiSelesai || null,
-    bahan: cleanBahan,
-    catatan: catatan || null,
-    created_by: user?.email ?? null,
-    created_by_name: displayName(user),
-  };
-
-  const { data, error } = await supabase.from("cmt_full_kirim").insert(row).select().single();
-  if (error) throw error;
-
-  logHistory({
-    action: "cmt-full-kirim-bahan",
-    category: "produksi",
-    kode: namaVendor.trim(),
-    nama: `${cleanBahan.length} bahan dikirim`,
-    snapshot: row,
-  }).catch(() => {});
+  const { data, error } = await supabase.rpc("create_cmt_full_kirim", {
+    p_nama_vendor: namaVendor.trim(),
+    p_tanggal_kirim: tanggalKirim,
+    p_estimasi_selesai: estimasiSelesai || null,
+    p_bahan: cleanBahan,
+    p_catatan: catatan || null,
+  });
+  if (error) throw new Error(error.message);
 
   return data;
 }

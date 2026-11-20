@@ -1,13 +1,9 @@
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockToast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("@deera/shared/features/toast/hooks", () => ({ toast: mockToast }));
-
-vi.mock("@deera/shared/features/auth/hooks", () => ({
-  useAuth: () => ({ user: { email: "a@b.com" } }),
-}));
 
 const mockUseProducts = vi.fn();
 vi.mock("@deera/shared/features/products/hooks", () => ({
@@ -69,7 +65,6 @@ describe("SetoranFullForm", () => {
     expect(args.namaProduk).toBe("Mukena B");
     expect(args.hargaUpah).toBe("10000");
     expect(args.items).toEqual([{ size: "Midi", warna: "HITAM", qty: "5" }]);
-    expect(args.user).toEqual({ email: "a@b.com" });
     expect(mockToast.success).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });

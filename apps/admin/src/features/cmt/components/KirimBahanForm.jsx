@@ -1,13 +1,11 @@
-import { useState } from "react";
-import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import { useCreateCmtFullKirim } from "../hooks";
 import { newBahanItem } from "../utils";
 
 const SATUAN_OPTIONS = ["yard", "meter", "cm", "kg", "lembar", "roll"];
 
 export default function KirimBahanForm({ onClose }) {
-  const { user } = useAuth();
   const { createKirimBahan, creating } = useCreateCmtFullKirim();
 
   const [namaVendor, setNamaVendor] = useState("");
@@ -33,7 +31,6 @@ export default function KirimBahanForm({ onClose }) {
         estimasiSelesai,
         bahan: cleanBahan,
         catatan,
-        user,
       });
       toast.success("Pengiriman bahan ke CMT dicatat.");
       onClose();

@@ -1,10 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@deera/shared/lib/supabase", () => ({
   supabase: { from: vi.fn(), rpc: vi.fn() },
-}));
-vi.mock("@deera/shared/features/auth/api", () => ({
-  displayName: vi.fn((user) => user?.user_metadata?.full_name ?? user?.email ?? null),
 }));
 vi.mock("../history/api", () => ({
   logHistory: vi.fn().mockResolvedValue(undefined),
@@ -13,17 +10,17 @@ vi.mock("../history/api", () => ({
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
 import {
-  generateKirimNo,
-  fetchCmtJahitKirim,
-  fetchAvailablePotonganByKode,
-  createKirimCmtJahit,
-  setorKirimCmtJahit,
   batalKirimCmtJahit,
-  fetchCmtSetoranFull,
-  createSetoranFull,
-  fetchCmtFullKirim,
   createCmtFullKirim,
+  createKirimCmtJahit,
+  createSetoranFull,
   deleteCmtFullKirim,
+  fetchAvailablePotonganByKode,
+  fetchCmtFullKirim,
+  fetchCmtJahitKirim,
+  fetchCmtSetoranFull,
+  generateKirimNo,
+  setorKirimCmtJahit,
   updateHargaUpahKirim,
 } from "./api";
 
@@ -43,27 +40,9 @@ function makeOrderChain(returnVal = { data: [], error: null }) {
   }
   return chain;
 }
-function makeInsertSelectChain(returnVal = { data: [], error: null }) {
-  return { insert: vi.fn().mockReturnThis(), select: vi.fn().mockResolvedValue(returnVal) };
-}
-function makeInsertSelectSingleChain(returnVal = { data: null, error: null }) {
-  return {
-    insert: vi.fn().mockReturnThis(),
-    select: vi.fn().mockReturnThis(),
-    single: vi.fn().mockResolvedValue(returnVal),
-  };
-}
 function makeUpdateEqChain(returnVal = { error: null }) {
   return { update: vi.fn().mockReturnThis(), eq: vi.fn().mockResolvedValue(returnVal) };
 }
-function makeUpdateInChain(returnVal = { error: null }) {
-  return { update: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue(returnVal) };
-}
-function makeInsertChain(returnVal = { error: null }) {
-  return { insert: vi.fn().mockResolvedValue(returnVal) };
-}
-
-const user = { email: "a@b.com", user_metadata: { full_name: "A" } };
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -132,6 +111,12 @@ describe("fetchAvailablePotonganByKode", () => {
 });
 
 describe("createKirimCmtJahit", () => {
+  // Insert cmt_jahit_kirim (N baris) + link jahit_cards.cmt_jahit_kirim_id
+  // per grup sekarang 1 RPC atomik (create_kirim_cmt_jahit), identitas
+  // dari auth.uid() — lihat supabase/migrations/20261120_cmt_crud.sql.
+  // groupCardsByKodeSizeWarna() (pure JS) masih dites tersendiri di
+  // utils.test.js; di sini cuma tes createKirimCmtJahit manggil RPC
+  // dengan groups yang benar.
   const baseArgs = {
     namaVendor: "Vendor A",
     tanggalKirim: "2026-11-18",
@@ -148,17 +133,7 @@ describe("createKirimCmtJahit", () => {
       },
     ],
     catatan: "",
-    user,
   };
-
-  function mockSuccessChains(insertReturn = { data: [{ id: "kirim1" }], error: null }) {
-    const insertChain = makeInsertSelectChain(insertReturn);
-    const linkChain = makeUpdateInChain({ error: null });
-    supabase.from.mockImplementation((table) =>
-      table === "cmt_jahit_kirim" ? insertChain : linkChain,
-    );
-    return { insertChain, linkChain };
-  }
 
   it("throws kalau nama vendor kosong", async () => {
     await expect(createKirimCmtJahit({ ...baseArgs, namaVendor: "" })).rejects.toThrow("vendor");
@@ -168,34 +143,32 @@ describe("createKirimCmtJahit", () => {
     await expect(createKirimCmtJahit({ ...baseArgs, cards: [] })).rejects.toThrow("produk");
   });
 
-  it("insert satu baris per kombinasi kode+size+warna, lalu tautkan kartu sumbernya (cmt_jahit_kirim_id) & logHistory", async () => {
-    const { insertChain, linkChain } = mockSuccessChains();
+  it("memanggil create_kirim_cmt_jahit dengan groups per kombinasi kode+size+warna", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
 
-    const result = await createKirimCmtJahit(baseArgs);
+    await createKirimCmtJahit(baseArgs);
 
-    const insertedRows = insertChain.insert.mock.calls[0][0];
-    expect(insertedRows).toHaveLength(1);
-    expect(insertedRows[0]).toMatchObject({
-      nama_vendor: "Vendor A",
-      kode_produk: "D-01-OSK",
-      size: "Midi",
-      warna: "HITAM",
-      qty: 10,
-      harga_upah: 7000,
-      status: "dikirim",
-      created_by: "a@b.com",
-    });
-    expect(insertedRows[0].kirim_no).toMatch(/^CMT-\d{8}-\d{3}$/);
-    expect(linkChain.update).toHaveBeenCalledWith({ cmt_jahit_kirim_id: "kirim1" });
-    expect(linkChain.in).toHaveBeenCalledWith("id", ["c1"]);
-    expect(result).toEqual([{ id: "kirim1" }]);
-    expect(logHistory).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "cmt-jahit-kirim", category: "produksi" }),
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "create_kirim_cmt_jahit",
+      expect.objectContaining({
+        p_nama_vendor: "Vendor A",
+        p_harga_upah: 7000,
+        p_groups: [
+          expect.objectContaining({
+            kode_produk: "D-01-OSK",
+            size: "Midi",
+            warna: "HITAM",
+            qty: 10,
+            cardIds: ["c1"],
+          }),
+        ],
+      }),
     );
+    expect(supabase.rpc.mock.calls[0][1].p_kirim_no).toMatch(/^CMT-\d{8}-\d{3}$/);
   });
 
-  it("dua kartu kode+size+warna sama (misal dari 2 batch) -> qty dijumlah jadi satu baris, kedua card id ditautkan", async () => {
-    const { insertChain, linkChain } = mockSuccessChains();
+  it("dua kartu kode+size+warna sama (misal dari 2 batch) -> qty dijumlah jadi satu grup, kedua card id ikut", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
 
     await createKirimCmtJahit({
       ...baseArgs,
@@ -219,86 +192,35 @@ describe("createKirimCmtJahit", () => {
       ],
     });
 
-    expect(insertChain.insert.mock.calls[0][0]).toHaveLength(1);
-    expect(insertChain.insert.mock.calls[0][0][0].qty).toBe(14);
-    expect(linkChain.in).toHaveBeenCalledWith("id", ["c1", "c2"]);
-  });
-
-  it("kode berbeda -> baris terpisah masing2 ditautkan ke kartu sumbernya sendiri", async () => {
-    const { insertChain, linkChain } = mockSuccessChains({
-      data: [{ id: "kirimA" }, { id: "kirimB" }],
-      error: null,
-    });
-
-    await createKirimCmtJahit({
-      ...baseArgs,
-      cards: [
-        {
-          id: "c1",
-          kode_produk: "D-01-OSK",
-          nama_produk: "Gamis A",
-          size: "Midi",
-          warna: "HITAM",
-          qty: 10,
-        },
-        {
-          id: "c2",
-          kode_produk: "D-02-SFN",
-          nama_produk: "Mukena B",
-          size: "Gamis",
-          warna: "MERAH",
-          qty: 3,
-        },
-      ],
-    });
-
-    expect(insertChain.insert.mock.calls[0][0]).toHaveLength(2);
-    expect(linkChain.in).toHaveBeenCalledWith("id", ["c1"]);
-    expect(linkChain.in).toHaveBeenCalledWith("id", ["c2"]);
+    const groups = supabase.rpc.mock.calls[0][1].p_groups;
+    expect(groups).toHaveLength(1);
+    expect(groups[0].qty).toBe(14);
+    expect(groups[0].cardIds).toEqual(["c1", "c2"]);
   });
 
   it("harga_upah tidak diisi -> default 0 (opsional, bisa diisi nanti)", async () => {
-    const { insertChain } = mockSuccessChains();
+    supabase.rpc.mockResolvedValue({ error: null });
     await createKirimCmtJahit({ ...baseArgs, hargaUpah: "" });
-    expect(insertChain.insert.mock.calls[0][0][0].harga_upah).toBe(0);
+    expect(supabase.rpc.mock.calls[0][1].p_harga_upah).toBe(0);
   });
 
-  it("warna kosong -> fallback ke '_'", async () => {
-    const { insertChain } = mockSuccessChains();
-    await createKirimCmtJahit({
-      ...baseArgs,
-      cards: [{ id: "c1", kode_produk: "D-01", size: "Midi", warna: "", qty: 5 }],
-    });
-    expect(insertChain.insert.mock.calls[0][0][0].warna).toBe("_");
-  });
-
-  it("throws kalau insert gagal", async () => {
-    supabase.from.mockReturnValue(
-      makeInsertSelectChain({ data: null, error: new Error("db down") }),
-    );
+  it("throws kalau RPC gagal", async () => {
+    supabase.rpc.mockResolvedValue({ error: { message: "db down" } });
     await expect(createKirimCmtJahit(baseArgs)).rejects.toThrow("db down");
-  });
-
-  it("throws kalau tautkan jahit_cards gagal", async () => {
-    supabase.from.mockImplementation((table) =>
-      table === "cmt_jahit_kirim"
-        ? makeInsertSelectChain({ data: [{ id: "kirim1" }], error: null })
-        : makeUpdateInChain({ error: new Error("link fail") }),
-    );
-    await expect(createKirimCmtJahit(baseArgs)).rejects.toThrow("link fail");
   });
 });
 
 describe("setorKirimCmtJahit", () => {
+  // Loop update per baris sekarang 1 RPC atomik (setor_kirim_cmt_jahit) —
+  // lihat supabase/migrations/20261120_cmt_crud.sql.
   it("throws kalau itemsSetor kosong", async () => {
     await expect(
       setorKirimCmtJahit({ kirimNo: "CMT-1", tanggalSetor: "2026-11-18", itemsSetor: [] }),
     ).rejects.toThrow();
   });
 
-  it("update tiap baris: status setor, qty_setor, tanggal_setor; lalu logHistory", async () => {
-    const chain = makeUpdateEqChain({ error: null });
-    supabase.from.mockReturnValue(chain);
+  it("memanggil setor_kirim_cmt_jahit dengan items & catatan", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
 
     await setorKirimCmtJahit({
       kirimNo: "CMT-1",
@@ -307,40 +229,22 @@ describe("setorKirimCmtJahit", () => {
         { id: "k1", qtySetor: 9 },
         { id: "k2", qtySetor: 5 },
       ],
-    });
-
-    expect(chain.update).toHaveBeenCalledTimes(2);
-    expect(chain.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "setor", qty_setor: 9, tanggal_setor: "2026-11-18" }),
-    );
-    expect(chain.eq).toHaveBeenCalledWith("id", "k1");
-    expect(chain.eq).toHaveBeenCalledWith("id", "k2");
-    expect(logHistory).toHaveBeenCalledWith(expect.objectContaining({ action: "cmt-jahit-setor" }));
-  });
-
-  it("catatan diisi -> ikut di payload update; catatan kosong -> tidak ikut", async () => {
-    const chain = makeUpdateEqChain({ error: null });
-    supabase.from.mockReturnValue(chain);
-
-    await setorKirimCmtJahit({
-      kirimNo: "CMT-1",
-      tanggalSetor: "2026-11-18",
-      itemsSetor: [{ id: "k1", qtySetor: 1 }],
       catatan: "ok",
     });
-    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ catatan: "ok" }));
 
-    chain.update.mockClear();
-    await setorKirimCmtJahit({
-      kirimNo: "CMT-1",
-      tanggalSetor: "2026-11-18",
-      itemsSetor: [{ id: "k1", qtySetor: 1 }],
+    expect(supabase.rpc).toHaveBeenCalledWith("setor_kirim_cmt_jahit", {
+      p_kirim_no: "CMT-1",
+      p_tanggal_setor: "2026-11-18",
+      p_items: [
+        { id: "k1", qtySetor: 9 },
+        { id: "k2", qtySetor: 5 },
+      ],
+      p_catatan: "ok",
     });
-    expect(chain.update.mock.calls[0][0]).not.toHaveProperty("catatan");
   });
 
-  it("throws kalau update gagal", async () => {
-    supabase.from.mockReturnValue(makeUpdateEqChain({ error: new Error("boom") }));
+  it("throws kalau RPC gagal", async () => {
+    supabase.rpc.mockResolvedValue({ error: { message: "boom" } });
     await expect(
       setorKirimCmtJahit({
         kirimNo: "CMT-1",
@@ -352,41 +256,28 @@ describe("setorKirimCmtJahit", () => {
 });
 
 describe("batalKirimCmtJahit", () => {
-  it("ids kosong -> tidak query sama sekali", async () => {
+  // update status + lepas tautan jahit_cards sekarang 1 RPC atomik
+  // (batal_kirim_cmt_jahit) — lihat
+  // supabase/migrations/20261120_cmt_crud.sql.
+  it("ids kosong -> tidak panggil RPC sama sekali", async () => {
     await batalKirimCmtJahit({ kirimNo: "CMT-1", ids: [] });
-    expect(supabase.from).not.toHaveBeenCalled();
+    expect(supabase.rpc).not.toHaveBeenCalled();
   });
 
-  it("update status batal utk semua id, lepas tautan jahit_cards, lalu logHistory", async () => {
-    const kirimChain = makeUpdateInChain({ error: null });
-    const cardsChain = makeUpdateInChain({ error: null });
-    supabase.from.mockImplementation((table) =>
-      table === "cmt_jahit_kirim" ? kirimChain : cardsChain,
-    );
+  it("memanggil batal_kirim_cmt_jahit dengan kirim_no & ids", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
 
     await batalKirimCmtJahit({ kirimNo: "CMT-1", ids: ["k1", "k2"] });
 
-    expect(kirimChain.update).toHaveBeenCalledWith(expect.objectContaining({ status: "batal" }));
-    expect(kirimChain.in).toHaveBeenCalledWith("id", ["k1", "k2"]);
-    expect(cardsChain.update).toHaveBeenCalledWith({ cmt_jahit_kirim_id: null });
-    expect(cardsChain.in).toHaveBeenCalledWith("cmt_jahit_kirim_id", ["k1", "k2"]);
-    expect(logHistory).toHaveBeenCalledWith(expect.objectContaining({ action: "cmt-jahit-batal" }));
+    expect(supabase.rpc).toHaveBeenCalledWith("batal_kirim_cmt_jahit", {
+      p_kirim_no: "CMT-1",
+      p_ids: ["k1", "k2"],
+    });
   });
 
-  it("throws kalau update status batal gagal", async () => {
-    supabase.from.mockReturnValue(makeUpdateInChain({ error: new Error("boom") }));
+  it("throws kalau RPC gagal", async () => {
+    supabase.rpc.mockResolvedValue({ error: { message: "boom" } });
     await expect(batalKirimCmtJahit({ kirimNo: "CMT-1", ids: ["k1"] })).rejects.toThrow("boom");
-  });
-
-  it("throws kalau lepas tautan jahit_cards gagal", async () => {
-    const kirimChain = makeUpdateInChain({ error: null });
-    const cardsChain = makeUpdateInChain({ error: new Error("release fail") });
-    supabase.from.mockImplementation((table) =>
-      table === "cmt_jahit_kirim" ? kirimChain : cardsChain,
-    );
-    await expect(batalKirimCmtJahit({ kirimNo: "CMT-1", ids: ["k1"] })).rejects.toThrow(
-      "release fail",
-    );
   });
 });
 
@@ -441,6 +332,10 @@ describe("fetchCmtSetoranFull", () => {
 });
 
 describe("createSetoranFull", () => {
+  // Insert cmt_setoran_full + loop (increment_stok_gudang + insert
+  // stok_masuk_log) sekarang 1 RPC atomik (create_setoran_full),
+  // identitas dari auth.uid() — lihat
+  // supabase/migrations/20261120_cmt_crud.sql.
   const baseArgs = {
     namaVendor: "Vendor B",
     kodeProduk: "D-02-SFN",
@@ -452,18 +347,7 @@ describe("createSetoranFull", () => {
       { size: "Gamis", warna: "MERAH", qty: "3" },
     ],
     catatan: "",
-    user,
   };
-
-  function mockSuccessChains() {
-    const insertChain = makeInsertSelectSingleChain({ data: { id: "f1" }, error: null });
-    const logChain = makeInsertChain({ error: null });
-    supabase.from.mockImplementation((table) =>
-      table === "cmt_setoran_full" ? insertChain : logChain,
-    );
-    supabase.rpc.mockResolvedValue({ error: null });
-    return { insertChain, logChain };
-  }
 
   it("throws kalau nama vendor kosong", async () => {
     await expect(createSetoranFull({ ...baseArgs, namaVendor: "" })).rejects.toThrow("vendor");
@@ -479,44 +363,28 @@ describe("createSetoranFull", () => {
     ).rejects.toThrow();
   });
 
-  it("insert row cmt_setoran_full dgn total_upah = total qty x harga, lalu increment_stok_gudang + stok_masuk_log per item", async () => {
-    const { insertChain, logChain } = mockSuccessChains();
+  it("memanggil create_setoran_full dengan item yang sudah difilter qty>0", async () => {
+    supabase.rpc.mockResolvedValue({ data: { id: "f1" }, error: null });
 
     const result = await createSetoranFull(baseArgs);
 
-    expect(insertChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        nama_vendor: "Vendor B",
-        kode_produk: "D-02-SFN",
-        harga_upah: 10000,
-        total_upah: 80000,
-      }),
-    );
-    expect(supabase.rpc).toHaveBeenCalledTimes(2);
-    expect(supabase.rpc).toHaveBeenCalledWith("increment_stok_gudang", {
-      p_kode: "D-02-SFN",
-      p_size: "Midi",
-      p_warna: "HITAM",
-      p_delta: 5,
+    expect(supabase.rpc).toHaveBeenCalledWith("create_setoran_full", {
+      p_nama_vendor: "Vendor B",
+      p_kode_produk: "D-02-SFN",
+      p_nama_produk: "Mukena B",
+      p_tanggal_setor: "2026-11-18",
+      p_items: [
+        { size: "Midi", warna: "HITAM", qty: "5" },
+        { size: "Gamis", warna: "MERAH", qty: "3" },
+      ],
+      p_harga_upah: 10000,
+      p_catatan: null,
     });
-    expect(supabase.rpc).toHaveBeenCalledWith("increment_stok_gudang", {
-      p_kode: "D-02-SFN",
-      p_size: "Gamis",
-      p_warna: "MERAH",
-      p_delta: 3,
-    });
-    expect(logChain.insert).toHaveBeenCalledTimes(2);
-    expect(logChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ cmt_setoran_full_id: "f1", qty_ditambahkan: 5 }),
-    );
-    expect(logHistory).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "cmt-full-setor", kode: "D-02-SFN" }),
-    );
     expect(result).toEqual({ id: "f1" });
   });
 
-  it("item dgn qty 0 diabaikan (tidak masuk RPC)", async () => {
-    mockSuccessChains();
+  it("item dgn qty 0 diabaikan (tidak ikut dikirim ke RPC)", async () => {
+    supabase.rpc.mockResolvedValue({ data: { id: "f1" }, error: null });
     await createSetoranFull({
       ...baseArgs,
       items: [
@@ -524,21 +392,14 @@ describe("createSetoranFull", () => {
         { size: "Gamis", warna: "MERAH", qty: 0 },
       ],
     });
-    expect(supabase.rpc).toHaveBeenCalledTimes(1);
+    expect(supabase.rpc.mock.calls[0][1].p_items).toEqual([
+      { size: "Midi", warna: "HITAM", qty: 5 },
+    ]);
   });
 
-  it("throws kalau insert cmt_setoran_full gagal", async () => {
-    supabase.from.mockReturnValue(
-      makeInsertSelectSingleChain({ data: null, error: new Error("boom") }),
-    );
+  it("throws kalau RPC gagal", async () => {
+    supabase.rpc.mockResolvedValue({ data: null, error: { message: "boom" } });
     await expect(createSetoranFull(baseArgs)).rejects.toThrow("boom");
-  });
-
-  it("throws kalau increment_stok_gudang gagal", async () => {
-    const insertChain = makeInsertSelectSingleChain({ data: { id: "f1" }, error: null });
-    supabase.from.mockReturnValue(insertChain);
-    supabase.rpc.mockResolvedValue({ error: new Error("rpc fail") });
-    await expect(createSetoranFull(baseArgs)).rejects.toThrow("rpc fail");
   });
 });
 
@@ -561,13 +422,16 @@ describe("fetchCmtFullKirim", () => {
 });
 
 describe("createCmtFullKirim", () => {
+  // Insert tunggal, sudah atomik dari sananya — cuma identitas yang
+  // diperbaiki (sekarang 1 RPC, created_by dari auth.uid() bukan
+  // objek `user` client) — lihat
+  // supabase/migrations/20261120_cmt_crud.sql.
   const baseArgs = {
     namaVendor: "Vendor C",
     tanggalKirim: "2026-11-18",
     estimasiSelesai: "2026-11-25",
     bahan: [{ nama_bahan: "Wolfis", kode_bahan: "WLF-01", satuan: "yard", jumlah: "50" }],
     catatan: "",
-    user,
   };
 
   it("throws kalau nama vendor kosong", async () => {
@@ -583,51 +447,34 @@ describe("createCmtFullKirim", () => {
     ).rejects.toThrow();
   });
 
-  it("TIDAK ada field kode produk sama sekali -- kirim bahan terjadi sebelum kode ada", async () => {
-    const chain = makeInsertSelectSingleChain({ data: { id: "b1" }, error: null });
-    supabase.from.mockReturnValue(chain);
-
-    await createCmtFullKirim(baseArgs);
-
-    const row = chain.insert.mock.calls[0][0];
-    expect(row).not.toHaveProperty("kode_produk");
-    expect(row.bahan).toEqual([
-      { nama_bahan: "Wolfis", kode_bahan: "WLF-01", satuan: "yard", jumlah: 50 },
-    ]);
-  });
-
-  it("insert row + logHistory", async () => {
-    const chain = makeInsertSelectSingleChain({ data: { id: "b1" }, error: null });
-    supabase.from.mockReturnValue(chain);
+  it("memanggil create_cmt_full_kirim dengan bahan yang sudah dibersihkan", async () => {
+    supabase.rpc.mockResolvedValue({ data: { id: "b1" }, error: null });
 
     const result = await createCmtFullKirim(baseArgs);
 
-    expect(supabase.from).toHaveBeenCalledWith("cmt_full_kirim");
-    expect(chain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ nama_vendor: "Vendor C", created_by: "a@b.com" }),
-    );
-    expect(logHistory).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "cmt-full-kirim-bahan", category: "produksi" }),
-    );
+    expect(supabase.rpc).toHaveBeenCalledWith("create_cmt_full_kirim", {
+      p_nama_vendor: "Vendor C",
+      p_tanggal_kirim: "2026-11-18",
+      p_estimasi_selesai: "2026-11-25",
+      p_bahan: [{ nama_bahan: "Wolfis", kode_bahan: "WLF-01", satuan: "yard", jumlah: 50 }],
+      p_catatan: null,
+    });
     expect(result).toEqual({ id: "b1" });
   });
 
   it("kode_bahan kosong -> null", async () => {
-    const chain = makeInsertSelectSingleChain({ data: { id: "b1" }, error: null });
-    supabase.from.mockReturnValue(chain);
+    supabase.rpc.mockResolvedValue({ data: { id: "b1" }, error: null });
 
     await createCmtFullKirim({
       ...baseArgs,
       bahan: [{ nama_bahan: "Sifon", satuan: "meter", jumlah: 20 }],
     });
 
-    expect(chain.insert.mock.calls[0][0].bahan[0].kode_bahan).toBeNull();
+    expect(supabase.rpc.mock.calls[0][1].p_bahan[0].kode_bahan).toBeNull();
   });
 
-  it("throws kalau insert gagal", async () => {
-    supabase.from.mockReturnValue(
-      makeInsertSelectSingleChain({ data: null, error: new Error("boom") }),
-    );
+  it("throws kalau RPC gagal", async () => {
+    supabase.rpc.mockResolvedValue({ data: null, error: { message: "boom" } });
     await expect(createCmtFullKirim(baseArgs)).rejects.toThrow("boom");
   });
 });
