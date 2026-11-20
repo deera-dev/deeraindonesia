@@ -65,7 +65,7 @@ Alasan urutan pengerjaan (termudah/paling-gak-kritis dulu): lihat §3.
 | — | Retrofit Catalog ke Aurum | 🔲 Belum mulai | Setelah M3a |
 | — | Audit & Optimasi: Catalog (retroaktif) | 🔲 Belum mulai | Catalog selesai sebelum aturan "audit dulu" ada |
 | M3 | Studio: scaffold ✅ (login jalan) + CRUD models/poses/presets + dashboard + Edge Functions + **desain otorisasi studio-publish** | 🟡 Sebagian | CRUD models/poses/presets ✅ (2026-11-19): `studio-{models,poses,presets}-crud` Edge Functions di-deploy (forward JWT caller, RLS `authenticated_full_access`), vertical slice lengkap (schema/api/queries/hooks/components) + 136 test + route wiring + AppShell nav. **Otorisasi studio-publish ✅ (2026-11-19)**: `studio-publish` Edge Function di-deploy + 3 secret Cloudinary sudah diisi user manual, lihat §6.2 (resolved) untuk desain lengkapnya. Masih belum dites end-to-end (nunggu M7 atau tes manual). Client masih panggil `supabase.from()` langsung di CRUD models/poses/presets (pola deferred sama kayak M1/M2, lihat §6.10). **Belum**: dashboard generate/history/content (M7), halaman generate yang benar-benar memanggil `studio-publish` (juga M7 — function-nya sudah ada tapi belum ada caller). |
-| M4 | Admin (24 fitur) → TS + Edge Functions + Aurum | 🟡 Sebagian | App terbesar (±7x Catalog). Audit ✅ (2026-11-19, `docs/reports/audit-report-m4-admin.md`) + 3 temuan dieksekusi (3 dead hook dihapus, 6 RLS policy dobel dihapus, sinkron 2-arah `toko_kunjungan`↔checklist trip `ngorder-jadwal`). **Pertama kali Edge Function dites beneran dari browser asli (2026-11-19)** sebelum porting mulai — lihat §6.10 (resolved). Porting kode: **produk** (`produk-crud` Edge Function + RPC atomik `save_product`/`delete_product_cascade`, ✅), **stok-opname** (`stok-opname-crud` + RPC `save_stok_opname`, ✅), **pindah-stok-lokasi** (`move_stok_lokasi` identitas dari `auth.uid()`, ✅ — lihat insiden #12), **transfer** (`approve_transfer` identitas dari `auth.uid()`, ✅), **buku-potongan** (dicek, sudah atomik dari sananya, tidak ada perubahan), **produksi-bahan** (RPC `merge_bahan_dupe_group`, ✅), **produksi-hpp** (RPC `save_hpp_template`/`save_hpp_config_value`, ✅), **produksi-record** (RPC `create_produksi_batch`/`update_produksi_batch` + `deleteBatchAndProduct` delegasi ke `delete_product_cascade`, ✅ — lihat insiden #13). Semua RPC di atas ditest langsung di DB production (BEGIN/ROLLBACK, bukan cuma lolos compile) sebelum dianggap selesai. Belum: konversi TS penuh fitur manapun (masih `.js`/`.jsx`, cuma fungsi tulis-DB-nya yang diubah), 16 fitur admin lain (produksi-jahit, produksi-sampel, cmt, ngorder, ngorder-jadwal, pasar-restock, pelanggan, calon-customer, blast, analytics, trafik-katalog, notifikasi, cetak-label, pengiriman, auth, history). |
+| M4 | Admin (24 fitur) → TS + Edge Functions + Aurum | 🟡 Sebagian | App terbesar (±7x Catalog). Audit ✅ (2026-11-19, `docs/reports/audit-report-m4-admin.md`) + 3 temuan dieksekusi (3 dead hook dihapus, 6 RLS policy dobel dihapus, sinkron 2-arah `toko_kunjungan`↔checklist trip `ngorder-jadwal`). **Pertama kali Edge Function dites beneran dari browser asli (2026-11-19)** sebelum porting mulai — lihat §6.10 (resolved). Porting kode: **produk** (`produk-crud` Edge Function + RPC atomik `save_product`/`delete_product_cascade`, ✅), **stok-opname** (`stok-opname-crud` + RPC `save_stok_opname`, ✅), **pindah-stok-lokasi** (`move_stok_lokasi` identitas dari `auth.uid()`, ✅ — lihat insiden #12), **transfer** (`approve_transfer` identitas dari `auth.uid()`, ✅), **buku-potongan** (dicek, sudah atomik dari sananya, tidak ada perubahan), **produksi-bahan** (RPC `merge_bahan_dupe_group`, ✅), **produksi-hpp** (RPC `save_hpp_template`/`save_hpp_config_value`, ✅), **produksi-record** (RPC `create_produksi_batch`/`update_produksi_batch` + `deleteBatchAndProduct` delegasi ke `delete_product_cascade`, ✅ — lihat insiden #13), **produksi-jahit** (dicek, sudah atomik dari sananya — single-table writes + unique constraint lindungi race dedup kartu, tidak ada perubahan), **cmt** (RPC `create_kirim_cmt_jahit`/`setor_kirim_cmt_jahit`/`batal_kirim_cmt_jahit`/`create_setoran_full`/`create_cmt_full_kirim`, ✅), **produksi-sampel** (RPC `save_batch_decisions_sampel`/`create_sampel_planning`/`approve_sampel_repeat`/`reorder_sampel_planning`, ✅). Semua RPC di atas ditest langsung di DB production (BEGIN/ROLLBACK, bukan cuma lolos compile) sebelum dianggap selesai — **tapi lihat insiden #14**: mengubah signature RPC yang SUDAH ada sebelum sesi ini (bukan RPC baru) butuh compat shim kalau frontend production (`main`, belum merge) masih manggil shape lama; `approve_transfer`/`move_stok_lokasi` sempat kena, sudah diperbaiki. Belum: konversi TS penuh fitur manapun (masih `.js`/`.jsx`, cuma fungsi tulis-DB-nya yang diubah), 13 fitur admin lain (ngorder, ngorder-jadwal, pasar-restock, pelanggan, calon-customer, blast, analytics, trafik-katalog, notifikasi, cetak-label, pengiriman, auth, history). |
 | M5 | Finance → TS + Edge Functions + Aurum | 🔲 Belum mulai | Audit dulu |
 | M6 | POS (risiko tertinggi, offline-sync) → TS + Edge Functions + Aurum + verifikasi hari pasar beneran | 🔲 Belum mulai | Audit dulu |
 | M7 | Studio bagian AI (generate/history/content studio, 23 API routes) → Edge Functions + Aurum | 🔲 Belum mulai | Audit dulu + tambahkan cost-cap fal.ai |
@@ -319,6 +319,48 @@ Urut dari paling penting:
     `update_produksi_batch`) semuanya fungsi BARU (gak ada isu overload)
     — diverifikasi BEGIN/ROLLBACK seperti biasa, semua ✅. Detail lengkap
     di commit message masing-masing, bukan diulang di sini.
+14. 🟠 **INSIDEN PRODUCTION NYATA (2026-11-20, dilaporkan user langsung)**
+    — approve transfer di `admin.deera.id` gagal total dengan error
+    PostgREST `PGRST202` ("Could not find the function
+    public.approve_transfer(p_approver_email, p_approver_name,
+    p_transfer_id)"). Sebab: `admin.deera.id` production deploy dari
+    branch `main`, yang **belum di-merge** sama branch kerja M4 sesi ini
+    (`claude/zen-carson-yy4twu`) — jadi frontend yang live masih kode
+    LAMA (manggil `approve_transfer` dgn 3 parameter: `p_transfer_id`,
+    `p_approver_email`, `p_approver_name`). Tapi RPC-nya sendiri sudah
+    diubah LANGSUNG ke database production (lewat Supabase MCP, cara
+    yang dipakai semua RPC fix sesi ini) jadi cuma 1 parameter waktu fix
+    identity-spoofing tadi (`20e5d30`). Begitu DB berubah duluan sementara
+    frontend belum ikut, caller lama langsung gak ketemu fungsinya.
+
+    **Ini pola risiko baru yang beda dari insiden #12/#13**: di situ
+    masalahnya salah assume scope atau salah assume CREATE OR REPLACE
+    me-replace in-place. Di sini masalahnya adalah **urutan deploy** —
+    DB berubah instan (lewat MCP), sementara frontend production nunggu
+    merge+deploy dari `main`. SETIAP RPC yang:
+    (a) sudah ada SEBELUM sesi M4 ini (bukan RPC baru), DAN
+    (b) signature-nya diubah (bukan cuma ganti isi function body),
+    berisiko kena masalah yang sama — karena frontend production yang
+    belum merge pasti masih kirim shape lama.
+
+    **Fix**: tambah balik signature lama sebagai shim tipis yang cuma
+    delegasi ke versi baru (parameter identitas lama diabaikan total,
+    bukan dipakai — itu justru lubang yang sudah diperbaiki). Dicek dulu
+    `move_stok_lokasi` kena masalah SAMA (4 parameter lama -> 2 baru) dan
+    diperbaiki SEKALIAN sebelum ada laporan, bukan nunggu insiden kedua.
+    RPC lain yang diubah sesi ini (`save_product`, `delete_product_cascade`,
+    `save_stok_opname`, dan semua RPC produksi-bahan/hpp/record/cmt/sampel)
+    AMAN dari pola ini karena itu semua RPC **BARU** — frontend production
+    lama gak pernah manggilnya sama sekali (masih pakai `supabase.from()`
+    langsung), jadi gak ada caller lama yang bisa putus.
+
+    **Pelajaran standing buat sisa M4/M5/M6**: begitu mau ubah SIGNATURE
+    (bukan isi) RPC yang SUDAH ada sebelum sesi rewrite ini, cek dulu
+    apakah RPC itu sudah dipanggil production frontend yang LIVE (bukan
+    cuma kode di branch kerja) — kalau iya, WAJIB tambah compat shim
+    signature lama di migration yang SAMA, jangan nunggu sampai user
+    lapor error. Shim-shim ini (`20261120_legacy_rpc_compat_shims.sql`)
+    boleh dihapus setelah branch M4 di-merge & production ikut deploy.
 
 ## 7. Peta koneksi lintas-app (ringkas — detail penuh ada di riwayat chat 2026-11-08)
 
