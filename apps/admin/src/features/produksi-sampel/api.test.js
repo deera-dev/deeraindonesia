@@ -51,55 +51,6 @@ function makeEqChain(returnVal = { data: null, error: null }) {
     eq: vi.fn().mockResolvedValue(returnVal),
   };
 }
-function makeInsertSelectSingleChain(returnVal = { data: null, error: null }) {
-  const c = {
-    select: vi.fn().mockReturnThis(),
-    single: vi.fn().mockResolvedValue(returnVal),
-    order: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-  };
-  return c;
-}
-function makeSelectTerminalChain(returnVal = { data: [], error: null }) {
-  return {
-    select: vi.fn().mockResolvedValue(returnVal),
-    order: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    upsert: vi.fn().mockReturnThis(),
-  };
-}
-function makeUpsertChain(returnVal = { data: null, error: null }) {
-  return {
-    select: vi.fn().mockReturnThis(),
-    order: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    upsert: vi.fn().mockResolvedValue(returnVal),
-  };
-}
-function makeThrowOnErrorChain(shouldThrow = null) {
-  const c = {
-    select: vi.fn().mockReturnThis(),
-    order: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    throwOnError: shouldThrow
-      ? vi.fn().mockRejectedValue(shouldThrow)
-      : vi.fn().mockResolvedValue({ error: null }),
-  };
-  return c;
-}
-
 beforeEach(() => vi.clearAllMocks());
 
 describe("fetchSampels", () => {
@@ -140,12 +91,15 @@ describe("updateSampel", () => {
 });
 
 describe("createPlanning", () => {
-  it("inserts entry status=planning dengan bahan_foto, model_foto, bahan_items & urutan, return inserted", async () => {
-    const chain = makeInsertSelectSingleChain({
+  // Insert tunggal, sudah atomik dari sananya — sekarang 1 RPC
+  // (create_sampel_planning), identitas dari auth.uid() bukan
+  // userEmail/userName client — lihat
+  // supabase/migrations/20261120_produksi_sampel_crud.sql.
+  it("memanggil create_sampel_planning dengan bahan_foto, model_foto, bahan_items & urutan", async () => {
+    supabase.rpc.mockResolvedValue({
       data: { nomor: "SPL-001", nama: "Gamis Planning" },
       error: null,
     });
-    supabase.from.mockReturnValue(chain);
     const bahanItems = [{ nama_bahan: "Wolfis", kode_bahan: "B-01", satuan: "yard" }];
     const result = await createPlanning(
       { nama: "Gamis Planning", tanggal: "2026-08-01" },
@@ -153,75 +107,72 @@ describe("createPlanning", () => {
       ["https://cld/model1.jpg", "https://cld/model2.jpg"],
       bahanItems,
       3,
-      { userEmail: "a@b.com", userName: "A" },
     );
     expect(result).toEqual({ nomor: "SPL-001", nama: "Gamis Planning" });
-    expect(chain.insert).toHaveBeenCalledWith(
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "create_sampel_planning",
       expect.objectContaining({
-        status: "planning",
-        bahan_foto: "https://cld/bahan.jpg",
-        model_foto: ["https://cld/model1.jpg", "https://cld/model2.jpg"],
-        bahan_items: bahanItems,
-        urutan: 3,
-        foto: [],
+        p_nama: "Gamis Planning",
+        p_bahan_foto_url: "https://cld/bahan.jpg",
+        p_model_foto_urls: ["https://cld/model1.jpg", "https://cld/model2.jpg"],
+        p_bahan_items: bahanItems,
+        p_urutan: 3,
       }),
     );
   });
 
   it("bahan_foto null kalau tidak diisi, model_foto & bahan_items default [], urutan default 0", async () => {
-    const chain = makeInsertSelectSingleChain({
-      data: { nomor: "SPL-002", nama: "X" },
-      error: null,
-    });
-    supabase.from.mockReturnValue(chain);
+    supabase.rpc.mockResolvedValue({ data: { nomor: "SPL-002", nama: "X" }, error: null });
     await createPlanning(
       { nama: "X", tanggal: "2026-08-01" },
       null,
       undefined,
       undefined,
       undefined,
-      { userEmail: "a@b.com", userName: "A" },
     );
-    expect(chain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ bahan_foto: null, model_foto: [], bahan_items: [], urutan: 0 }),
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "create_sampel_planning",
+      expect.objectContaining({
+        p_bahan_foto_url: null,
+        p_model_foto_urls: [],
+        p_bahan_items: [],
+        p_urutan: 0,
+      }),
     );
   });
 
-  it("throws when error on insert", async () => {
-    const chain = makeInsertSelectSingleChain({ data: null, error: new Error("insert fail") });
-    supabase.from.mockReturnValue(chain);
+  it("throws when RPC gagal", async () => {
+    supabase.rpc.mockResolvedValue({ data: null, error: { message: "insert fail" } });
     await expect(
-      createPlanning({ nama: "X", tanggal: "2026-08-01" }, null, [], [], 0, {
-        userEmail: "a@b.com",
-        userName: "A",
-      }),
+      createPlanning({ nama: "X", tanggal: "2026-08-01" }, null, [], [], 0),
     ).rejects.toThrow("insert fail");
   });
 });
 
 describe("reorderPlanning", () => {
-  it("update urutan per id (Promise.all)", async () => {
-    const chain = makeThrowOnErrorChain();
-    supabase.from.mockReturnValue(chain);
+  // Dulu Promise.all dari N update independen — sekarang 1 RPC atomik.
+  it("memanggil reorder_sampel_planning dengan updates", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
     await reorderPlanning([
       { id: "s1", urutan: 0 },
       { id: "s2", urutan: 1 },
     ]);
-    expect(supabase.from).toHaveBeenCalledWith("sampel");
-    expect(chain.update).toHaveBeenCalledWith({ urutan: 0 });
-    expect(chain.update).toHaveBeenCalledWith({ urutan: 1 });
-    expect(chain.eq).toHaveBeenCalledWith("id", "s1");
-    expect(chain.eq).toHaveBeenCalledWith("id", "s2");
+    expect(supabase.rpc).toHaveBeenCalledWith("reorder_sampel_planning", {
+      p_updates: [
+        { id: "s1", urutan: 0 },
+        { id: "s2", urutan: 1 },
+      ],
+    });
   });
 
-  it("tidak error pada array kosong/null", async () => {
+  it("tidak panggil RPC pada array kosong/null", async () => {
     await expect(reorderPlanning([])).resolves.toBeUndefined();
     await expect(reorderPlanning(null)).resolves.toBeUndefined();
+    expect(supabase.rpc).not.toHaveBeenCalled();
   });
 
-  it("throws kalau salah satu update gagal", async () => {
-    const chain = makeThrowOnErrorChain(new Error("update fail"));
-    supabase.from.mockReturnValue(chain);
+  it("throws kalau RPC gagal", async () => {
+    supabase.rpc.mockResolvedValue({ error: { message: "update fail" } });
     await expect(reorderPlanning([{ id: "s1", urutan: 0 }])).rejects.toThrow("update fail");
   });
 });
@@ -253,79 +204,65 @@ describe("markSampelDibuat", () => {
 
 describe("createPlanning — repeat", () => {
   it("entry.repeat -> is_repeat + repeat_dari_id/nomor tersimpan", async () => {
-    const chain = makeInsertSelectSingleChain({
-      data: { nomor: "SPL-9", nama: "Repeat X" },
-      error: null,
-    });
-    supabase.from.mockReturnValue(chain);
+    supabase.rpc.mockResolvedValue({ data: { nomor: "SPL-9", nama: "Repeat X" }, error: null });
     await createPlanning(
       { nama: "Repeat X", tanggal: "2026-10-08", repeat: { id: "p1", kode: "D-07-OSK" } },
       null,
       [],
       [],
       0,
-      { userEmail: "a@b.com", userName: "A" },
     );
-    expect(chain.insert).toHaveBeenCalledWith(
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "create_sampel_planning",
       expect.objectContaining({
-        is_repeat: true,
-        repeat_dari_id: "p1",
-        repeat_dari_kode: "D-07-OSK",
+        p_is_repeat: true,
+        p_repeat_dari_id: "p1",
+        p_repeat_dari_kode: "D-07-OSK",
       }),
     );
   });
 
-  it("tanpa repeat -> tidak ada field is_repeat", async () => {
-    const chain = makeInsertSelectSingleChain({ data: { nomor: "SPL-9", nama: "X" }, error: null });
-    supabase.from.mockReturnValue(chain);
-    await createPlanning({ nama: "X", tanggal: "2026-10-08" }, null, [], [], 0, {
-      userEmail: "a",
-      userName: "A",
-    });
-    expect(chain.insert.mock.calls[0][0]).not.toHaveProperty("is_repeat");
+  it("tanpa repeat -> is_repeat false, repeat_dari_* null", async () => {
+    supabase.rpc.mockResolvedValue({ data: { nomor: "SPL-9", nama: "X" }, error: null });
+    await createPlanning({ nama: "X", tanggal: "2026-10-08" }, null, [], [], 0);
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "create_sampel_planning",
+      expect.objectContaining({
+        p_is_repeat: false,
+        p_repeat_dari_id: null,
+        p_repeat_dari_kode: null,
+      }),
+    );
   });
 });
 
 describe("approveRepeat", () => {
-  it("approved + foto acuan disalin + sesuai_sampel true, target by id, tercatat di history", async () => {
-    const chain = makeEqChain({ data: null, error: null });
-    supabase.from.mockReturnValue(chain);
-    await approveRepeat(
-      { id: "p1", nomor: "SPL-9", nama: "Repeat X", foto: ["f1"], catatan: "" },
-      { userEmail: "a@b.com" },
-    );
-    expect(chain.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: "approved",
-        foto: ["f1"],
-        sesuai_sampel: true,
-        perubahan: null,
-        approved_by: "a@b.com",
-      }),
-    );
-    expect(chain.eq).toHaveBeenCalledWith("id", "p1");
-    expect(logHistory).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "sampel-approve-repeat", kode: "SPL-9" }),
-    );
+  // Update tunggal, sudah atomik dari sananya — sekarang 1 RPC
+  // (approve_sampel_repeat), approved_by dari auth.uid() bukan userEmail
+  // client.
+  it("memanggil approve_sampel_repeat dengan id/foto/catatan", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
+    await approveRepeat({ id: "p1", foto: ["f1"], catatan: "" });
+    expect(supabase.rpc).toHaveBeenCalledWith("approve_sampel_repeat", {
+      p_id: "p1",
+      p_foto: ["f1"],
+      p_catatan: null,
+    });
   });
 
-  it("catatan -> sesuai_sampel false + perubahan terisi", async () => {
-    const chain = makeEqChain({ data: null, error: null });
-    supabase.from.mockReturnValue(chain);
-    await approveRepeat(
-      { id: "p1", nomor: "N", nama: "X", foto: [], catatan: "kancing beda" },
-      { userEmail: "a" },
-    );
-    expect(chain.update).toHaveBeenCalledWith(
-      expect.objectContaining({ sesuai_sampel: false, perubahan: "kancing beda" }),
-    );
+  it("catatan terisi diteruskan apa adanya", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
+    await approveRepeat({ id: "p1", foto: [], catatan: "kancing beda" });
+    expect(supabase.rpc).toHaveBeenCalledWith("approve_sampel_repeat", {
+      p_id: "p1",
+      p_foto: [],
+      p_catatan: "kancing beda",
+    });
   });
 
-  it("throws on error", async () => {
-    supabase.from.mockReturnValue(makeEqChain({ data: null, error: new Error("boom") }));
-    await expect(
-      approveRepeat({ id: "p1", nomor: "N", nama: "X", foto: [] }, { userEmail: "a" }),
-    ).rejects.toThrow("boom");
+  it("throws kalau RPC gagal", async () => {
+    supabase.rpc.mockResolvedValue({ error: { message: "boom" } });
+    await expect(approveRepeat({ id: "p1", foto: [] })).rejects.toThrow("boom");
   });
 });
 
@@ -351,58 +288,43 @@ describe("setWoSelesai", () => {
 });
 
 describe("saveBatchDecisions", () => {
-  it("calls update for approved decision", async () => {
-    const chain = makeEqChain({ data: null, error: null });
-    supabase.from.mockReturnValue(chain);
+  // Dulu Promise.all dari N update independen tanpa transaction —
+  // sekarang 1 RPC atomik (save_batch_decisions_sampel). notify-
+  // sampel-status TETAP fire-and-forget di luar RPC.
+  it("memanggil save_batch_decisions_sampel dengan decisions yang sudah difilter choice!=null", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
     const decisions = { id1: { choice: "approve", catatan: "", alasan: "" } };
     const sampelMap = { id1: { nomor: "SPL-001", nama: "Gamis D" } };
-    const result = await saveBatchDecisions(decisions, sampelMap, { userEmail: "a@b.com" });
+    const result = await saveBatchDecisions(decisions, sampelMap, "a@b.com");
     expect(result).toHaveLength(1);
-    expect(chain.update).toHaveBeenCalled();
+    expect(supabase.rpc).toHaveBeenCalledWith("save_batch_decisions_sampel", {
+      p_decisions: [{ id: "id1", choice: "approve", catatan: null, alasan: null }],
+    });
   });
-  it("calls update for rejected decision", async () => {
-    const chain = makeEqChain({ data: null, error: null });
-    supabase.from.mockReturnValue(chain);
-    const decisions = { id2: { choice: "reject", catatan: "", alasan: "Tidak sesuai" } };
-    const sampelMap = { id2: { nomor: "SPL-002", nama: "Gamis E" } };
-    await saveBatchDecisions(decisions, sampelMap, { userEmail: "a@b.com" });
-    expect(chain.update).toHaveBeenCalled();
-  });
-  it("calls update for ditahan decision dengan ditahan_note", async () => {
-    const chain = makeEqChain({ data: null, error: null });
-    supabase.from.mockReturnValue(chain);
-    const decisions = { id5: { choice: "ditahan", catatan: "Tunggu bahan tambahan", alasan: "" } };
-    const sampelMap = { id5: { nomor: "SPL-005", nama: "Gamis F", status: "draft" } };
-    await saveBatchDecisions(decisions, sampelMap, { userEmail: "a@b.com" });
-    expect(chain.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "ditahan", ditahan_note: "Tunggu bahan tambahan" }),
-    );
-  });
-  it("skips entries with choice=null", async () => {
-    const chain = makeEqChain({ data: null, error: null });
-    supabase.from.mockReturnValue(chain);
+
+  it("skips entries with choice=null (tidak panggil RPC kalau kosong semua)", async () => {
     const decisions = { id3: { choice: null, catatan: "", alasan: "" } };
-    const result = await saveBatchDecisions(decisions, {}, { userEmail: "a@b.com" });
+    const result = await saveBatchDecisions(decisions, {}, "a@b.com");
     expect(result).toHaveLength(0);
+    expect(supabase.rpc).not.toHaveBeenCalled();
   });
-  it("throws when update fails", async () => {
-    const chain = makeEqChain({ data: null, error: new Error("update fail") });
-    supabase.from.mockReturnValue(chain);
+
+  it("throws when RPC fails", async () => {
+    supabase.rpc.mockResolvedValue({ error: { message: "update fail" } });
     const decisions = { id4: { choice: "approve", catatan: "", alasan: "" } };
     await expect(
-      saveBatchDecisions(decisions, { id4: { nomor: "X", nama: "Y" } }, { userEmail: "a@b.com" }),
+      saveBatchDecisions(decisions, { id4: { nomor: "X", nama: "Y" } }, "a@b.com"),
     ).rejects.toThrow("update fail");
   });
 
   it("trigger notify-sampel-status (best-effort) ke pembuat planning, permintaan Denny 2026-09", async () => {
-    const chain = makeEqChain({ data: null, error: null });
-    supabase.from.mockReturnValue(chain);
+    supabase.rpc.mockResolvedValue({ error: null });
     const decisions = { id6: { choice: "approve", catatan: "", alasan: "" } };
     const sampelMap = {
       id6: { nomor: "SPL-006", nama: "Gamis G", status: "draft", created_by: "pembuat@deera.id" },
     };
 
-    await saveBatchDecisions(decisions, sampelMap, { userEmail: "reviewer@deera.id" });
+    await saveBatchDecisions(decisions, sampelMap, "reviewer@deera.id");
 
     expect(supabase.functions.invoke).toHaveBeenCalledWith(
       "notify-sampel-status",
@@ -419,8 +341,7 @@ describe("saveBatchDecisions", () => {
   });
 
   it("notify-sampel-status gagal TIDAK melempar error (fire-and-forget)", async () => {
-    const chain = makeEqChain({ data: null, error: null });
-    supabase.from.mockReturnValue(chain);
+    supabase.rpc.mockResolvedValue({ error: null });
     supabase.functions.invoke.mockRejectedValueOnce(new Error("edge fn down"));
     const decisions = { id7: { choice: "reject", catatan: "", alasan: "Tidak sesuai" } };
     const sampelMap = {
@@ -428,7 +349,7 @@ describe("saveBatchDecisions", () => {
     };
 
     await expect(
-      saveBatchDecisions(decisions, sampelMap, { userEmail: "reviewer@deera.id" }),
+      saveBatchDecisions(decisions, sampelMap, "reviewer@deera.id"),
     ).resolves.toBeDefined();
   });
 });

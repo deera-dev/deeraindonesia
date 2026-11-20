@@ -109,7 +109,7 @@ describe("useCreatePlanning", () => {
     const { result } = renderHook(() => useCreatePlanning(), { wrapper });
     expect(typeof result.current).toBe("function");
   });
-  it("calls mutateAsync dengan entry/bahanFotoUrl/modelFotoUrls/bahanItems/urutan/userEmail/userName", async () => {
+  it("calls mutateAsync dengan entry/bahanFotoUrl/modelFotoUrls/bahanItems/urutan", async () => {
     const customMutate = vi.fn().mockResolvedValue(undefined);
     useCreatePlanningMutation.mockReturnValue({ mutateAsync: customMutate });
     const { result } = renderHook(() => useCreatePlanning(), { wrapper });
@@ -120,8 +120,6 @@ describe("useCreatePlanning", () => {
       ["m1.jpg"],
       bahanItems,
       2,
-      "a@b.com",
-      "A",
     );
     expect(customMutate).toHaveBeenCalledWith({
       entry: { nama: "X", tanggal: "2026-08-01" },
@@ -129,8 +127,6 @@ describe("useCreatePlanning", () => {
       modelFotoUrls: ["m1.jpg"],
       bahanItems,
       urutan: 2,
-      userEmail: "a@b.com",
-      userName: "A",
     });
   });
 });
@@ -170,16 +166,15 @@ describe("useMarkSampelDibuat", () => {
 });
 
 describe("useApproveRepeat", () => {
-  it("meneruskan sampel/foto/catatan/userEmail ke mutateAsync", async () => {
+  it("meneruskan sampel/foto/catatan ke mutateAsync", async () => {
     const customMutate = vi.fn().mockResolvedValue(undefined);
     useApproveRepeatMutation.mockReturnValue({ mutateAsync: customMutate });
     const { result } = renderHook(() => useApproveRepeat(), { wrapper });
-    await result.current({ sampel: { id: "p1" }, foto: ["f"], catatan: "c", userEmail: "a@b.com" });
+    await result.current({ sampel: { id: "p1" }, foto: ["f"], catatan: "c" });
     expect(customMutate).toHaveBeenCalledWith({
       sampel: { id: "p1" },
       foto: ["f"],
       catatan: "c",
-      userEmail: "a@b.com",
     });
   });
 });

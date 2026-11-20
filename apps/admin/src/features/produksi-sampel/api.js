@@ -31,50 +31,27 @@ export async function updateSampel({ id, nomor, nama, tanggal, foto }) {
   }).catch(() => {});
 }
 
-export async function createPlanning(
-  entry,
-  bahanFotoUrl,
-  modelFotoUrls,
-  bahanItems,
-  urutan,
-  { userEmail, userName },
-) {
-  const insert = {
-    nama: entry.nama,
-    tanggal: entry.tanggal,
-    foto: [],
-    bahan_foto: bahanFotoUrl || null,
-    model_foto: modelFotoUrls ?? [],
-    bahan_items: bahanItems ?? [],
-    urutan: urutan ?? 0,
-    nomor: buildNomor(),
-    ...(entry.repeat
-      ? {
-          is_repeat: true,
-          repeat_dari_id: entry.repeat.id ?? null,
-          repeat_dari_kode: entry.repeat.kode ?? null,
-        }
-      : {}),
-    status: "planning",
-    created_by: userEmail,
-    created_by_name: userName,
-  };
-  const { data: inserted, error } = await supabase
-    .from("sampel")
-    .insert(insert)
-    .select("nomor, nama")
-    .single();
-  if (error) throw error;
+// Insert tunggal, sudah atomik dari sananya — cuma identitas yang
+// diperbaiki (created_by dulu dari userEmail/userName client, sekarang
+// dari auth.uid()) — lihat
+// supabase/migrations/20261120_produksi_sampel_crud.sql.
+export async function createPlanning(entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan) {
+  const nomor = buildNomor();
+  const { data, error } = await supabase.rpc("create_sampel_planning", {
+    p_nomor: nomor,
+    p_nama: entry.nama,
+    p_tanggal: entry.tanggal,
+    p_bahan_foto_url: bahanFotoUrl || null,
+    p_model_foto_urls: modelFotoUrls ?? [],
+    p_bahan_items: bahanItems ?? [],
+    p_urutan: urutan ?? 0,
+    p_is_repeat: !!entry.repeat,
+    p_repeat_dari_id: entry.repeat?.id ?? null,
+    p_repeat_dari_kode: entry.repeat?.kode ?? null,
+  });
+  if (error) throw new Error(error.message);
 
-  logHistory({
-    action: "sampel-planning-buat",
-    category: "produksi",
-    kode: inserted?.nomor ?? insert.nomor,
-    nama: inserted?.nama ?? insert.nama,
-    snapshot: insert,
-  }).catch(() => {});
-
-  return inserted ?? insert;
+  return data;
 }
 
 export async function updatePlanning({ id, nomor, nama, tanggal, modelFotoUrls, bahanItems }) {
@@ -98,12 +75,12 @@ export async function updatePlanning({ id, nomor, nama, tanggal, modelFotoUrls, 
   }).catch(() => {});
 }
 
+// Dulu Promise.all dari N update independen tanpa transaction — sekarang
+// 1 RPC atomik.
 export async function reorderPlanning(updates) {
-  await Promise.all(
-    (updates ?? []).map(({ id, urutan }) =>
-      supabase.from("sampel").update({ urutan }).eq("id", id).throwOnError(),
-    ),
-  );
+  if (!updates?.length) return;
+  const { error } = await supabase.rpc("reorder_sampel_planning", { p_updates: updates });
+  if (error) throw new Error(error.message);
 }
 
 export async function markSampelDibuat({ id, nomor, nama, foto }) {
@@ -190,87 +167,40 @@ export async function setWoSelesai({ id, nomor, nama, selesai }) {
   }).catch(() => {});
 }
 
-export async function approveRepeat({ id, nomor, nama, foto, catatan }, { userEmail }) {
-  const now = new Date().toISOString();
-  const payload = {
-    status: "approved",
-    foto: foto ?? [],
-    sesuai_sampel: !catatan,
-    perubahan: catatan || null,
-    approved_by: userEmail,
-    approved_at: now,
-    updated_at: now,
-  };
-  const { error } = await supabase.from("sampel").update(payload).eq("id", id);
-  if (error) throw error;
-
-  logHistory({
-    action: "sampel-approve-repeat",
-    category: "produksi",
-    kode: nomor,
-    nama,
-    snapshot: { status: "approved", repeat: true, perubahan: catatan || null },
-    before: { status: "planning" },
-  }).catch(() => {});
+// Update tunggal, sudah atomik dari sananya — cuma identitas yang
+// diperbaiki (approved_by dulu dari userEmail client, sekarang dari
+// auth.uid()).
+export async function approveRepeat({ id, foto, catatan }) {
+  const { error } = await supabase.rpc("approve_sampel_repeat", {
+    p_id: id,
+    p_foto: foto ?? [],
+    p_catatan: catatan || null,
+  });
+  if (error) throw new Error(error.message);
 }
 
-export async function saveBatchDecisions(decisions, sampelMap, { userEmail }) {
+// Dulu Promise.all dari N update independen (approve/tahan/reject per
+// sampel) tanpa transaction — kalau satu gagal, sisanya sudah ter-commit
+// duluan. Sekarang 1 RPC atomik, identitas dari auth.uid(). notify-
+// sampel-status TETAP fire-and-forget di luar RPC — lihat
+// supabase/migrations/20261120_produksi_sampel_crud.sql.
+export async function saveBatchDecisions(decisions, sampelMap, userEmail) {
   const toProcess = Object.entries(decisions).filter(([, d]) => d.choice !== null);
-  const now = new Date().toISOString();
+  if (toProcess.length === 0) return toProcess;
 
-  await Promise.all(
-    toProcess.map(async ([id, dec]) => {
-      const payload =
-        dec.choice === "approve"
-          ? {
-              status: "approved",
-              sesuai_sampel: !dec.catatan,
-              perubahan: dec.catatan || null,
-              approved_by: userEmail,
-              approved_at: now,
-              updated_at: now,
-            }
-          : dec.choice === "ditahan"
-            ? {
-                status: "ditahan",
-                ditahan_by: userEmail,
-                ditahan_at: now,
-                ditahan_note: dec.catatan || null,
-                updated_at: now,
-              }
-            : {
-                status: "rejected",
-                rejected_by: userEmail,
-                rejected_at: now,
-                rejection_note: dec.alasan,
-                updated_at: now,
-              };
-      const { error } = await supabase.from("sampel").update(payload).eq("id", id);
-      if (error) throw error;
-    }),
-  );
+  const { error } = await supabase.rpc("save_batch_decisions_sampel", {
+    p_decisions: toProcess.map(([id, dec]) => ({
+      id,
+      choice: dec.choice,
+      catatan: dec.catatan || null,
+      alasan: dec.alasan || null,
+    })),
+  });
+  if (error) throw new Error(error.message);
 
   toProcess.forEach(([id, dec]) => {
     const sampel = sampelMap[id];
     if (!sampel) return;
-    logHistory({
-      action:
-        dec.choice === "approve"
-          ? "sampel-approve"
-          : dec.choice === "ditahan"
-            ? "sampel-tahan"
-            : "sampel-reject",
-      category: "produksi",
-      kode: sampel.nomor,
-      nama: sampel.nama,
-      snapshot:
-        dec.choice === "approve"
-          ? { status: "approved", perubahan: dec.catatan || null }
-          : dec.choice === "ditahan"
-            ? { status: "ditahan", ditahan_note: dec.catatan || null }
-            : { status: "rejected", rejection_note: dec.alasan },
-      before: { status: sampel.status },
-    }).catch(() => {});
 
     supabase.functions
       .invoke("notify-sampel-status", {

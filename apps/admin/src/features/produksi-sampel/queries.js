@@ -37,11 +37,8 @@ export function useUpdateSampelMutation() {
 export function useCreatePlanningMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, userEmail, userName }) =>
-      createPlanning(entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, {
-        userEmail,
-        userName,
-      }),
+    mutationFn: ({ entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan }) =>
+      createPlanning(entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
     },
@@ -71,11 +68,7 @@ export function useMarkSampelDibuatMutation() {
 export function useApproveRepeatMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ sampel, foto, catatan, userEmail }) =>
-      approveRepeat(
-        { id: sampel.id, nomor: sampel.nomor, nama: sampel.nama, foto, catatan },
-        { userEmail },
-      ),
+    mutationFn: ({ sampel, foto, catatan }) => approveRepeat({ id: sampel.id, foto, catatan }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
     },
@@ -115,7 +108,7 @@ export function useSaveBatchDecisionsMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ decisions, sampelMap, userEmail }) =>
-      saveBatchDecisions(decisions, sampelMap, { userEmail }),
+      saveBatchDecisions(decisions, sampelMap, userEmail),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiSampelKeys.all });
     },

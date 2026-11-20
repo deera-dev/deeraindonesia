@@ -70,13 +70,8 @@ describe("useCreatePlanningMutation", () => {
       modelFotoUrls: ["url-model"],
       bahanItems,
       urutan: 2,
-      userEmail: "a@b.com",
-      userName: "A",
     });
-    expect(createPlanning).toHaveBeenCalledWith(entry, "url-bahan", ["url-model"], bahanItems, 2, {
-      userEmail: "a@b.com",
-      userName: "A",
-    });
+    expect(createPlanning).toHaveBeenCalledWith(entry, "url-bahan", ["url-model"], bahanItems, 2);
   });
 });
 

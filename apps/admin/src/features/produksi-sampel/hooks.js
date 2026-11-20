@@ -33,8 +33,8 @@ export function useUpdatePlanning() {
 
 export function useCreatePlanning() {
   const { mutateAsync } = useCreatePlanningMutation();
-  return (entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, userEmail, userName) =>
-    mutateAsync({ entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan, userEmail, userName });
+  return (entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan) =>
+    mutateAsync({ entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan });
 }
 
 export function useReorderPlanning() {
@@ -54,8 +54,7 @@ export function useMarkSampelDibuat() {
 
 export function useApproveRepeat() {
   const { mutateAsync } = useApproveRepeatMutation();
-  return ({ sampel, foto, catatan, userEmail }) =>
-    mutateAsync({ sampel, foto, catatan, userEmail });
+  return ({ sampel, foto, catatan }) => mutateAsync({ sampel, foto, catatan });
 }
 
 export function useSetWoSelesai() {
