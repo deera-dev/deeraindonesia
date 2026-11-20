@@ -56,19 +56,6 @@ function makeEqChain(data = null, error = null) {
   return c;
 }
 
-function makeMaybeSingleChain(data = null, error = null) {
-  const c = makeBase();
-  c.maybeSingle.mockResolvedValue({ data, error });
-  return c;
-}
-
-function makeUpsertChain(data = null, error = null, insertedBatch = { id: "b1" }) {
-  const c = makeBase();
-  c.upsert.mockResolvedValue({ data, error });
-  c.single.mockResolvedValue({ data: error ? null : insertedBatch, error: null });
-  return c;
-}
-
 beforeEach(() => vi.clearAllMocks());
 
 describe("fetchBatches", () => {
@@ -108,9 +95,12 @@ describe("deleteBatchAndProduct", () => {
 });
 
 describe("createBatches", () => {
-  it("upserts products and inserts batch for each entry", async () => {
-    const chain = makeUpsertChain();
-    supabase.from.mockReturnValue(chain);
+  // Upsert products + insert produksi_batch + upsert expected_stok
+  // sekarang 1 RPC atomik (create_produksi_batch) — lihat
+  // supabase/migrations/20261120_produksi_batch_crud.sql. Di sini cuma
+  // tes JS-nya manggil RPC dgn field yang benar & meneruskan error.
+  it("memanggil create_produksi_batch dengan field yang benar", async () => {
+    supabase.rpc.mockResolvedValue({ data: { id: "batch-1" }, error: null });
     const entry = {
       kode: "D-01-OSK",
       nama: "Gamis",
@@ -125,13 +115,14 @@ describe("createBatches", () => {
       catatan: "",
     };
     await createBatches([entry], {});
-    expect(chain.upsert).toHaveBeenCalled();
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "create_produksi_batch",
+      expect.objectContaining({ p_kode: "D-01-OSK", p_batch_no: "PROD-20240101-123" }),
+    );
   });
 
-  it("throws when products upsert errors", async () => {
-    const chain = makeUpsertChain(null, null);
-    chain.upsert.mockResolvedValue({ error: new Error("upsert fail") });
-    supabase.from.mockReturnValue(chain);
+  it("throw kalau RPC gagal", async () => {
+    supabase.rpc.mockResolvedValue({ data: null, error: { message: "gagal simpan batch" } });
     const entry = {
       kode: "D-01-OSK",
       nama: "Gamis",
@@ -145,33 +136,11 @@ describe("createBatches", () => {
       tanggal: "2024-01-01",
       catatan: "",
     };
-    await expect(createBatches([entry], {})).rejects.toThrow("upsert fail");
+    await expect(createBatches([entry], {})).rejects.toThrow("gagal simpan batch");
   });
 
-  it("inserts upah_jahit into produksi_batch", async () => {
-    const chain = makeUpsertChain();
-    supabase.from.mockReturnValue(chain);
-    const entry = {
-      kode: "D-01-OSK",
-      nama: "Gamis",
-      bahan: "OSK",
-      activeVariants: [{ size: "Midi", ld: 110, pb: 130 }],
-      warnaList: ["HITAM"],
-      sizes: [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] }],
-      totalKain: 5,
-      template: null,
-      batchNo: "PROD-20240101-123",
-      tanggal: "2024-01-01",
-      catatan: "",
-      upahJahit: 25000,
-    };
-    await createBatches([entry], {});
-    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ upah_jahit: 25000 }));
-  });
-
-  it("defaults upah_jahit to 0 when not provided", async () => {
-    const chain = makeUpsertChain();
-    supabase.from.mockReturnValue(chain);
+  it("mengirim upah_jahit, default ke 0 kalau tidak diisi", async () => {
+    supabase.rpc.mockResolvedValue({ data: { id: "batch-1" }, error: null });
     const entry = {
       kode: "D-01-OSK",
       nama: "Gamis",
@@ -186,12 +155,14 @@ describe("createBatches", () => {
       catatan: "",
     };
     await createBatches([entry], {});
-    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ upah_jahit: 0 }));
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "create_produksi_batch",
+      expect.objectContaining({ p_upah_jahit: 0 }),
+    );
   });
 
   it("membuat kartu Jahit dari batch yang baru diinsert (permintaan Denny 2026-09)", async () => {
-    const chain = makeUpsertChain(null, null, { id: "batch-new-1" });
-    supabase.from.mockReturnValue(chain);
+    supabase.rpc.mockResolvedValue({ data: { id: "batch-new-1" }, error: null });
     const sizes = [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] }];
     const entry = {
       kode: "D-01-OSK",
@@ -218,87 +189,86 @@ describe("createBatches", () => {
 });
 
 describe("updateBatch", () => {
-  function mockFromForUnchangedKode({ productExists = true } = {}) {
-    const productsChain = makeMaybeSingleChain(productExists ? { kode: "D-01-OSK" } : null);
-    const otherChain = makeEqChain();
-    supabase.from.mockImplementation((table) =>
-      table === "products" ? productsChain : otherChain,
+  // ensureProductForKode (select+update/insert products) + update
+  // produksi_batch + delete/upsert expected_stok sekarang 1 RPC atomik
+  // (update_produksi_batch) — clash-detection, rename-vs-insert, dan
+  // expected_stok cleanup semuanya sudah diverifikasi langsung di DB
+  // (BEGIN/ROLLBACK) saat menulis migrationnya, bukan lagi lewat mock
+  // chain supabase.from() di sini. Lihat
+  // supabase/migrations/20261120_produksi_batch_crud.sql.
+  const basePayload = {
+    initial: {
+      id: "b1",
+      kode_produk: "D-01-OSK",
+      batch_no: "PROD-OLD",
+      tanggal_produksi: "2024-01-01",
+      total_kain: 10,
+    },
+    kode: "D-01-OSK",
+    nama: "Gamis",
+    tanggal: "2024-01-15",
+    totalKain: 12,
+    sizes: [],
+    bahanDipakai: [],
+    batchNo: "PROD-NEW",
+    catatan: "",
+  };
+
+  it("memanggil update_produksi_batch dengan field yang benar", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
+    await updateBatch(basePayload, [], {});
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "update_produksi_batch",
+      expect.objectContaining({
+        p_batch_id: "b1",
+        p_initial_kode: "D-01-OSK",
+        p_kode: "D-01-OSK",
+        p_batch_no: "PROD-NEW",
+      }),
     );
-    return { productsChain, otherChain };
-  }
-
-  it("calls update on produksi_batch", async () => {
-    const { otherChain } = mockFromForUnchangedKode();
-    const payload = {
-      initial: {
-        id: "b1",
-        kode_produk: "D-01-OSK",
-        batch_no: "PROD-OLD",
-        tanggal_produksi: "2024-01-01",
-        total_kain: 10,
-      },
-      kode: "D-01-OSK",
-      nama: "Gamis",
-      tanggal: "2024-01-15",
-      totalKain: 12,
-      sizes: [],
-      bahanDipakai: [],
-      batchNo: "PROD-NEW",
-      catatan: "",
-    };
-    await updateBatch(payload, [], {});
-    expect(otherChain.update).toHaveBeenCalled();
   });
 
-  it("persists upah_jahit in the update payload", async () => {
-    const { otherChain } = mockFromForUnchangedKode();
-    const payload = {
-      initial: {
-        id: "b1",
-        kode_produk: "D-01-OSK",
-        batch_no: "PROD-OLD",
-        tanggal_produksi: "2024-01-01",
-        total_kain: 10,
-      },
-      kode: "D-01-OSK",
-      nama: "Gamis",
-      tanggal: "2024-01-15",
-      totalKain: 12,
-      sizes: [],
-      bahanDipakai: [],
-      batchNo: "PROD-NEW",
-      catatan: "",
-      upahJahit: 30000,
-    };
-    await updateBatch(payload, [], {});
-    expect(otherChain.update).toHaveBeenCalledWith(expect.objectContaining({ upah_jahit: 30000 }));
+  it("mengirim fallback variants/warna hasil deriveProductFieldsFromSizes", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
+    const sizes = [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] }];
+    await updateBatch({ ...basePayload, sizes }, [], {});
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "update_produksi_batch",
+      expect.objectContaining({
+        p_fallback_variants: [{ size: "Midi", harga: 0, ld: 110, pb: 130 }],
+        p_fallback_warna: ["HITAM"],
+      }),
+    );
   });
 
-  it("defaults upah_jahit to 0 when not provided", async () => {
-    const { otherChain } = mockFromForUnchangedKode();
-    const payload = {
-      initial: {
-        id: "b1",
-        kode_produk: "D-01-OSK",
-        batch_no: "PROD-OLD",
-        tanggal_produksi: "2024-01-01",
-        total_kain: 10,
-      },
-      kode: "D-01-OSK",
-      nama: "Gamis",
-      tanggal: "2024-01-15",
-      totalKain: 12,
-      sizes: [],
-      bahanDipakai: [],
-      batchNo: "PROD-NEW",
-      catatan: "",
-    };
-    await updateBatch(payload, [], {});
-    expect(otherChain.update).toHaveBeenCalledWith(expect.objectContaining({ upah_jahit: 0 }));
+  it("persists upah_jahit, default ke 0 kalau tidak diisi", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
+    await updateBatch({ ...basePayload, upahJahit: 30000 }, [], {});
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "update_produksi_batch",
+      expect.objectContaining({ p_upah_jahit: 30000 }),
+    );
+
+    await updateBatch(basePayload, [], {});
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "update_produksi_batch",
+      expect.objectContaining({ p_upah_jahit: 0 }),
+    );
+  });
+
+  it("throw kalau RPC gagal (termasuk clash kode), tidak memanggil kartu Jahit", async () => {
+    supabase.rpc.mockResolvedValue({
+      error: { message: 'Kode produk "D-02-OSK" sudah dipakai produk lain — pilih kode lain.' },
+    });
+    await expect(updateBatch({ ...basePayload, kode: "D-02-OSK" }, [], {})).rejects.toThrow(
+      "sudah dipakai produk lain",
+    );
+    expect(createJahitCardsForBatch).not.toHaveBeenCalled();
+    expect(renameJahitCardsForBatch).not.toHaveBeenCalled();
   });
 
   it("sinkron kartu Jahit pakai batch_id yang sudah ada (permintaan Denny 2026-09)", async () => {
-    mockFromForUnchangedKode();
+    supabase.rpc.mockResolvedValue({ error: null });
     const sizes = [
       {
         size: "Midi",
@@ -308,24 +278,7 @@ describe("updateBatch", () => {
         ],
       },
     ];
-    const payload = {
-      initial: {
-        id: "b1",
-        kode_produk: "D-01-OSK",
-        batch_no: "PROD-OLD",
-        tanggal_produksi: "2024-01-01",
-        total_kain: 10,
-      },
-      kode: "D-01-OSK",
-      nama: "Gamis",
-      tanggal: "2024-01-15",
-      totalKain: 12,
-      sizes,
-      bahanDipakai: [],
-      batchNo: "PROD-NEW",
-      catatan: "",
-    };
-    await updateBatch(payload, [], {});
+    await updateBatch({ ...basePayload, sizes }, [], {});
     await Promise.resolve();
     expect(createJahitCardsForBatch).toHaveBeenCalledWith({
       batchId: "b1",
@@ -335,179 +288,21 @@ describe("updateBatch", () => {
     });
   });
 
-  describe("ensureProductForKode (bugfix FK saat edit batch)", () => {
-    it("kode TIDAK berubah & baris products sudah ada -> tidak upsert/insert products lagi", async () => {
-      const { productsChain, otherChain } = mockFromForUnchangedKode({ productExists: true });
-      const payload = {
-        initial: {
-          id: "b1",
-          kode_produk: "D-01-OSK",
-          batch_no: "PROD-OLD",
-          tanggal_produksi: "2024-01-01",
-          total_kain: 10,
-        },
-        kode: "D-01-OSK",
-        nama: "Gamis",
-        tanggal: "2024-01-15",
-        totalKain: 12,
-        sizes: [],
-        bahanDipakai: [],
-        batchNo: "PROD-NEW",
-        catatan: "",
-      };
-      await updateBatch(payload, [], {});
-      expect(productsChain.maybeSingle).toHaveBeenCalled();
-      expect(productsChain.upsert).not.toHaveBeenCalled();
-      expect(otherChain.update).toHaveBeenCalled();
-      expect(renameJahitCardsForBatch).not.toHaveBeenCalled();
-    });
+  it("kode TIDAK berubah -> tidak memanggil renameJahitCardsForBatch", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
+    await updateBatch(basePayload, [], {});
+    await Promise.resolve();
+    expect(renameJahitCardsForBatch).not.toHaveBeenCalled();
+  });
 
-    it("kode TIDAK berubah tapi baris products HILANG (anomali) -> self-heal via upsert sebelum update produksi_batch", async () => {
-      const { productsChain, otherChain } = mockFromForUnchangedKode({ productExists: false });
-      const sizes = [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] }];
-      const payload = {
-        initial: {
-          id: "b1",
-          kode_produk: "D-01-OSK",
-          batch_no: "PROD-OLD",
-          tanggal_produksi: "2024-01-01",
-          total_kain: 10,
-        },
-        kode: "D-01-OSK",
-        nama: "Gamis",
-        tanggal: "2024-01-15",
-        totalKain: 12,
-        sizes,
-        bahanDipakai: [],
-        batchNo: "PROD-NEW",
-        catatan: "",
-      };
-      await updateBatch(payload, [], {});
-      expect(productsChain.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ kode: "D-01-OSK", nama: "Gamis" }),
-        { onConflict: "kode" },
-      );
-      expect(otherChain.update).toHaveBeenCalled();
-    });
-
-    it("kode BERUBAH & kode baru belum dipakai -> rename baris products lama ke kode baru", async () => {
-      const productsChain = makeBase();
-      productsChain.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
-      productsChain.select.mockReturnValueOnce(productsChain).mockResolvedValueOnce({
-        data: [{ kode: "D-02-OSK" }],
-        error: null,
-      });
-      const otherChain = makeEqChain();
-      supabase.from.mockImplementation((table) =>
-        table === "products" ? productsChain : otherChain,
-      );
-
-      const payload = {
-        initial: {
-          id: "b1",
-          kode_produk: "D-01-OSK",
-          batch_no: "PROD-OLD",
-          tanggal_produksi: "2024-01-01",
-          total_kain: 10,
-        },
-        kode: "D-02-OSK",
-        nama: "Gamis",
-        tanggal: "2024-01-15",
-        totalKain: 12,
-        sizes: [],
-        bahanDipakai: [],
-        batchNo: "PROD-NEW",
-        catatan: "",
-      };
-      await updateBatch(payload, [], {});
-      await Promise.resolve();
-
-      expect(productsChain.update).toHaveBeenCalledWith({ kode: "D-02-OSK" });
-      expect(productsChain.insert).not.toHaveBeenCalled();
-      expect(otherChain.update).toHaveBeenCalledWith(
-        expect.objectContaining({ kode_produk: "D-02-OSK" }),
-      );
-      expect(otherChain.delete).toHaveBeenCalled();
-      expect(renameJahitCardsForBatch).toHaveBeenCalledWith({
-        batchId: "b1",
-        kode: "D-02-OSK",
-        nama: "Gamis",
-      });
-    });
-
-    it("kode BERUBAH tapi baris products lama sudah tidak ada -> insert baris baru dari data batch", async () => {
-      const productsChain = makeBase();
-      productsChain.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
-      productsChain.select.mockReturnValueOnce(productsChain).mockResolvedValueOnce({
-        data: [],
-        error: null,
-      });
-      const otherChain = makeEqChain();
-      supabase.from.mockImplementation((table) =>
-        table === "products" ? productsChain : otherChain,
-      );
-
-      const sizes = [{ size: "Midi", warna: [{ warna: "HITAM", qty: 5 }] }];
-      const payload = {
-        initial: {
-          id: "b1",
-          kode_produk: "D-01-OSK",
-          batch_no: "PROD-OLD",
-          tanggal_produksi: "2024-01-01",
-          total_kain: 10,
-        },
-        kode: "D-02-OSK",
-        nama: "Gamis",
-        tanggal: "2024-01-15",
-        totalKain: 12,
-        sizes,
-        bahanDipakai: [],
-        batchNo: "PROD-NEW",
-        catatan: "",
-      };
-      await updateBatch(payload, [], {});
-      await Promise.resolve();
-
-      expect(productsChain.insert).toHaveBeenCalledWith(
-        expect.objectContaining({ kode: "D-02-OSK", nama: "Gamis" }),
-      );
-      expect(otherChain.update).toHaveBeenCalledWith(
-        expect.objectContaining({ kode_produk: "D-02-OSK" }),
-      );
-      expect(renameJahitCardsForBatch).toHaveBeenCalledWith({
-        batchId: "b1",
-        kode: "D-02-OSK",
-        nama: "Gamis",
-      });
-    });
-
-    it("kode BERUBAH ke kode yang sudah dipakai produk lain -> throw, TIDAK menyentuh produksi_batch", async () => {
-      const productsChain = makeMaybeSingleChain({ kode: "D-02-OSK" });
-      const otherChain = makeEqChain();
-      supabase.from.mockImplementation((table) =>
-        table === "products" ? productsChain : otherChain,
-      );
-
-      const payload = {
-        initial: {
-          id: "b1",
-          kode_produk: "D-01-OSK",
-          batch_no: "PROD-OLD",
-          tanggal_produksi: "2024-01-01",
-          total_kain: 10,
-        },
-        kode: "D-02-OSK",
-        nama: "Gamis",
-        tanggal: "2024-01-15",
-        totalKain: 12,
-        sizes: [],
-        bahanDipakai: [],
-        batchNo: "PROD-NEW",
-        catatan: "",
-      };
-      await expect(updateBatch(payload, [], {})).rejects.toThrow("sudah dipakai produk lain");
-      expect(otherChain.update).not.toHaveBeenCalled();
-      expect(renameJahitCardsForBatch).not.toHaveBeenCalled();
+  it("kode BERUBAH -> memanggil renameJahitCardsForBatch dengan kode baru", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
+    await updateBatch({ ...basePayload, kode: "D-02-OSK" }, [], {});
+    await Promise.resolve();
+    expect(renameJahitCardsForBatch).toHaveBeenCalledWith({
+      batchId: "b1",
+      kode: "D-02-OSK",
+      nama: "Gamis",
     });
   });
 });

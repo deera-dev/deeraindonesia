@@ -79,6 +79,11 @@ export async function deleteBatchAndProduct(batch) {
   await deleteProductCascade(batch.kode_produk, "produksi");
 }
 
+// Dulu 3 tulis berurutan (upsert products, insert produksi_batch, upsert
+// expected_stok) tanpa transaction — sekarang 1 RPC atomik
+// (create_produksi_batch). createJahitCardsForBatch TETAP fire-and-
+// forget di luar RPC (perilaku lama yang disengaja — lihat migration
+// supabase/migrations/20261120_produksi_batch_crud.sql).
 async function saveEntry({
   kode,
   nama,
@@ -103,64 +108,30 @@ async function saveEntry({
       jumlah: Math.round((Number(b.qty_per_baju) || 0) * totalKain * 100) / 100,
     })) ?? [];
 
-  const { error: prodErr } = await supabase.from("products").upsert(
-    {
-      kode,
-      nama,
-      bahan: bahan || null,
-      hpp: template?.total_hpp ?? 0,
-      variants: activeVariants.map((v) => ({ size: v.size, harga: 0, ld: v.ld, pb: v.pb })),
-      warna: warnaList.length > 0 ? warnaList : [],
-    },
-    { onConflict: "kode" },
-  );
-  if (prodErr) throw new Error(prodErr.message);
+  const { data, error } = await supabase.rpc("create_produksi_batch", {
+    p_kode: kode,
+    p_nama: nama,
+    p_bahan: bahan || null,
+    p_variants: activeVariants.map((v) => ({ size: v.size, harga: 0, ld: v.ld, pb: v.pb })),
+    p_warna: warnaList.length > 0 ? warnaList : [],
+    p_hpp: template?.total_hpp ?? 0,
+    p_batch_no: batchNo,
+    p_tanggal: tanggal,
+    p_total_kain: totalKain,
+    p_sizes: sizes,
+    p_bahan_dipakai: bahanDipakai,
+    p_hpp_snapshot: template ?? null,
+    p_hpp_per_item: template?.total_hpp ?? 0,
+    p_catatan: catatan,
+    p_upah_jahit: Number(upahJahit) || 0,
+    p_tukang_potong_id: tukangPotongId || null,
+    p_tukang_potong_nama: tukangPotongNama || null,
+  });
+  if (error) throw new Error(error.message);
 
-  const { data: insertedBatch, error: batchErr } = await supabase
-    .from("produksi_batch")
-    .insert({
-      batch_no: batchNo,
-      kode_produk: kode,
-      nama_produk: nama,
-      tanggal_produksi: tanggal,
-      total_kain: totalKain,
-      sizes,
-      bahan_dipakai: bahanDipakai,
-      hpp_snapshot: template ?? null,
-      hpp_per_item: template?.total_hpp ?? 0,
-      catatan,
-      upah_jahit: Number(upahJahit) || 0,
-      tukang_potong_id: tukangPotongId || null,
-      tukang_potong_nama: tukangPotongNama || null,
-    })
-    .select("id")
-    .single();
-  if (batchErr) throw new Error(batchErr.message);
-
-  createJahitCardsForBatch({ batchId: insertedBatch?.id, kode, nama, sizes }).catch((err) =>
+  createJahitCardsForBatch({ batchId: data?.id, kode, nama, sizes }).catch((err) =>
     console.warn("createJahitCardsForBatch error:", err),
   );
-
-  const expectedRows = [];
-  for (const sz of sizes) {
-    for (const w of sz.warna ?? []) {
-      expectedRows.push({ kode, size: sz.size, warna: w.warna, expected_qty: w.qty });
-    }
-  }
-  if (expectedRows.length > 0) {
-    const { error: expErr } = await supabase
-      .from("expected_stok")
-      .upsert(expectedRows, { onConflict: "kode,size,warna" });
-    if (expErr) throw new Error(expErr.message);
-  }
-
-  logHistory({
-    action: "batch-produksi",
-    category: "produksi",
-    kode,
-    nama,
-    snapshot: { batch_no: batchNo, tanggal, total_kain: totalKain, sizes, catatan },
-  }).catch(() => {});
 }
 
 export async function createBatches(entries, shared) {
@@ -183,48 +154,20 @@ function deriveProductFieldsFromSizes(sizes) {
   return { variants, warna: [...warnaSet] };
 }
 
-async function ensureProductForKode({ kode, initial, nama, sizes, kodeChanged }) {
-  if (kodeChanged) {
-    const { data: clash } = await supabase
-      .from("products")
-      .select("kode")
-      .eq("kode", kode)
-      .maybeSingle();
-    if (clash) {
-      throw new Error(`Kode produk "${kode}" sudah dipakai produk lain — pilih kode lain.`);
-    }
-
-    const { data: renamed, error: renameErr } = await supabase
-      .from("products")
-      .update({ kode })
-      .eq("kode", initial.kode_produk)
-      .select("kode");
-    if (renameErr) throw new Error(renameErr.message);
-
-    if (!renamed || renamed.length === 0) {
-      const { variants, warna } = deriveProductFieldsFromSizes(sizes);
-      const { error: insErr } = await supabase
-        .from("products")
-        .insert({ kode, nama, variants, warna });
-      if (insErr) throw new Error(insErr.message);
-    }
-  } else {
-    const { data: existing } = await supabase
-      .from("products")
-      .select("kode")
-      .eq("kode", kode)
-      .maybeSingle();
-    if (!existing) {
-      const { variants, warna } = deriveProductFieldsFromSizes(sizes);
-      const { error: insErr } = await supabase
-        .from("products")
-        .upsert({ kode, nama, variants, warna }, { onConflict: "kode" });
-      if (insErr) throw new Error(insErr.message);
-    }
-  }
-}
-
-export async function updateBatch(payload, extraEntries, shared) {
+// extraEntries/shared TIDAK dipakai — sudah begitu dari sebelumnya
+// (BatchForm.jsx membangun & mengirim extraEntries utk "Produk
+// tambahan" saat edit, tapi updateBatch lama juga gak pernah
+// memakainya). Pre-existing, bukan regresi dari perubahan ini.
+//
+// Dulu ensureProductForKode (select+update/insert products) + update
+// produksi_batch + delete/upsert expected_stok — 3+ tulis berurutan
+// tanpa transaction. Sekarang 1 RPC atomik (update_produksi_batch).
+// SIZE_PRESETS tetap dihitung di JS (deriveProductFieldsFromSizes) dan
+// dikirim sebagai p_fallback_variants/p_fallback_warna — RPC cuma
+// memakainya kalau produk hilang/perlu dibuat ulang, bukan ikut hitung
+// ulang preset size di SQL. Lihat
+// supabase/migrations/20261120_produksi_batch_crud.sql.
+export async function updateBatch(payload, _extraEntries, _shared) {
   const {
     initial,
     kode,
@@ -240,26 +183,26 @@ export async function updateBatch(payload, extraEntries, shared) {
     tukangPotongNama,
   } = payload;
   const kodeChanged = kode !== initial.kode_produk;
+  const { variants: fallbackVariants, warna: fallbackWarna } = deriveProductFieldsFromSizes(sizes);
 
-  await ensureProductForKode({ kode, initial, nama, sizes, kodeChanged });
-
-  const { error: batchErr } = await supabase
-    .from("produksi_batch")
-    .update({
-      batch_no: batchNo,
-      kode_produk: kode,
-      nama_produk: nama,
-      tanggal_produksi: tanggal,
-      total_kain: totalKain,
-      sizes,
-      bahan_dipakai: bahanDipakai,
-      catatan,
-      upah_jahit: Number(upahJahit) || 0,
-      tukang_potong_id: tukangPotongId || null,
-      tukang_potong_nama: tukangPotongNama || null,
-    })
-    .eq("id", initial.id);
-  if (batchErr) throw new Error(batchErr.message);
+  const { error } = await supabase.rpc("update_produksi_batch", {
+    p_batch_id: initial.id,
+    p_initial_kode: initial.kode_produk,
+    p_kode: kode,
+    p_nama: nama,
+    p_tanggal: tanggal,
+    p_total_kain: totalKain,
+    p_sizes: sizes,
+    p_bahan_dipakai: bahanDipakai,
+    p_batch_no: batchNo,
+    p_catatan: catatan,
+    p_upah_jahit: Number(upahJahit) || 0,
+    p_tukang_potong_id: tukangPotongId || null,
+    p_tukang_potong_nama: tukangPotongNama || null,
+    p_fallback_variants: fallbackVariants,
+    p_fallback_warna: fallbackWarna,
+  });
+  if (error) throw new Error(error.message);
 
   createJahitCardsForBatch({ batchId: initial.id, kode, nama, sizes }).catch((err) =>
     console.warn("createJahitCardsForBatch error:", err),
@@ -269,29 +212,5 @@ export async function updateBatch(payload, extraEntries, shared) {
     renameJahitCardsForBatch({ batchId: initial.id, kode, nama }).catch((err) =>
       console.warn("renameJahitCardsForBatch error:", err),
     );
-    await supabase.from("expected_stok").delete().eq("kode", initial.kode_produk);
   }
-
-  const expectedRows = [];
-  for (const sz of sizes) {
-    for (const w of sz.warna ?? []) {
-      expectedRows.push({ kode, size: sz.size, warna: w.warna, expected_qty: w.qty });
-    }
-  }
-  if (expectedRows.length > 0) {
-    await supabase.from("expected_stok").upsert(expectedRows, { onConflict: "kode,size,warna" });
-  }
-
-  logHistory({
-    action: "batch-produksi",
-    category: "produksi",
-    kode,
-    nama,
-    snapshot: { batch_no: batchNo, tanggal, total_kain: totalKain, sizes, catatan, edit: true },
-    before: {
-      batch_no: initial.batch_no,
-      kode_produk: initial.kode_produk,
-      tanggal: initial.tanggal_produksi,
-    },
-  }).catch(() => {});
 }
