@@ -82,33 +82,33 @@ describe("createCampaign", () => {
     );
   });
 
-  it("insert campaign lalu bulk insert targets dgn campaign_id yang benar", async () => {
-    const campaignBuilder = makeBuilder({ data: { id: "camp1" }, error: null });
-    const targetsBuilder = makeBuilder({ data: null, error: null });
-    supabaseMock.from.mockReturnValueOnce(campaignBuilder).mockReturnValueOnce(targetsBuilder);
+  // Insert campaign + bulk insert targets sekarang 1 RPC atomik
+  // (create_blast_campaign), identitas dari auth.uid() bukan objek
+  // `user` client — lihat supabase/migrations/20261120_blast_crud.sql.
+  it("memanggil create_blast_campaign dengan nama/productKodes/message/targets", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: { id: "camp1" }, error: null });
 
     const result = await createCampaign({
       nama: "Promo Lebaran",
       productKodes: ["D-01-OSK"],
       message: "Halo",
       targets: [{ source: "calon", contactId: "c1", nama: "Budi", noHp: "0812" }],
-      user: { email: "a@b.com", name: "Admin" },
     });
 
-    expect(campaignBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ nama: "Promo Lebaran", status: "berjalan" }),
-    );
-    expect(targetsBuilder.insert).toHaveBeenCalledWith([
-      {
-        campaign_id: "camp1",
-        source: "calon",
-        contact_id: "c1",
-        nama: "Budi",
-        no_hp: "0812",
-        status: "pending",
-      },
-    ]);
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("create_blast_campaign", {
+      p_nama: "Promo Lebaran",
+      p_product_kodes: ["D-01-OSK"],
+      p_message: "Halo",
+      p_targets: [{ source: "calon", contactId: "c1", nama: "Budi", noHp: "0812" }],
+    });
     expect(result).toEqual({ id: "camp1" });
+  });
+
+  it("throws kalau RPC gagal", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: { message: "boom" } });
+    await expect(
+      createCampaign({ nama: "Promo", targets: [{ source: "calon", nama: "X" }] }),
+    ).rejects.toThrow("boom");
   });
 });
 

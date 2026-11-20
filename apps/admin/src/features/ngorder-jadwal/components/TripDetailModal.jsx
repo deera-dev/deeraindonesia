@@ -1,4 +1,3 @@
-import { useAuth } from "@deera/shared/features/auth/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { useState } from "react";
 import {
@@ -37,7 +36,6 @@ function Section({ title, hint, children }) {
 }
 
 export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onOpen }) {
-  const { user } = useAuth();
   const { data: trips = [] } = useTripsQuery();
   const updateMutation = useUpdateTripMutation();
   const createMutation = useCreateTripMutation();
@@ -66,7 +64,6 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
         tripId: trip.id,
         toko: trip.toko ?? [],
         tokoId,
-        user,
       });
     } catch (err) {
       toast.error(err.message ?? "Gagal menyimpan.");
@@ -85,10 +82,7 @@ export default function TripDetailModal({ tripId, tokoList, onClose, onEdit, onO
 
   async function handleDuplicate() {
     try {
-      const row = await createMutation.mutateAsync({
-        ...duplicateTripPayload(trip),
-        user: { email: user?.email },
-      });
+      const row = await createMutation.mutateAsync(duplicateTripPayload(trip));
       toast.success("Jadwal disalin - atur tanggalnya lewat Edit.");
       onOpen(row.id);
     } catch (err) {

@@ -1,4 +1,3 @@
-import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { useMemo, useState } from "react";
@@ -10,7 +9,6 @@ import BlastTemplatePicker from "./BlastTemplatePicker";
 
 export default function BlastCreateForm({ onCreated }) {
   const { products = [] } = useProducts();
-  const { user } = useAuth();
   const createMutation = useCreateCampaignMutation();
 
   const [step, setStep] = useState(0);
@@ -68,7 +66,6 @@ export default function BlastCreateForm({ onCreated }) {
         productKodes: [...selectedKodes],
         message: finalMessage,
         targets: [...selectedTargets.values()],
-        user: { email: user?.email, name: user?.user_metadata?.name ?? user?.email },
       });
       toast.success(`Blast "${nama}" dibuat dengan ${selectedTargets.size} target.`);
       onCreated?.(campaign);

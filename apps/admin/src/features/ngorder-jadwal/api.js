@@ -38,16 +38,24 @@ export async function fetchTrips() {
   return data ?? [];
 }
 
-export async function createTrip({ user, ...input }) {
+// Insert tunggal, sudah atomik dari sananya — cuma identitas yang
+// diperbaiki (created_by_email dulu dari objek `user` client, sekarang
+// dari auth.uid()) — lihat supabase/migrations/20261120_ngorder_crud.sql.
+export async function createTrip(input) {
   const problem = validateTrip(input);
   if (problem) throw new Error(problem);
-  const payload = {
-    ...normalize(input),
-    created_by_email: user?.email ?? null,
-    updated_at: new Date().toISOString(),
-  };
-  const { data, error } = await supabase.from(TABLE).insert(payload).select().single();
-  if (error) throw error;
+  const payload = normalize(input);
+  const { data, error } = await supabase.rpc("create_ngorder_trip", {
+    p_nama: payload.nama,
+    p_tanggal_mulai: payload.tanggal_mulai,
+    p_tanggal_selesai: payload.tanggal_selesai,
+    p_daerah: payload.daerah ?? [],
+    p_peserta: payload.peserta ?? [],
+    p_modal_awal: payload.modal_awal ?? 0,
+    p_status: payload.status ?? "rencana",
+    p_catatan: payload.catatan ?? null,
+  });
+  if (error) throw new Error(error.message);
   return data;
 }
 
@@ -78,13 +86,13 @@ export async function fetchTripOpens(tripId) {
 // dicatat 2x. Uncheck TIDAK membatalkan catatan kunjungan itu (sengaja --
 // lihat §2 docs/reports/audit-report-m4-admin.md, hindari ngilangin
 // catatan kunjungan nyata cuma gara-gara klik salah di checklist).
-export async function toggleTripTokoVisited(tripId, toko, tokoId, user) {
+export async function toggleTripTokoVisited(tripId, toko, tokoId) {
   const next = toggleTokoVisited(toko, tokoId);
   const trip = await updateTrip(tripId, { toko: next });
 
   const justVisited = next.find((t) => t.toko_id === tokoId)?.dikunjungi;
   if (justVisited) {
-    markTokoVisitedViaTrip(tokoId, user).catch((err) =>
+    markTokoVisitedViaTrip(tokoId).catch((err) =>
       console.warn("markTokoVisitedViaTrip error:", err),
     );
   }
@@ -96,23 +104,12 @@ export async function toggleTripTokoVisited(tripId, toko, tokoId, user) {
 // (rencana/berjalan) dan belum centang toko itu ikut tercentang otomatis.
 // Trip yang sudah selesai/batal TIDAK disentuh (laporan histori gak
 // berubah sendiri). Dipanggil dari ngorder/api.js (updateKunjungan).
+// Dulu loop update per trip tanpa transaction — sekarang 1 UPDATE
+// statement atomik (bukan loop sama sekali, lihat migration).
 export async function markTokoVisitedInActiveTrips(tokoId) {
   if (!tokoId) return;
-  const { data: trips, error } = await supabase
-    .from(TABLE)
-    .select("id, toko")
-    .in("status", ["rencana", "berjalan"]);
-  if (error) throw error;
-
-  for (const trip of trips ?? []) {
-    const list = trip.toko ?? [];
-    const idx = list.findIndex((t) => t.toko_id === tokoId && !t.dikunjungi);
-    if (idx === -1) continue;
-    const next = list.map((t, i) => (i === idx ? { ...t, dikunjungi: true } : t));
-    const { error: updateErr } = await supabase
-      .from(TABLE)
-      .update({ toko: next, updated_at: new Date().toISOString() })
-      .eq("id", trip.id);
-    if (updateErr) throw updateErr;
-  }
+  const { error } = await supabase.rpc("mark_toko_visited_in_active_trips", {
+    p_toko_id: tokoId,
+  });
+  if (error) throw new Error(error.message);
 }

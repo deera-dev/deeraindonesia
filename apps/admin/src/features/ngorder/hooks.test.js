@@ -62,7 +62,7 @@ describe("usePetaRencana (rencana kunjungan bersama semua akun)", () => {
     expect(mocks.remove).not.toHaveBeenCalled();
   });
 
-  it("clear melewati baris tmp-, updateKunjungan meneruskan akun", async () => {
+  it("clear melewati baris tmp-, updateKunjungan meneruskan row & patch", async () => {
     mocks.rows = [
       { id: "k1", toko_id: "t1" },
       { id: "tmp-t2", toko_id: "t2" },
@@ -74,7 +74,6 @@ describe("usePetaRencana (rencana kunjungan bersama semua akun)", () => {
     expect(mocks.update).toHaveBeenCalledWith({
       row: mocks.rows[0],
       patch: { status: "selesai" },
-      user: { email: "a@deera.id", name: "Akun A" },
     });
   });
 });

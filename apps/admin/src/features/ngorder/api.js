@@ -78,34 +78,23 @@ export async function fetchTokoItems(tokoId) {
   return data ?? [];
 }
 
-export async function createKiriman({ tokoId, tanggal, catatan, items, user }) {
+// Dulu insert sampel_kiriman lalu insert bulk sampel_kiriman_item — 2
+// tabel tanpa transaction, bisa nyisain kiriman "hantu" (0 item) kalau
+// step kedua gagal. Sekarang 1 RPC atomik, identitas dari auth.uid() —
+// lihat supabase/migrations/20261120_ngorder_crud.sql.
+export async function createKiriman({ tokoId, tanggal, catatan, items }) {
   if (!tokoId) throw new Error("Toko wajib dipilih.");
   if (!items?.length) throw new Error("Pilih minimal satu produk untuk dikirim.");
 
-  const { data: kiriman, error: kirimanErr } = await supabase
-    .from("sampel_kiriman")
-    .insert({
-      toko_id: tokoId,
-      tanggal: tanggal || new Date().toISOString().slice(0, 10),
-      catatan: catatan?.trim() || null,
-      created_by_email: user?.email ?? null,
-      created_by_name: user?.name ?? null,
-    })
-    .select()
-    .single();
-  if (kirimanErr) throw kirimanErr;
+  const { data, error } = await supabase.rpc("create_kiriman", {
+    p_toko_id: tokoId,
+    p_tanggal: tanggal || new Date().toISOString().slice(0, 10),
+    p_catatan: catatan?.trim() || null,
+    p_items: items.map((it) => ({ kode: it.kode, nama: it.nama ?? null })),
+  });
+  if (error) throw new Error(error.message);
 
-  const rows = items.map((it) => ({
-    kiriman_id: kiriman.id,
-    toko_id: tokoId,
-    kode: it.kode,
-    nama: it.nama ?? null,
-    status: "pending",
-  }));
-  const { error: itemsErr } = await supabase.from("sampel_kiriman_item").insert(rows);
-  if (itemsErr) throw itemsErr;
-
-  return kiriman;
+  return data;
 }
 
 export async function updateItemStatus(itemId, status) {
@@ -129,10 +118,6 @@ export async function setTokoLocation(id, { lat, lng, source }) {
     .single();
   if (error) throw error;
   return data;
-}
-
-function actor(user) {
-  return { email: user?.email ?? null, nama: user?.name ?? user?.email ?? null };
 }
 
 function isBlankKunjungan(row) {
@@ -159,78 +144,45 @@ export async function fetchKunjunganToko(tokoId) {
   return (data ?? []).filter((r) => !isBlankKunjungan(r));
 }
 
-export async function addRencana({ tokoIds, user }) {
+// Dulu select dedup + loop insert satu-satu dgn try/catch per-row utk
+// unique violation (toko_kunjungan_aktif_uniq) — sekarang 1 RPC, bulk
+// insert dgn ON CONFLICT (toko_id) WHERE aktif DO NOTHING, sekalian
+// atomik. dipilih_oleh_email/nama dari auth.uid(), bukan objek `user`
+// client — lihat supabase/migrations/20261120_ngorder_crud.sql.
+export async function addRencana({ tokoIds }) {
   const ids = [...new Set(tokoIds ?? [])].filter(Boolean);
   if (!ids.length) return [];
-  const { data: existing, error: exErr } = await supabase
-    .from("toko_kunjungan")
-    .select("toko_id")
-    .eq("aktif", true)
-    .in("toko_id", ids);
-  if (exErr) throw exErr;
-  const have = new Set((existing ?? []).map((r) => r.toko_id));
-  const a = actor(user);
-  const rows = ids
-    .filter((id) => !have.has(id))
-    .map((toko_id) => ({ toko_id, dipilih_oleh_email: a.email, dipilih_oleh_nama: a.nama }));
-  const inserted = [];
-  for (const row of rows) {
-    const { data, error } = await supabase.from("toko_kunjungan").insert(row).select().single();
-    if (error && error.code !== "23505") throw error;
-    if (data) inserted.push(data);
-  }
-  return inserted;
+  const { data, error } = await supabase.rpc("add_rencana_kunjungan", { p_toko_ids: ids });
+  if (error) throw new Error(error.message);
+  return data ?? [];
 }
 
+// Delete batch + update batch sekarang 1 RPC atomik.
 export async function removeRencana(rows) {
   const list = (rows ?? []).filter(Boolean);
   const blank = list.filter(isBlankKunjungan).map((r) => r.id);
   const keep = list.filter((r) => !isBlankKunjungan(r)).map((r) => r.id);
-  if (blank.length) {
-    const { error } = await supabase.from("toko_kunjungan").delete().in("id", blank);
-    if (error) throw error;
-  }
-  if (keep.length) {
-    const { error } = await supabase
-      .from("toko_kunjungan")
-      .update({ aktif: false, updated_at: new Date().toISOString() })
-      .in("id", keep);
-    if (error) throw error;
-  }
+  if (!blank.length && !keep.length) return;
+  const { error } = await supabase.rpc("remove_rencana_kunjungan", {
+    p_blank_ids: blank,
+    p_keep_ids: keep,
+  });
+  if (error) throw new Error(error.message);
 }
 
-export async function updateKunjungan({ row, patch, user }) {
+// Dulu update toko_kunjungan lalu (kalau status jadi selesai) update
+// toko TANPA try/catch — kalau step kedua gagal, seluruh function throw
+// padahal step pertama sudah ter-commit (kunjungan selesai tapi
+// toko.status_approach belum ikut). Sekarang 1 RPC atomik, identitas
+// dari auth.uid().
+export async function updateKunjungan({ row, patch }) {
   if (!row?.id) throw new Error("Kunjungan tidak ditemukan.");
-  const now = new Date().toISOString();
-  const a = actor(user);
-  const payload = { updated_at: now, diubah_oleh_email: a.email, diubah_oleh_nama: a.nama };
-  if ("hasil" in patch) payload.hasil = patch.hasil?.trim() || null;
-  if ("request" in patch) payload.request = patch.request?.trim() || null;
-  if ("kesan" in patch) payload.kesan = patch.kesan || null;
-  if ("status" in patch) {
-    payload.status = patch.status;
-    if (patch.status === "berlangsung" && !row.mulai_at) payload.mulai_at = now;
-    if (patch.status === "selesai") {
-      payload.selesai_at = now;
-      if (!row.mulai_at) payload.mulai_at = now;
-    }
-    if (patch.status === "rencana") {
-      payload.mulai_at = null;
-      payload.selesai_at = null;
-    }
-  }
-  const { data, error } = await supabase
-    .from("toko_kunjungan")
-    .update(payload)
-    .eq("id", row.id)
-    .select()
-    .single();
-  if (error) throw error;
+  const { data, error } = await supabase.rpc("update_kunjungan", {
+    p_id: row.id,
+    p_patch: patch,
+  });
+  if (error) throw new Error(error.message);
   if (data.status === "selesai") {
-    await updateToko(
-      data.toko_id,
-      data.kesan ? { status_approach: "sudah", kesan: data.kesan } : { status_approach: "sudah" },
-    );
     // Best-effort — jangan gagalkan update kunjungan cuma karena sinkron
     // checklist trip-nya gagal.
     markTokoVisitedInActiveTrips(data.toko_id).catch((err) =>
@@ -245,7 +197,11 @@ export async function updateKunjungan({ row, patch, user }) {
 // di sini (tanpa hasil/kesan — itu bisa diisi belakangan lewat tab Peta).
 // Kalau toko ini sudah pernah ditandai selesai, gak diapa-apain lagi.
 // Dipanggil dari ngorder-jadwal/api.js saat toggle checklist.
-export async function markTokoVisitedViaTrip(tokoId, user) {
+//
+// Jalur insert-baru (toko belum pernah ada kunjungan aktif) dulu insert
+// toko_kunjungan lalu update toko sbg 2 langkah tanpa transaction —
+// sekarang RPC terpisah (create_kunjungan_selesai) yg disatukan.
+export async function markTokoVisitedViaTrip(tokoId) {
   if (!tokoId) return null;
   const { data: existing, error: fetchErr } = await supabase
     .from("toko_kunjungan")
@@ -257,28 +213,13 @@ export async function markTokoVisitedViaTrip(tokoId, user) {
 
   if (existing) {
     if (existing.status === "selesai") return existing;
-    return updateKunjungan({ row: existing, patch: { status: "selesai" }, user });
+    return updateKunjungan({ row: existing, patch: { status: "selesai" } });
   }
 
-  const now = new Date().toISOString();
-  const a = actor(user);
-  const { data, error } = await supabase
-    .from("toko_kunjungan")
-    .insert({
-      toko_id: tokoId,
-      status: "selesai",
-      aktif: true,
-      dipilih_oleh_email: a.email,
-      dipilih_oleh_nama: a.nama,
-      diubah_oleh_email: a.email,
-      diubah_oleh_nama: a.nama,
-      mulai_at: now,
-      selesai_at: now,
-    })
-    .select()
-    .single();
-  if (error) throw error;
-  await updateToko(data.toko_id, { status_approach: "sudah" });
+  const { data, error } = await supabase.rpc("create_kunjungan_selesai", {
+    p_toko_id: tokoId,
+  });
+  if (error) throw new Error(error.message);
   return data;
 }
 

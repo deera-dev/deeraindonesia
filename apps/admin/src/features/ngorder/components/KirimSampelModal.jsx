@@ -1,4 +1,3 @@
-import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { useMemo, useState } from "react";
@@ -11,7 +10,6 @@ function todayStr() {
 
 export default function KirimSampelModal({ toko, statusByKode, onClose, onCreated }) {
   const { products = [] } = useProducts();
-  const { user } = useAuth();
   const createMutation = useCreateKirimanMutation(toko.id);
 
   const [tanggal, setTanggal] = useState(todayStr());
@@ -35,7 +33,6 @@ export default function KirimSampelModal({ toko, statusByKode, onClose, onCreate
         tanggal,
         catatan,
         items: selectedProducts.map((p) => ({ kode: p.kode, nama: p.nama })),
-        user: { email: user?.email, name: user?.user_metadata?.name ?? user?.email },
       });
       toast.success(`${selectedKodes.size} sampel dicatat terkirim ke ${toko.nama}.`);
       onCreated?.();

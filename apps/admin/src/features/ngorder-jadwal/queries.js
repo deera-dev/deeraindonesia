@@ -51,8 +51,7 @@ export function useUpdateTripMutation() {
 export function useToggleTripTokoVisitedMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ tripId, toko, tokoId, user }) =>
-      toggleTripTokoVisited(tripId, toko, tokoId, user),
+    mutationFn: ({ tripId, toko, tokoId }) => toggleTripTokoVisited(tripId, toko, tokoId),
     onSuccess: (row) => {
       qc.setQueryData(tripKeys.all, (old) => (old ?? []).map((t) => (t.id === row.id ? row : t)));
       qc.invalidateQueries({ queryKey: tripKeys.all });

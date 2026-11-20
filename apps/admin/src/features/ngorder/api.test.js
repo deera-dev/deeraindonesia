@@ -180,25 +180,32 @@ describe("createKiriman", () => {
     );
   });
 
-  it("insert kiriman lalu bulk insert item dgn status pending", async () => {
-    const kirimanBuilder = makeBuilder({ data: { id: "k1" }, error: null });
-    const itemsBuilder = makeBuilder({ data: null, error: null });
-    supabaseMock.from.mockReturnValueOnce(kirimanBuilder).mockReturnValueOnce(itemsBuilder);
+  // Insert kiriman + bulk insert item sekarang 1 RPC atomik
+  // (create_kiriman), identitas dari auth.uid() — lihat
+  // supabase/migrations/20261120_ngorder_crud.sql.
+  it("memanggil create_kiriman dengan toko/tanggal/catatan/items", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: { id: "k1" }, error: null });
 
     await createKiriman({
       tokoId: "t1",
       tanggal: "2026-10-03",
       catatan: "dibawa Budi",
       items: [{ kode: "D-01", nama: "Gamis A" }],
-      user: { email: "a@b.com", name: "Admin" },
     });
 
-    expect(kirimanBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ toko_id: "t1", tanggal: "2026-10-03" }),
-    );
-    expect(itemsBuilder.insert).toHaveBeenCalledWith([
-      { kiriman_id: "k1", toko_id: "t1", kode: "D-01", nama: "Gamis A", status: "pending" },
-    ]);
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("create_kiriman", {
+      p_toko_id: "t1",
+      p_tanggal: "2026-10-03",
+      p_catatan: "dibawa Budi",
+      p_items: [{ kode: "D-01", nama: "Gamis A" }],
+    });
+  });
+
+  it("throws kalau RPC gagal", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: { message: "boom" } });
+    await expect(
+      createKiriman({ tokoId: "t1", items: [{ kode: "D-01", nama: "A" }] }),
+    ).rejects.toThrow("boom");
   });
 });
 
@@ -276,86 +283,84 @@ describe("rencana kunjungan (toko_kunjungan)", () => {
     expect((await fetchKunjunganToko("t1")).map((r) => r.id)).toEqual(["k2", "k3"]);
   });
 
-  it("addRencana melewati toko yang sudah ada di rencana & mencatat akun pemilih", async () => {
-    const existing = makeBuilder({ data: [{ toko_id: "t1" }], error: null });
-    const insert = makeBuilder({ data: { id: "k2", toko_id: "t2" }, error: null });
-    supabaseMock.from.mockReturnValueOnce(existing).mockReturnValueOnce(insert);
-    const res = await addRencana({
-      tokoIds: ["t1", "t2", "t2"],
-      user: { email: "a@x", name: "A" },
-    });
-    expect(insert.insert).toHaveBeenCalledTimes(1);
-    expect(insert.insert).toHaveBeenCalledWith({
-      toko_id: "t2",
-      dipilih_oleh_email: "a@x",
-      dipilih_oleh_nama: "A",
+  // Dulu select dedup + loop insert satu-satu — sekarang 1 RPC atomik
+  // (add_rencana_kunjungan, bulk insert ON CONFLICT DO NOTHING),
+  // identitas dari auth.uid() — lihat
+  // supabase/migrations/20261120_ngorder_crud.sql.
+  it("memanggil add_rencana_kunjungan dengan toko_id unik", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: [{ id: "k2", toko_id: "t2" }], error: null });
+    const res = await addRencana({ tokoIds: ["t1", "t2", "t2"] });
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("add_rencana_kunjungan", {
+      p_toko_ids: ["t1", "t2"],
     });
     expect(res).toEqual([{ id: "k2", toko_id: "t2" }]);
   });
 
-  it("addRencana mengabaikan bentrok unik (akun lain memilih toko yg sama bersamaan)", async () => {
-    supabaseMock.from
-      .mockReturnValueOnce(makeBuilder({ data: [], error: null }))
-      .mockReturnValueOnce(makeBuilder({ data: null, error: { code: "23505", message: "dup" } }));
-    await expect(addRencana({ tokoIds: ["t1"], user: null })).resolves.toEqual([]);
+  it("tokoIds kosong -> tidak memanggil RPC", async () => {
+    expect(await addRencana({ tokoIds: [] })).toEqual([]);
+    expect(supabaseMock.rpc).not.toHaveBeenCalled();
   });
 
+  // Dulu 2 operasi terpisah (delete batch + update batch) tanpa
+  // transaction bersama — sekarang 1 RPC atomik
+  // (remove_rencana_kunjungan).
   it("removeRencana: baris kosong dihapus, baris bercatatan diarsipkan (aktif=false)", async () => {
-    const del = makeBuilder({ data: null, error: null });
-    const upd = makeBuilder({ data: null, error: null });
-    supabaseMock.from.mockReturnValueOnce(del).mockReturnValueOnce(upd);
+    supabaseMock.rpc.mockResolvedValueOnce({ error: null });
     await removeRencana([
       { id: "k1", status: "rencana" },
       { id: "k2", status: "selesai", hasil: "ok" },
     ]);
-    expect(del.delete).toHaveBeenCalled();
-    expect(del.in).toHaveBeenCalledWith("id", ["k1"]);
-    expect(upd.update.mock.calls[0][0]).toMatchObject({ aktif: false });
-    expect(upd.in).toHaveBeenCalledWith("id", ["k2"]);
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("remove_rencana_kunjungan", {
+      p_blank_ids: ["k1"],
+      p_keep_ids: ["k2"],
+    });
   });
 
-  it("updateKunjungan 'berlangsung' mengisi mulai_at & pengubah, tidak menyentuh toko", async () => {
-    const builder = makeBuilder({
+  // Dulu update toko_kunjungan lalu (kalau selesai) update toko TANPA
+  // try/catch, 2 langkah tanpa transaction — sekarang 1 RPC atomik
+  // (update_kunjungan), identitas dari auth.uid().
+  it("updateKunjungan 'berlangsung' memanggil RPC dengan patch yang benar", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({
       data: { id: "k1", toko_id: "t1", status: "berlangsung" },
       error: null,
     });
-    supabaseMock.from.mockReturnValueOnce(builder);
     await updateKunjungan({
       row: { id: "k1" },
       patch: { status: "berlangsung", hasil: "  ketemu owner " },
-      user: { email: "b@x", name: "B" },
     });
-    const payload = builder.update.mock.calls[0][0];
-    expect(payload).toMatchObject({
-      status: "berlangsung",
-      hasil: "ketemu owner",
-      diubah_oleh_nama: "B",
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("update_kunjungan", {
+      p_id: "k1",
+      p_patch: { status: "berlangsung", hasil: "  ketemu owner " },
     });
-    expect(payload.mulai_at).toBeTruthy();
-    expect(supabaseMock.from).toHaveBeenCalledTimes(1);
   });
 
-  it("updateKunjungan 'selesai' menandai toko sudah di-approach + kesan", async () => {
-    const kunj = makeBuilder({
+  it("updateKunjungan 'selesai' -> fire-and-forget markTokoVisitedInActiveTrips", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({
       data: { id: "k1", toko_id: "t1", status: "selesai", kesan: "tertarik" },
       error: null,
     });
-    const toko = makeBuilder({ data: { id: "t1" }, error: null });
-    supabaseMock.from.mockReturnValueOnce(kunj).mockReturnValueOnce(toko);
-    await updateKunjungan({
-      row: { id: "k1" },
-      patch: { status: "selesai", kesan: "tertarik" },
-      user: null,
-    });
-    expect(kunj.update.mock.calls[0][0].selesai_at).toBeTruthy();
-    expect(supabaseMock.from).toHaveBeenNthCalledWith(2, "toko");
-    expect(toko.update.mock.calls[0][0]).toMatchObject({
-      status_approach: "sudah",
-      kesan: "tertarik",
-    });
+    await updateKunjungan({ row: { id: "k1" }, patch: { status: "selesai", kesan: "tertarik" } });
     // Best-effort (fire-and-forget): juga coba sinkron checklist trip --
-    // lihat markTokoVisitedInActiveTrips di ngorder-jadwal/api.js.
-    expect(supabaseMock.from).toHaveBeenNthCalledWith(3, "ngorder_trip");
+    // lihat mark_toko_visited_in_active_trips.
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("mark_toko_visited_in_active_trips", {
+      p_toko_id: "t1",
+    });
+  });
+
+  it("updateKunjungan status bukan selesai -> tidak panggil mark_toko_visited_in_active_trips", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: { id: "k1", toko_id: "t1", status: "berlangsung" },
+      error: null,
+    });
+    await updateKunjungan({ row: { id: "k1" }, patch: { status: "berlangsung" } });
+    expect(supabaseMock.rpc).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws kalau RPC gagal", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: null, error: { message: "boom" } });
+    await expect(
+      updateKunjungan({ row: { id: "k1" }, patch: { status: "selesai" } }),
+    ).rejects.toThrow("boom");
   });
 
   it("markGeocodeFailed menandai geocode_source 'gagal'", async () => {
@@ -377,46 +382,46 @@ describe("rencana kunjungan (toko_kunjungan)", () => {
 
 describe("markTokoVisitedViaTrip (sinkron dari checklist trip, ngorder-jadwal)", () => {
   it("tanpa tokoId: tidak menyentuh Supabase, return null", async () => {
-    expect(await markTokoVisitedViaTrip(null, { email: "a@b.com" })).toBeNull();
+    expect(await markTokoVisitedViaTrip(null)).toBeNull();
     expect(supabaseMock.from).not.toHaveBeenCalled();
   });
 
-  it("belum ada kunjungan aktif -> insert baru langsung berstatus selesai + toko.status_approach", async () => {
+  // Jalur insert-baru dulu insert toko_kunjungan lalu update toko
+  // terpisah tanpa transaction — sekarang 1 RPC atomik
+  // (create_kunjungan_selesai) — lihat
+  // supabase/migrations/20261120_ngorder_crud.sql.
+  it("belum ada kunjungan aktif -> panggil create_kunjungan_selesai", async () => {
     const selectBuilder = makeBuilder({ data: null, error: null });
-    const insertBuilder = makeBuilder({ data: { id: "k2", toko_id: "t1" }, error: null });
-    const tokoBuilder = makeBuilder({ data: null, error: null });
-    supabaseMock.from
-      .mockReturnValueOnce(selectBuilder)
-      .mockReturnValueOnce(insertBuilder)
-      .mockReturnValueOnce(tokoBuilder);
+    supabaseMock.from.mockReturnValueOnce(selectBuilder);
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: { id: "k2", toko_id: "t1", status: "selesai" },
+      error: null,
+    });
 
-    const result = await markTokoVisitedViaTrip("t1", { email: "a@b.com" });
+    const result = await markTokoVisitedViaTrip("t1");
 
     expect(selectBuilder.eq).toHaveBeenCalledWith("aktif", true);
-    expect(insertBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ toko_id: "t1", status: "selesai", aktif: true }),
-    );
-    expect(tokoBuilder.update.mock.calls[0][0]).toMatchObject({ status_approach: "sudah" });
-    expect(result).toEqual({ id: "k2", toko_id: "t1" });
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("create_kunjungan_selesai", {
+      p_toko_id: "t1",
+    });
+    expect(result).toEqual({ id: "k2", toko_id: "t1", status: "selesai" });
   });
 
-  it("ada kunjungan aktif status rencana -> ditandai selesai lewat updateKunjungan (bukan insert baru)", async () => {
+  it("ada kunjungan aktif status rencana -> ditandai selesai lewat update_kunjungan (bukan insert baru)", async () => {
     const existing = { id: "k1", toko_id: "t1", status: "rencana", mulai_at: null };
     const selectBuilder = makeBuilder({ data: existing, error: null });
-    const updateKunjBuilder = makeBuilder({
+    supabaseMock.from.mockReturnValueOnce(selectBuilder);
+    supabaseMock.rpc.mockResolvedValueOnce({
       data: { id: "k1", toko_id: "t1", status: "selesai", kesan: null },
       error: null,
     });
-    const tokoBuilder = makeBuilder({ data: null, error: null });
-    supabaseMock.from
-      .mockReturnValueOnce(selectBuilder)
-      .mockReturnValueOnce(updateKunjBuilder)
-      .mockReturnValueOnce(tokoBuilder);
 
-    const result = await markTokoVisitedViaTrip("t1", { email: "a@b.com" });
+    const result = await markTokoVisitedViaTrip("t1");
 
-    expect(updateKunjBuilder.update.mock.calls[0][0]).toMatchObject({ status: "selesai" });
-    expect(tokoBuilder.update.mock.calls[0][0]).toMatchObject({ status_approach: "sudah" });
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("update_kunjungan", {
+      p_id: "k1",
+      p_patch: { status: "selesai" },
+    });
     expect(result.status).toBe("selesai");
   });
 
@@ -424,9 +429,10 @@ describe("markTokoVisitedViaTrip (sinkron dari checklist trip, ngorder-jadwal)",
     const existing = { id: "k1", toko_id: "t1", status: "selesai" };
     supabaseMock.from.mockReturnValueOnce(makeBuilder({ data: existing, error: null }));
 
-    const result = await markTokoVisitedViaTrip("t1", { email: "a@b.com" });
+    const result = await markTokoVisitedViaTrip("t1");
 
     expect(supabaseMock.from).toHaveBeenCalledTimes(1);
+    expect(supabaseMock.rpc).not.toHaveBeenCalled();
     expect(result).toEqual(existing);
   });
 });

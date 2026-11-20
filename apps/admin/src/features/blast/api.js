@@ -33,36 +33,23 @@ export async function fetchCampaignDetail(campaignId) {
   return { campaign, targets: targets ?? [] };
 }
 
-export async function createCampaign({ nama, productKodes, message, targets, user }) {
+// Dulu insert blast_campaign lalu insert blast_target (bulk) — 2 tulis
+// terpisah tanpa transaction, bisa nyisain campaign "hantu" (0 target)
+// kalau step kedua gagal. Sekarang 1 RPC atomik, identitas dari
+// auth.uid() — lihat supabase/migrations/20261120_blast_crud.sql.
+export async function createCampaign({ nama, productKodes, message, targets }) {
   if (!nama?.trim()) throw new Error("Nama blast wajib diisi.");
   if (!targets?.length) throw new Error("Pilih minimal satu target.");
 
-  const { data: campaign, error: campaignErr } = await supabase
-    .from("blast_campaign")
-    .insert({
-      nama: nama.trim(),
-      product_kodes: productKodes ?? [],
-      message: message ?? "",
-      status: "berjalan",
-      created_by_email: user?.email ?? null,
-      created_by_name: user?.name ?? null,
-    })
-    .select()
-    .single();
-  if (campaignErr) throw campaignErr;
+  const { data, error } = await supabase.rpc("create_blast_campaign", {
+    p_nama: nama.trim(),
+    p_product_kodes: productKodes ?? [],
+    p_message: message ?? "",
+    p_targets: targets,
+  });
+  if (error) throw new Error(error.message);
 
-  const rows = targets.map((t) => ({
-    campaign_id: campaign.id,
-    source: t.source,
-    contact_id: t.contactId ?? null,
-    nama: t.nama,
-    no_hp: t.noHp ?? null,
-    status: "pending",
-  }));
-  const { error: targetsErr } = await supabase.from("blast_target").insert(rows);
-  if (targetsErr) throw targetsErr;
-
-  return campaign;
+  return data;
 }
 
 export async function markTargetStatus(targetId, status) {

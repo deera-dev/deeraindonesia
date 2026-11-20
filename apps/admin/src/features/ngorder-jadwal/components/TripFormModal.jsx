@@ -1,4 +1,3 @@
-import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useState } from "react";
 import {
   localDateStr,
@@ -21,7 +20,6 @@ export default function TripFormModal({
   onClose,
   onSaved,
 }) {
-  const { user } = useAuth();
   const today = defaultDate ?? localDateStr();
   const [nama, setNama] = useState(initial?.nama ?? "");
   const [mulai, setMulai] = useState(initial?.tanggal_mulai ?? today);
@@ -58,7 +56,7 @@ export default function TripFormModal({
     try {
       const row = initial
         ? await updateMutation.mutateAsync({ id: initial.id, patch: input })
-        : await createMutation.mutateAsync({ ...input, user: { email: user?.email } });
+        : await createMutation.mutateAsync(input);
       onSaved?.(row);
       onClose();
     } catch (err) {
