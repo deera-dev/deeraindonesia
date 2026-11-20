@@ -269,7 +269,7 @@ describe("ProductDetailPage — galeri foto + video tergabung (thumbnail strip &
     expect(video).toBeInTheDocument();
     expect(video).toHaveAttribute(
       "src",
-      "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
+      "https://res.cloudinary.com/demo/video/upload/f_auto,q_auto/v1/gamis-dewi.mp4",
     );
     expect(video).toHaveAttribute("poster");
     expect(video.getAttribute("poster")).toContain(".jpg");
@@ -286,7 +286,7 @@ describe("ProductDetailPage — galeri foto + video tergabung (thumbnail strip &
     expect(video).toBeInTheDocument();
     expect(video).toHaveAttribute(
       "src",
-      "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
+      "https://res.cloudinary.com/demo/video/upload/f_auto,q_auto/v1/gamis-dewi.mp4",
     );
   });
 
@@ -468,7 +468,7 @@ describe("ProductDetailPage — lightbox galeri foto & video", () => {
     expect(lightboxVideo).toBeInTheDocument();
     expect(lightboxVideo).toHaveAttribute(
       "src",
-      "https://res.cloudinary.com/demo/video/upload/v1/gamis-dewi.mp4",
+      "https://res.cloudinary.com/demo/video/upload/f_auto,q_auto/v1/gamis-dewi.mp4",
     );
   });
 });

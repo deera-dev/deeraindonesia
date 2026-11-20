@@ -1,5 +1,5 @@
 import { useProduct, useProducts } from "@deera/shared/features/products/hooks";
-import { cldUrl, cldVideoPoster } from "@deera/shared/lib/cloudinary";
+import { cldUrl, cldVideoPoster, cldVideoUrl } from "@deera/shared/lib/cloudinary";
 import { Link, Navigate, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { WhatsApp } from "../../../shared/components/WhatsApp";
@@ -163,7 +163,7 @@ export default function ProductDetail() {
       ? [
           {
             type: "video" as const,
-            src: product.video,
+            src: cldVideoUrl(product.video),
             poster: cldVideoPoster(product.video, { width: 900 }),
           },
         ]

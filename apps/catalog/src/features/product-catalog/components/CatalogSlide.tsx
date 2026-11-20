@@ -6,9 +6,7 @@ import FavoriteButton from "../../favorites/components/FavoriteButton";
 import { useFavorites } from "../../favorites/hooks";
 import { countSeriWarna, TERLARIS_LABELS } from "../utils";
 
-interface CatalogModel extends Product {
-  index?: number;
-}
+type CatalogModel = Product;
 
 function SoldOutStamp({ className = "" }: { className?: string }) {
   return (
@@ -73,6 +71,7 @@ function InfoBadges({ terlarisLabel, baru, limitedStok, hasVideo, detailCount }:
 interface CatalogSlideProps {
   model: CatalogModel;
   isLast: boolean;
+  isFirst?: boolean;
   soldOut?: boolean;
   limitedStok?: boolean;
   baru?: boolean;
@@ -84,6 +83,7 @@ interface CatalogSlideProps {
 export default function CatalogSlide({
   model,
   isLast,
+  isFirst = false,
   soldOut = false,
   limitedStok = false,
   baru = false,
@@ -95,7 +95,6 @@ export default function CatalogSlide({
   const heroSrc = cldUrl(model.image, { width: 1200 });
   const blurSrc = cldUrl(model.image, { width: 400 });
   const ref = useRef<HTMLElement | null>(null);
-  const isFirst = model.index === 0;
   const [active, setActive] = useState(isFirst);
   const sizeNames = (model.variants ?? []).map((v) => v.size);
   const detailCount = (model.detail ?? []).length;

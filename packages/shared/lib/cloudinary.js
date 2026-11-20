@@ -109,6 +109,19 @@ export function cldUrl(url, opts = {}) {
   return `${parts[0]}/upload/${steps.join("/")}/${parts[1]}`;
 }
 
+export function cldVideoUrl(url, opts = {}) {
+  if (!url || typeof url !== "string") return url;
+  if (!url.includes("/upload/")) return url;
+
+  const transforms = ["f_auto", "q_auto"];
+  if (opts.width) transforms.push(`w_${opts.width}`);
+  if (opts.height) transforms.push(`h_${opts.height}`);
+  const transformStr = transforms.join(",");
+  const parts = url.split("/upload/");
+  if (parts.length !== 2) return url;
+  return `${parts[0]}/upload/${transformStr}/${parts[1]}`;
+}
+
 export function cldVideoPoster(url, opts = {}) {
   if (!url || typeof url !== "string") return url;
   if (!url.includes("/upload/")) return url;

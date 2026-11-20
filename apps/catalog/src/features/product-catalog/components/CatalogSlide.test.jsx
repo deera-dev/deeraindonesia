@@ -47,8 +47,8 @@ describe("CatalogSlide", () => {
     expect(img).toHaveAttribute("fetchpriority", "auto");
   });
 
-  it("img loading eager saat model.index === 0 (slide pertama)", async () => {
-    await renderSlide({ model: { ...baseModel, index: 0 }, isLast: false });
+  it("img loading eager saat isFirst (slide pertama)", async () => {
+    await renderSlide({ model: baseModel, isLast: false, isFirst: true });
     const img = screen.getByAltText("Gamis Dewi");
     expect(img).toHaveAttribute("loading", "eager");
     expect(img).toHaveAttribute("fetchpriority", "high");

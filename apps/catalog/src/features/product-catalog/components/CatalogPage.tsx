@@ -1,5 +1,6 @@
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useHeroPreload } from "../../../shared/hooks/useHeroPreload";
 import { useFavorites } from "../../favorites/hooks";
 import {
   useBaruSet,
@@ -87,6 +88,8 @@ export default function CatalogPage() {
   );
   const hasActiveFilter = !!bahan || !!ukuran;
 
+  useHeroPreload(filtered);
+
   const activePosition = filtered.findIndex((p) => p.kode === activeKode) + 1;
 
   const handleActive = useCallback(
@@ -163,6 +166,7 @@ export default function CatalogPage() {
               key={model.kode}
               model={model}
               isLast={index === filtered.length - 1}
+              isFirst={index === 0}
               soldOut={soldOutSet.has(model.kode)}
               limitedStok={!soldOutSet.has(model.kode) && limitedStokSet.has(model.kode)}
               baru={baruSet.has(model.kode)}
