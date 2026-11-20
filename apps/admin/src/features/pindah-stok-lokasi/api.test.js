@@ -11,36 +11,19 @@ beforeEach(() => {
 });
 
 describe("moveStokLokasi", () => {
-  it("memanggil rpc('move_stok_lokasi', ...) dengan parameter yang benar", async () => {
+  // Identitas audit (user_email/user_name) sekarang diambil RPC dari
+  // auth.uid() -> profiles, bukan parameter client lagi — lihat
+  // supabase/migrations/20261120_move_stok_lokasi_identity.sql.
+  it("memanggil rpc('move_stok_lokasi', ...) dengan p_from/p_to saja", async () => {
     supabaseMock.rpc.mockResolvedValueOnce({ data: { success: true, total_pcs: 10 }, error: null });
 
-    const result = await moveStokLokasi({
-      fromLocation: "cideng",
-      toLocation: "gudang",
-      actorEmail: "dika@deera.id",
-      actorName: "DIKA",
-    });
+    const result = await moveStokLokasi({ fromLocation: "cideng", toLocation: "gudang" });
 
     expect(supabaseMock.rpc).toHaveBeenCalledWith("move_stok_lokasi", {
       p_from: "cideng",
       p_to: "gudang",
-      p_actor_email: "dika@deera.id",
-      p_actor_name: "DIKA",
     });
     expect(result).toEqual({ success: true, total_pcs: 10 });
-  });
-
-  it("tanpa actorEmail/actorName -> null dan '-'", async () => {
-    supabaseMock.rpc.mockResolvedValueOnce({ data: { success: true }, error: null });
-
-    await moveStokLokasi({ fromLocation: "cideng", toLocation: "gudang" });
-
-    expect(supabaseMock.rpc).toHaveBeenCalledWith("move_stok_lokasi", {
-      p_from: "cideng",
-      p_to: "gudang",
-      p_actor_email: null,
-      p_actor_name: "-",
-    });
   });
 
   it("menolak lokasi asal tidak valid tanpa memanggil rpc", async () => {

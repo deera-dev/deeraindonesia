@@ -1,4 +1,4 @@
-import { displayName, getCurrentUser, verifyPassword } from "@deera/shared/features/auth/hooks";
+import { getCurrentUser, verifyPassword } from "@deera/shared/features/auth/hooks";
 import { useMoveStokLokasiMutation } from "./queries";
 
 export function useMoveStokLokasi() {
@@ -11,11 +11,6 @@ export function useMoveStokLokasi() {
     const passwordOk = await verifyPassword(user.email, password);
     if (!passwordOk) throw new Error("Password salah.");
 
-    return mutateAsync({
-      fromLocation,
-      toLocation,
-      actorEmail: user.email,
-      actorName: displayName(user),
-    });
+    return mutateAsync({ fromLocation, toLocation });
   };
 }

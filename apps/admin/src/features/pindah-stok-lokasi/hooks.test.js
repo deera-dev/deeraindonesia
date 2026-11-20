@@ -3,11 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getCurrentUser = vi.fn();
 const verifyPassword = vi.fn();
-const displayName = vi.fn();
 vi.mock("@deera/shared/features/auth/hooks", () => ({
   getCurrentUser: (...a) => getCurrentUser(...a),
   verifyPassword: (...a) => verifyPassword(...a),
-  displayName: (...a) => displayName(...a),
 }));
 
 const mutateAsync = vi.fn();
@@ -20,18 +18,20 @@ const { useMoveStokLokasi } = await import("./hooks");
 beforeEach(() => {
   getCurrentUser.mockReset();
   verifyPassword.mockReset();
-  displayName.mockReset();
   mutateAsync.mockReset();
 });
 
 describe("useMoveStokLokasi", () => {
-  it("verifikasi password lalu memanggil mutateAsync dengan actorEmail/actorName saat password benar", async () => {
+  // Identitas audit sekarang diambil RPC dari auth.uid() -> profiles,
+  // bukan dikirim dari hooks.js lagi — lihat
+  // supabase/migrations/20261120_move_stok_lokasi_identity.sql. Password
+  // re-confirm TETAP di client (ini TIDAK berubah).
+  it("verifikasi password lalu memanggil mutateAsync dengan fromLocation/toLocation saat password benar", async () => {
     getCurrentUser.mockResolvedValue({
       email: "dika@deera.id",
       user_metadata: { full_name: "Dika" },
     });
     verifyPassword.mockResolvedValue(true);
-    displayName.mockReturnValue("DIKA");
     mutateAsync.mockResolvedValue({ success: true, total_pcs: 7 });
 
     const { result } = renderHook(() => useMoveStokLokasi());
@@ -47,8 +47,6 @@ describe("useMoveStokLokasi", () => {
     expect(mutateAsync).toHaveBeenCalledWith({
       fromLocation: "cideng",
       toLocation: "gudang",
-      actorEmail: "dika@deera.id",
-      actorName: "DIKA",
     });
     expect(out).toEqual({ success: true, total_pcs: 7 });
   });
