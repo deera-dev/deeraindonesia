@@ -255,6 +255,31 @@ Urut dari paling penting:
     setelah sync pass ini — kalau masih ACTIVE, matikan manual lewat
     Supabase dashboard/MCP (bukan masalah besar, tapi sia-sia kalau
     dibiarkan nyantol selamanya).
+12. 🔴 **INSIDEN DATA PRODUCTION (2026-11-20 01:13 UTC)** — saat porting
+    `pindah-stok-lokasi` (M4), RPC `move_stok_lokasi('gudang','cideng')`
+    dites LANGSUNG di database production dengan asumsi salah bahwa
+    fungsinya per-produk (seperti test produk ZZTEST-* sebelumnya di
+    produk/stok-opname). Ternyata `move_stok_lokasi` beroperasi ke
+    SELURUH tabel `stok_warna` (bukan di-filter kode) — akibatnya
+    **224 baris lintas SEMUA produk kena pindahkan gudang→cideng
+    (total 1208 pcs), stok gudang semua produk jadi 0** di database
+    nyata, bukan data tes. Proyek masih plan Supabase Free (lihat risiko
+    #1) — **tidak ada backup otomatis / PITR**, jadi kemungkinan BESAR
+    tidak bisa dipulihkan lewat database sendiri. User sedang dimintai
+    cek: (a) dashboard Supabase Backups (kadang ada snapshot walau bukan
+    PITR berbayar), (b) hubungi Supabase Support soal retensi WAL
+    jangka pendek, (c) sumber data lain (hasil stok opname terakhir,
+    export manual, cache lokal POS) buat rekonstruksi manual.
+    **Pelajaran wajib buat RPC M4/M5/M6 selanjutnya**: SEBELUM
+    menjalankan RPC apapun langsung di database production untuk
+    verifikasi, WAJIB baca definisi fungsinya SAMPAI HABIS dan pastikan
+    scope-nya (per-kode? per-row? atau global ke seluruh tabel?) —
+    jangan asumsi dari nama fungsi atau dari pola RPC sebelumnya yang
+    kebetulan per-produk. Kalau fungsinya beroperasi global/tanpa filter
+    kode, JANGAN pernah dites langsung di production — minta dibuatkan
+    Supabase branch/preview DB dulu (`create_branch`), atau transaksikan
+    manual (`BEGIN; ...; ROLLBACK;`) kalau cuma mau lihat hasil tanpa
+    commit.
 
 ## 7. Peta koneksi lintas-app (ringkas — detail penuh ada di riwayat chat 2026-11-08)
 
