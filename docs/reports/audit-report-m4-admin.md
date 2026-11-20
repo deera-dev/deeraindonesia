@@ -139,11 +139,11 @@ Ditambah ~22 file lain 200-430 baris, mayoritas di grup produksi-*
 
 ## 6. Hal lain
 
-- `buku-potongan/api.js` dan `stok-opname/api.js` sama-sama nyentuh
-  `expected_stok`/`stok_warna` tanpa transaction wrapping yang kelihatan
-  di layer JS (andalkan upsert single-row, bukan atomicity multi-row) —
-  kemungkinan sudah tercakup desain RPC di `migration-plan.md`, perlu
-  dicek ulang pas desain RPC-nya, bukan temuan baru.
+- **✅ DICEK (2026-11-20)** — `buku-potongan/api.js` TERNYATA sudah aman:
+  `upsertExpectedStok` cuma 1 upsert tunggal (atomik dari sananya),
+  `expected_stok` juga gak punya kolom identitas audit — gak ada yang
+  perlu diperbaiki. `stok-opname/api.js` **SUDAH DIPERBAIKI** jadi RPC
+  atomik `save_stok_opname` (lihat §4 bagian "stok-opname" di bawah).
 - Tidak ada TODO/FIXME/XXX yang nunjukin kerja belum selesai di fitur
   manapun yang diaudit.
 
