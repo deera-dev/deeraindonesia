@@ -1,5 +1,4 @@
 import { supabase } from "@deera/shared/lib/supabase";
-import { logHistory } from "../history/api";
 import { isSyntheticStokId, parseSyntheticStokId } from "./utils";
 
 export async function fetchAllStokWarna() {
@@ -13,7 +12,7 @@ export async function fetchJahitDikerjakan() {
   return data ?? [];
 }
 
-export async function saveStokOpname({ changed, stokRows, products }) {
+export async function saveStokOpname({ changed, stokRows }) {
   const changedIds = Object.keys(changed);
   if (changedIds.length === 0) return { count: 0 };
 
@@ -32,62 +31,28 @@ export async function saveStokOpname({ changed, stokRows, products }) {
       ngorder: vals.ngorder !== undefined ? vals.ngorder : (row?.ngorder ?? 0),
     };
     return {
-      id: isNew ? undefined : row?.id,
       kode,
       size,
       warna,
-      before: { gudang: row?.gudang ?? 0, cideng: row?.cideng ?? 0, tegalgubug: row?.tegalgubug ?? 0, ngorder: row?.ngorder ?? 0 },
+      before: {
+        gudang: row?.gudang ?? 0,
+        cideng: row?.cideng ?? 0,
+        tegalgubug: row?.tegalgubug ?? 0,
+        ngorder: row?.ngorder ?? 0,
+      },
       after: merged,
     };
   });
 
-  const upsertRows = historyRows.map((r) => {
-    const base = {
-      kode: r.kode,
-      size: r.size,
-      warna: r.warna,
-      gudang: r.after.gudang,
-      cideng: r.after.cideng,
-      tegalgubug: r.after.tegalgubug,
-      ngorder: r.after.ngorder,
-      updated_at: new Date().toISOString(),
-    };
-    return r.id ? { id: r.id, ...base } : base;
+  // Upsert stok_warna (konflik di kode+size+warna, bukan id — jadi baris
+  // baru/lama bisa 1 batch, gak perlu dipisah 2 panggilan lagi kayak JS
+  // lama) + audit log per kode, atomik dalam 1 RPC. Lihat
+  // supabase/migrations/20261120_save_stok_opname.sql.
+  const { data, error } = await supabase.functions.invoke("stok-opname-crud", {
+    body: { action: "save", input: { rows: historyRows } },
   });
-
-  const existingRows = upsertRows.filter((r) => "id" in r);
-  const newRows = upsertRows.filter((r) => !("id" in r));
-
-  if (existingRows.length > 0) {
-    const { error } = await supabase
-      .from("stok_warna")
-      .upsert(existingRows, { onConflict: "kode,size,warna" });
-    if (error) throw error;
-  }
-  if (newRows.length > 0) {
-    const { error } = await supabase
-      .from("stok_warna")
-      .upsert(newRows, { onConflict: "kode,size,warna" });
-    if (error) throw error;
-  }
-
-  const kodeSet = [...new Set(historyRows.map((r) => r.kode))];
-  for (const kode of kodeSet) {
-    const rowsForKode = historyRows.filter((r) => r.kode === kode);
-    const prod = (products ?? []).find((p) => p.kode === kode);
-    logHistory({
-      action: "stok-opname",
-      category: "stok",
-      kode,
-      nama: prod?.nama ?? kode,
-      snapshot: {
-        rows: rowsForKode.map((r) => ({ kode: r.kode, size: r.size, warna: r.warna, ...r.after })),
-      },
-      before: {
-        rows: rowsForKode.map((r) => ({ kode: r.kode, size: r.size, warna: r.warna, ...r.before })),
-      },
-    });
-  }
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
 
   return { count: changedIds.length };
 }
