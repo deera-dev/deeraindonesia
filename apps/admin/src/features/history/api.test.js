@@ -8,27 +8,19 @@ import {
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
 
-const getCurrentUserMock = vi.fn();
-const displayNameMock = vi.fn();
-vi.mock("@deera/shared/features/auth/api", () => ({
-  getCurrentUser: (...a) => getCurrentUserMock(...a),
-  displayName: (...a) => displayNameMock(...a),
-}));
-
 const { logHistory, fetchHistory, fetchHistoryByKode, deleteHistoryEntry } = await import("./api");
 
 beforeEach(() => {
   resetSupabaseMock(supabaseMock);
-  getCurrentUserMock.mockReset();
-  displayNameMock.mockReset();
 });
 
+// log_history: identitas dulu dari getCurrentUser() di JS lalu dikirim sbg
+// payload insert client -> spoofable lewat REST langsung. Sekarang 1 RPC,
+// identitas dari auth.uid() -> profiles di DB -- lihat
+// supabase/migrations/20261120_history_pengiriman_crud.sql.
 describe("logHistory", () => {
-  it("insert ke product_history dengan user_email & user_name dari auth", async () => {
-    getCurrentUserMock.mockResolvedValue({ email: "admin@deera.id" });
-    displayNameMock.mockReturnValue("Admin");
-    const insertBuilder = makeBuilder({ data: null, error: null });
-    supabaseMock.from.mockReturnValue(insertBuilder);
+  it("memanggil RPC log_history dengan parameter yang benar", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ error: null });
 
     await logHistory({
       action: "tambah",
@@ -38,26 +30,18 @@ describe("logHistory", () => {
       snapshot: { x: 1 },
     });
 
-    expect(supabaseMock.from).toHaveBeenCalledWith("product_history");
-    expect(insertBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "tambah",
-        category: "produk",
-        kode: "D-01-OSK",
-        nama: "Gamis A",
-        snapshot: { x: 1 },
-        before_snapshot: null,
-        user_email: "admin@deera.id",
-        user_name: "Admin",
-      }),
-    );
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("log_history", {
+      p_action: "tambah",
+      p_category: "produk",
+      p_kode: "D-01-OSK",
+      p_nama: "Gamis A",
+      p_snapshot: { x: 1 },
+      p_before: null,
+    });
   });
 
-  it("meneruskan before ke before_snapshot jika diberikan", async () => {
-    getCurrentUserMock.mockResolvedValue({ email: "a@b.id" });
-    displayNameMock.mockReturnValue("A");
-    const insertBuilder = makeBuilder({ data: null, error: null });
-    supabaseMock.from.mockReturnValue(insertBuilder);
+  it("meneruskan before ke p_before jika diberikan", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ error: null });
 
     await logHistory({
       action: "edit",
@@ -68,17 +52,14 @@ describe("logHistory", () => {
       before: { x: 0 },
     });
 
-    expect(insertBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ before_snapshot: { x: 0 } }),
+    expect(supabaseMock.rpc).toHaveBeenCalledWith(
+      "log_history",
+      expect.objectContaining({ p_before: { x: 0 } }),
     );
   });
 
-  it("tidak melempar error jika insert supabase gagal/throw (best-effort)", async () => {
-    getCurrentUserMock.mockResolvedValue({ email: "a@b.id" });
-    displayNameMock.mockReturnValue("A");
-    supabaseMock.from.mockReturnValue({
-      insert: vi.fn().mockRejectedValue(new Error("network error")),
-    });
+  it("tidak melempar error jika RPC gagal/throw (best-effort)", async () => {
+    supabaseMock.rpc.mockRejectedValueOnce(new Error("network error"));
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     await expect(
@@ -88,21 +69,8 @@ describe("logHistory", () => {
     warnSpy.mockRestore();
   });
 
-  it("user null → user_email null & user_name dari displayName(null)", async () => {
-    getCurrentUserMock.mockResolvedValue(null);
-    displayNameMock.mockReturnValue("Admin");
-    const insertBuilder = makeBuilder({ data: null, error: null });
-    supabaseMock.from.mockReturnValue(insertBuilder);
-
-    await logHistory({ action: "tambah", category: "produk", kode: "X", nama: "Y", snapshot: {} });
-
-    expect(insertBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ user_email: null, user_name: "Admin" }),
-    );
-  });
-
-  it("getCurrentUser throws → ditangkap, console.warn dipanggil", async () => {
-    getCurrentUserMock.mockRejectedValue(new Error("auth error"));
+  it("tidak melempar error jika RPC mengembalikan error object (best-effort)", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ error: { message: "boom" } });
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     await expect(

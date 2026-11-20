@@ -5,8 +5,6 @@ import {
   useUpdatePengirimanMutation,
 } from "./queries";
 
-export { generatePengirimanNo } from "./api";
-
 export function usePengiriman(dateFrom = null, dateTo = null) {
   const { data, isLoading, error, refetch } = usePengirimanQuery(dateFrom, dateTo);
   return { pengirimanList: data ?? [], loading: isLoading, error, reload: refetch };

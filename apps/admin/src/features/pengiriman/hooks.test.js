@@ -15,13 +15,8 @@ vi.mock("./queries", () => ({
   useDeletePengirimanMutation: () => deleteMutation,
 }));
 
-const {
-  usePengiriman,
-  useCreatePengiriman,
-  useUpdatePengiriman,
-  useDeletePengiriman,
-  generatePengirimanNo,
-} = await import("./hooks");
+const { usePengiriman, useCreatePengiriman, useUpdatePengiriman, useDeletePengiriman } =
+  await import("./hooks");
 
 beforeEach(() => {
   pengirimanQueryState.data = undefined;
@@ -79,11 +74,5 @@ describe("useDeletePengiriman", () => {
     await result.current(pengiriman);
 
     expect(deleteMutation.mutateAsync).toHaveBeenCalledWith(pengiriman);
-  });
-});
-
-describe("generatePengirimanNo (re-export dari ./api)", () => {
-  it("menghasilkan format KRM-YYYYMMDD-xxx", () => {
-    expect(generatePengirimanNo()).toMatch(/^KRM-\d{8}-\d{3}$/);
   });
 });

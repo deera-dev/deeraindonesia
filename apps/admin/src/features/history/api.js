@@ -1,4 +1,3 @@
-import { displayName, getCurrentUser } from "@deera/shared/features/auth/api";
 import { supabase } from "@deera/shared/lib/supabase";
 
 export async function logHistory({
@@ -10,17 +9,15 @@ export async function logHistory({
   before = null,
 }) {
   try {
-    const user = await getCurrentUser();
-    await supabase.from("product_history").insert({
-      action,
-      category,
-      kode,
-      nama,
-      snapshot,
-      before_snapshot: before,
-      user_email: user?.email ?? null,
-      user_name: displayName(user),
+    const { error } = await supabase.rpc("log_history", {
+      p_action: action,
+      p_category: category,
+      p_kode: kode,
+      p_nama: nama,
+      p_snapshot: snapshot,
+      p_before: before,
     });
+    if (error) throw error;
   } catch (err) {
     console.warn("logHistory error:", err);
   }

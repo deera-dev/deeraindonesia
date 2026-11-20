@@ -8,35 +8,12 @@ import {
 const supabaseMock = createSupabaseMock();
 vi.mock("@deera/shared/lib/supabase", () => ({ supabase: supabaseMock }));
 
-vi.mock("../pelanggan/api", () => ({
-  createPelanggan: vi.fn(),
-  findPelangganByNama: vi.fn(),
-  updatePelangganInfo: vi.fn(),
-}));
-
-const {
-  generatePengirimanNo,
-  fetchPengiriman,
-  createPengiriman,
-  updatePengiriman,
-  deletePengiriman,
-} = await import("./api");
-const { createPelanggan, findPelangganByNama, updatePelangganInfo } = await import(
-  "../pelanggan/api"
+const { fetchPengiriman, createPengiriman, updatePengiriman, deletePengiriman } = await import(
+  "./api"
 );
 
 beforeEach(() => {
   resetSupabaseMock(supabaseMock);
-  createPelanggan.mockReset().mockResolvedValue({ id: "p-auto-created" });
-  findPelangganByNama.mockReset().mockResolvedValue(null);
-  updatePelangganInfo.mockReset().mockResolvedValue({ id: "p-updated" });
-});
-
-describe("generatePengirimanNo", () => {
-  it("menghasilkan format KRM-YYYYMMDD-xxx", () => {
-    const no = generatePengirimanNo();
-    expect(no).toMatch(/^KRM-\d{8}-\d{3}$/);
-  });
 });
 
 describe("fetchPengiriman", () => {
@@ -82,6 +59,11 @@ describe("fetchPengiriman", () => {
   });
 });
 
+// create_pengiriman/update_pengiriman: dulu resolvePelangganLink (insert/
+// update pelanggan) + insert/update pengiriman adalah 2 network call
+// terpisah non-atomik, dan created_by/created_by_name dikirim dari client
+// (useAuth()) -> spoofable. Sekarang 1 RPC atomik per aksi, identitas dari
+// auth.uid() -> profiles di DB -- lihat supabase/migrations/20261120_history_pengiriman_crud.sql.
 describe("createPengiriman", () => {
   const validPayload = {
     tanggal: "2026-08-24",
@@ -93,181 +75,45 @@ describe("createPengiriman", () => {
     namaPengirim: "Siti",
   };
 
-  it("melempar error jika tanggal kosong", async () => {
+  it("memanggil RPC create_pengiriman dengan parameter yang benar", async () => {
+    const inserted = { id: "pg1", pengiriman_no: "KRM-20260824-123" };
+    supabaseMock.rpc.mockResolvedValueOnce({ data: inserted, error: null });
+
+    const result = await createPengiriman(validPayload);
+
+    expect(result).toEqual(inserted);
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("create_pengiriman", {
+      p_tanggal: "2026-08-24",
+      p_nama_penerima: "Budi",
+      p_no_telp_penerima: "08123456789",
+      p_alamat: null,
+      p_pelanggan_id: null,
+      p_jumlah_karung: 5,
+      p_isi_karung: "Gamis dan mukena campur",
+      p_nama_ekspedisi: "JNE",
+      p_nama_pengirim: "Siti",
+    });
+  });
+
+  it("pelangganId & alamat ikut diteruskan ke RPC", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: { id: "pg2" }, error: null });
+
+    await createPengiriman({ ...validPayload, pelangganId: "p-existing", alamat: "Jl. A" });
+
+    expect(supabaseMock.rpc).toHaveBeenCalledWith(
+      "create_pengiriman",
+      expect.objectContaining({ p_pelanggan_id: "p-existing", p_alamat: "Jl. A" }),
+    );
+  });
+
+  it("melempar error kalau RPC gagal (termasuk validasi server-side)", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { message: "Tanggal wajib diisi." },
+    });
     await expect(createPengiriman({ ...validPayload, tanggal: "" })).rejects.toThrow(
       "Tanggal wajib diisi.",
     );
-  });
-
-  it("melempar error jika nama penerima kosong", async () => {
-    await expect(createPengiriman({ ...validPayload, namaPenerima: "  " })).rejects.toThrow(
-      "Nama penerima wajib diisi.",
-    );
-  });
-
-  it("melempar error jika jumlah karung <= 0", async () => {
-    await expect(createPengiriman({ ...validPayload, jumlahKarung: 0 })).rejects.toThrow(
-      "Jumlah karung harus lebih dari 0.",
-    );
-  });
-
-  it("melempar error jika nama ekspedisi kosong", async () => {
-    await expect(createPengiriman({ ...validPayload, namaEkspedisi: "" })).rejects.toThrow(
-      "Nama ekspedisi wajib diisi.",
-    );
-  });
-
-  it("melempar error jika nama pengirim kosong", async () => {
-    await expect(createPengiriman({ ...validPayload, namaPengirim: "" })).rejects.toThrow(
-      "Nama pengirim wajib diisi.",
-    );
-  });
-
-  it("melempar error saat insert gagal", async () => {
-    supabaseMock.from.mockReturnValueOnce(
-      makeBuilder({ data: null, error: new Error("insert gagal") }),
-    );
-    await expect(createPengiriman(validPayload)).rejects.toThrow("insert gagal");
-  });
-
-  it("sukses membuat pengiriman dgn payload lengkap + user", async () => {
-    const inserted = { id: "pg1", pengiriman_no: "KRM-20260824-123" };
-    const insertBuilder = makeBuilder({ data: inserted, error: null });
-    supabaseMock.from.mockReturnValueOnce(insertBuilder);
-
-    const result = await createPengiriman({
-      ...validPayload,
-      user: { email: "admin@deera.id", user_metadata: { full_name: "Admin Satu" } },
-    });
-
-    expect(result).toEqual(inserted);
-    expect(insertBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        tanggal: "2026-08-24",
-        nama_penerima: "Budi",
-        no_telp_penerima: "08123456789",
-        jumlah_karung: 5,
-        isi_karung: "Gamis dan mukena campur",
-        nama_ekspedisi: "JNE",
-        nama_pengirim: "Siti",
-        created_by: "admin@deera.id",
-        created_by_name: "ADMIN SATU",
-      }),
-    );
-  });
-
-  it("noTelpPenerima & isiKarung kosong -> disimpan null, user undefined -> created_by null & nama '-'", async () => {
-    const insertBuilder = makeBuilder({ data: { id: "pg2" }, error: null });
-    supabaseMock.from.mockReturnValueOnce(insertBuilder);
-
-    await createPengiriman({ ...validPayload, noTelpPenerima: "", isiKarung: "" });
-
-    expect(insertBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        no_telp_penerima: null,
-        isi_karung: null,
-        created_by: null,
-        created_by_name: "-",
-      }),
-    );
-  });
-
-  it("generatePengirimanNo dipakai sbg pengiriman_no", async () => {
-    const insertBuilder = makeBuilder({ data: { id: "pg3" }, error: null });
-    supabaseMock.from.mockReturnValueOnce(insertBuilder);
-
-    await createPengiriman(validPayload);
-
-    expect(insertBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ pengiriman_no: expect.stringMatching(/^KRM-\d{8}-\d{3}$/) }),
-    );
-  });
-
-  it("alamat disimpan trim, atau null kalau kosong/tidak diisi", async () => {
-    const insertBuilder = makeBuilder({ data: { id: "pg-a" }, error: null });
-    supabaseMock.from.mockReturnValueOnce(insertBuilder);
-    await createPengiriman({ ...validPayload, alamat: "  Jl. Mawar No. 1  " });
-    expect(insertBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ alamat: "Jl. Mawar No. 1" }),
-    );
-
-    const insertBuilder2 = makeBuilder({ data: { id: "pg-b" }, error: null });
-    supabaseMock.from.mockReturnValueOnce(insertBuilder2);
-    await createPengiriman(validPayload);
-    expect(insertBuilder2.insert).toHaveBeenCalledWith(expect.objectContaining({ alamat: null }));
-  });
-
-  describe("resolusi pelanggan_id (daftar penerima, permintaan Denny 2026-08)", () => {
-    it("pelangganId dipilih dari autocomplete → updatePelangganInfo dipanggil, pelanggan_id ikut id itu", async () => {
-      const insertBuilder = makeBuilder({ data: { id: "pg-x" }, error: null });
-      supabaseMock.from.mockReturnValueOnce(insertBuilder);
-
-      await createPengiriman({ ...validPayload, pelangganId: "p-existing", alamat: "Jl. A" });
-
-      expect(findPelangganByNama).not.toHaveBeenCalled();
-      expect(createPelanggan).not.toHaveBeenCalled();
-      expect(updatePelangganInfo).toHaveBeenCalledWith(
-        "p-existing",
-        expect.objectContaining({ no_hp: "08123456789", alamat: "Jl. A", ekspedisi_biasa: "JNE" }),
-      );
-      expect(insertBuilder.insert).toHaveBeenCalledWith(
-        expect.objectContaining({ pelanggan_id: "p-existing" }),
-      );
-    });
-
-    it("tanpa pelangganId, nama cocok persis dgn pelanggan lama → link ke situ & update datanya", async () => {
-      findPelangganByNama.mockResolvedValue({ id: "p-lama", nama: "Budi" });
-      const insertBuilder = makeBuilder({ data: { id: "pg-y" }, error: null });
-      supabaseMock.from.mockReturnValueOnce(insertBuilder);
-
-      await createPengiriman(validPayload);
-
-      expect(findPelangganByNama).toHaveBeenCalledWith("Budi");
-      expect(updatePelangganInfo).toHaveBeenCalledWith("p-lama", expect.anything());
-      expect(createPelanggan).not.toHaveBeenCalled();
-      expect(insertBuilder.insert).toHaveBeenCalledWith(
-        expect.objectContaining({ pelanggan_id: "p-lama" }),
-      );
-    });
-
-    it("tanpa pelangganId & tidak ada nama cocok → auto-create pelanggan baru", async () => {
-      const insertBuilder = makeBuilder({ data: { id: "pg-z" }, error: null });
-      supabaseMock.from.mockReturnValueOnce(insertBuilder);
-
-      await createPengiriman(validPayload);
-
-      expect(createPelanggan).toHaveBeenCalledWith(
-        expect.objectContaining({ nama: "Budi", no_hp: "08123456789", ekspedisi_biasa: "JNE" }),
-      );
-      expect(insertBuilder.insert).toHaveBeenCalledWith(
-        expect.objectContaining({ pelanggan_id: "p-auto-created" }),
-      );
-    });
-
-    it("resolve pelanggan gagal total (tanpa pelangganId) → pengiriman TETAP dibuat, pelanggan_id null", async () => {
-      findPelangganByNama.mockRejectedValue(new Error("network error"));
-      const insertBuilder = makeBuilder({ data: { id: "pg-fail" }, error: null });
-      supabaseMock.from.mockReturnValueOnce(insertBuilder);
-
-      const result = await createPengiriman(validPayload);
-
-      expect(result).toEqual({ id: "pg-fail" });
-      expect(insertBuilder.insert).toHaveBeenCalledWith(
-        expect.objectContaining({ pelanggan_id: null }),
-      );
-    });
-
-    it("resolve pelanggan gagal (pelangganId ada tapi update gagal) → pengiriman TETAP link ke pelangganId semula", async () => {
-      updatePelangganInfo.mockRejectedValue(new Error("update gagal"));
-      const insertBuilder = makeBuilder({ data: { id: "pg-fail2" }, error: null });
-      supabaseMock.from.mockReturnValueOnce(insertBuilder);
-
-      await createPengiriman({ ...validPayload, pelangganId: "p-existing" });
-
-      expect(insertBuilder.insert).toHaveBeenCalledWith(
-        expect.objectContaining({ pelanggan_id: "p-existing" }),
-      );
-    });
   });
 });
 
@@ -281,62 +127,29 @@ describe("updatePengiriman", () => {
     namaPengirim: "Siti",
   };
 
-  it("melempar error jika tanggal kosong", async () => {
-    await expect(updatePengiriman(target, { ...validPayload, tanggal: "" })).rejects.toThrow(
-      "Tanggal wajib diisi.",
-    );
+  it("memanggil RPC update_pengiriman dengan id + payload", async () => {
+    const updated = { id: "pg4", nama_penerima: "Budi" };
+    supabaseMock.rpc.mockResolvedValueOnce({ data: updated, error: null });
+
+    const result = await updatePengiriman(target, validPayload);
+
+    expect(result).toEqual(updated);
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("update_pengiriman", {
+      p_id: "pg4",
+      p_tanggal: "2026-08-24",
+      p_nama_penerima: "Budi",
+      p_no_telp_penerima: null,
+      p_alamat: null,
+      p_pelanggan_id: null,
+      p_jumlah_karung: 3,
+      p_isi_karung: null,
+      p_nama_ekspedisi: "J&T",
+      p_nama_pengirim: "Siti",
+    });
   });
 
-  it("melempar error jika nama penerima kosong", async () => {
-    await expect(updatePengiriman(target, { ...validPayload, namaPenerima: "" })).rejects.toThrow(
-      "Nama penerima wajib diisi.",
-    );
-  });
-
-  it("melempar error jika jumlah karung <= 0", async () => {
-    await expect(updatePengiriman(target, { ...validPayload, jumlahKarung: 0 })).rejects.toThrow(
-      "Jumlah karung harus lebih dari 0.",
-    );
-  });
-
-  it("melempar error jika nama ekspedisi kosong", async () => {
-    await expect(updatePengiriman(target, { ...validPayload, namaEkspedisi: "" })).rejects.toThrow(
-      "Nama ekspedisi wajib diisi.",
-    );
-  });
-
-  it("melempar error jika nama pengirim kosong", async () => {
-    await expect(updatePengiriman(target, { ...validPayload, namaPengirim: "" })).rejects.toThrow(
-      "Nama pengirim wajib diisi.",
-    );
-  });
-
-  it("sukses mengupdate pengiriman", async () => {
-    const updateBuilder = makeBuilder({ error: null });
-    supabaseMock.from.mockReturnValueOnce(updateBuilder);
-
-    await updatePengiriman(target, validPayload);
-
-    expect(updateBuilder.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        tanggal: "2026-08-24",
-        nama_penerima: "Budi",
-        jumlah_karung: 3,
-        nama_ekspedisi: "J&T",
-        nama_pengirim: "Siti",
-      }),
-    );
-    expect(updateBuilder.eq).toHaveBeenCalledWith("id", "pg4");
-  });
-
-  it("melempar error saat update gagal", async () => {
-    supabaseMock.from.mockReturnValueOnce(makeBuilder({ error: new Error("update gagal") }));
-    await expect(updatePengiriman(target, validPayload)).rejects.toThrow("update gagal");
-  });
-
-  it("alamat & pelanggan_id ikut dikirim ke update", async () => {
-    const updateBuilder = makeBuilder({ error: null });
-    supabaseMock.from.mockReturnValueOnce(updateBuilder);
+  it("alamat & pelanggan_id ikut dikirim ke RPC", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({ data: { id: "pg4" }, error: null });
 
     await updatePengiriman(target, {
       ...validPayload,
@@ -344,24 +157,19 @@ describe("updatePengiriman", () => {
       pelangganId: "p-existing",
     });
 
-    expect(updatePelangganInfo).toHaveBeenCalledWith(
-      "p-existing",
-      expect.objectContaining({ alamat: "Jl. Baru No. 2" }),
-    );
-    expect(updateBuilder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ alamat: "Jl. Baru No. 2", pelanggan_id: "p-existing" }),
+    expect(supabaseMock.rpc).toHaveBeenCalledWith(
+      "update_pengiriman",
+      expect.objectContaining({ p_alamat: "Jl. Baru No. 2", p_pelanggan_id: "p-existing" }),
     );
   });
 
-  it("tanpa pelangganId & tidak ada nama cocok → auto-create pelanggan baru saat edit juga", async () => {
-    const updateBuilder = makeBuilder({ error: null });
-    supabaseMock.from.mockReturnValueOnce(updateBuilder);
-
-    await updatePengiriman(target, validPayload);
-
-    expect(createPelanggan).toHaveBeenCalledWith(expect.objectContaining({ nama: "Budi" }));
-    expect(updateBuilder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ pelanggan_id: "p-auto-created" }),
+  it("melempar error kalau RPC gagal", async () => {
+    supabaseMock.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { message: "Pengiriman tidak ditemukan." },
+    });
+    await expect(updatePengiriman(target, validPayload)).rejects.toThrow(
+      "Pengiriman tidak ditemukan.",
     );
   });
 });

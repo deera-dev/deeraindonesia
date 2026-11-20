@@ -1,4 +1,3 @@
-import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createPengiriman as createPengirimanApi,
@@ -20,10 +19,9 @@ export function usePengirimanQuery(dateFrom = null, dateTo = null) {
 }
 
 export function useCreatePengirimanMutation() {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload) => createPengirimanApi({ ...payload, user }),
+    mutationFn: (payload) => createPengirimanApi(payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: pengirimanKeys.all }),
   });
 }
