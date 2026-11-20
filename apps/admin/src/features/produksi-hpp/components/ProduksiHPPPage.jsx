@@ -1,4 +1,3 @@
-import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useInvalidateProducts, useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { useMemo, useState } from "react";
@@ -32,7 +31,6 @@ import HppTemplateDetailSheet from "./HppTemplateDetailSheet";
 import KalkulatorHPP from "./KalkulatorHPP";
 
 export default function ProduksiHPPPage() {
-  const { user } = useAuth();
   const { products } = useProducts();
   const invalidateProducts = useInvalidateProducts();
 
@@ -92,7 +90,7 @@ export default function ProduksiHPPPage() {
 
   async function handleSave(payloads) {
     const arr = Array.isArray(payloads) ? payloads : [payloads];
-    await saveHppTemplates(arr, templates, user?.email);
+    await saveHppTemplates(arr);
     invalidateProducts();
     toast.success(
       arr.length > 1
@@ -262,7 +260,6 @@ export default function ProduksiHPPPage() {
             loading={configRowsLoading}
             error={configRowsError}
             onSave={saveHppConfig}
-            userEmail={user?.email}
             onRetry={refetchConfigRows}
           />
         </div>

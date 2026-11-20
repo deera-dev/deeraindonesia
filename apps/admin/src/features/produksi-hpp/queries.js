@@ -35,8 +35,7 @@ export function useBahanOptionsQuery() {
 export function useSaveHppTemplatesMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ payloads, templates, userEmail }) =>
-      saveHppTemplates(payloads, { templates, userEmail }),
+    mutationFn: (payloads) => saveHppTemplates(payloads),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiHppKeys.templates });
     },
@@ -56,7 +55,7 @@ export function useDeleteHppTemplateMutation() {
 export function useSaveHppConfigMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ key, nilai, userEmail }) => saveHppConfigValue(key, nilai, userEmail),
+    mutationFn: ({ key, nilai }) => saveHppConfigValue(key, nilai),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiHppKeys.config });
       queryClient.invalidateQueries({ queryKey: produksiHppKeys.configRows });

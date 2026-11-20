@@ -68,21 +68,13 @@ describe("HargaDasarPanel", () => {
   it("calls onSave, shows success toast, and closes sheet on save", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn().mockResolvedValue(undefined);
-    render(
-      <HargaDasarPanel
-        rows={rows}
-        loading={false}
-        error={false}
-        onSave={onSave}
-        userEmail="a@b.com"
-      />,
-    );
+    render(<HargaDasarPanel rows={rows} loading={false} error={false} onSave={onSave} />);
     await user.click(screen.getByText("Bordir"));
     const input = screen.getByDisplayValue("10000");
     await user.clear(input);
     await user.type(input, "12000");
     await user.click(screen.getByText("Simpan"));
-    await waitFor(() => expect(onSave).toHaveBeenCalledWith("bordir", 12000, "a@b.com"));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith("bordir", 12000));
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
     expect(screen.queryByDisplayValue("12000")).not.toBeInTheDocument();
   });
@@ -90,15 +82,7 @@ describe("HargaDasarPanel", () => {
   it("shows error toast and keeps sheet open when onSave rejects", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn().mockRejectedValue(new Error("Network error"));
-    render(
-      <HargaDasarPanel
-        rows={rows}
-        loading={false}
-        error={false}
-        onSave={onSave}
-        userEmail="a@b.com"
-      />,
-    );
+    render(<HargaDasarPanel rows={rows} loading={false} error={false} onSave={onSave} />);
     await user.click(screen.getByText("Bordir"));
     const input = screen.getByDisplayValue("10000");
     await user.clear(input);

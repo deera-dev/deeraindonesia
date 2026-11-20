@@ -5,14 +5,14 @@ import ConfigEditSheet from "./ConfigEditSheet";
 import ConfigGroupHeader from "./ConfigGroupHeader";
 import ConfigRow from "./ConfigRow";
 
-export default function HargaDasarPanel({ rows, loading, error, onSave, userEmail, onRetry }) {
+export default function HargaDasarPanel({ rows, loading, error, onSave, onRetry }) {
   const [editingRow, setEditingRow] = useState(null);
   const [saving, setSaving] = useState(false);
 
   async function handleSave(row, nilai) {
     setSaving(true);
     try {
-      await onSave(row.key, nilai, userEmail);
+      await onSave(row.key, nilai);
       toast.success(`${row.label} disimpan.`);
       setEditingRow(null);
     } catch (err) {

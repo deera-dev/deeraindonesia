@@ -46,32 +46,28 @@ export async function fetchBahanOptions() {
   ];
 }
 
-export async function saveHppTemplates(payloads, { templates, userEmail }) {
+// save_hpp_template dulu 2 tulis berurutan tanpa transaction per payload
+// (upsert hpp_template, lalu update products.hpp) + lookup "existing"
+// dari snapshot client yang bisa basi. Sekarang 1 RPC atomik yang juga
+// baca state terbaru langsung dari DB — lihat
+// supabase/migrations/20261120_save_hpp_template_config.sql.
+export async function saveHppTemplates(payloads) {
   const arr = Array.isArray(payloads) ? payloads : [payloads];
   for (const payload of arr) {
-    const record = { ...payload, updated_at: new Date().toISOString(), updated_by: userEmail };
-    const existing = templates.find((t) => t.kode_produk === payload.kode_produk);
-    if (existing) {
-      await supabase.from("hpp_template").update(record).eq("id", existing.id).throwOnError();
-    } else {
-      await supabase.from("hpp_template").insert(record).throwOnError();
-    }
-    if (payload.kode_produk && payload.total_hpp > 0) {
-      await supabase
-        .from("products")
-        .update({ hpp: payload.total_hpp })
-        .eq("kode", payload.kode_produk);
-    }
-    logHistory({
-      action: "hpp-simpan",
-      category: "produksi",
-      kode: payload.kode_produk ?? "",
-      nama: payload.kode_produk ?? "",
-      snapshot: { total_hpp: payload.total_hpp, bahan_items: payload.bahan_items },
-      before: existing
-        ? { total_hpp: existing.total_hpp, bahan_items: existing.bahan_items }
-        : undefined,
-    }).catch(() => {});
+    const { error } = await supabase.rpc("save_hpp_template", {
+      p_kode_produk: payload.kode_produk,
+      p_bahan_items: payload.bahan_items,
+      p_upah_jahit: payload.upah_jahit,
+      p_bordir: payload.bordir,
+      p_biaya_studio: payload.biaya_studio,
+      p_jumlah_baju_studio: payload.jumlah_baju_studio,
+      p_kancing_qty: payload.kancing_qty,
+      p_kancing_extra: payload.kancing_extra,
+      p_catatan: payload.catatan,
+      p_config_snapshot: payload.config_snapshot,
+      p_total_hpp: payload.total_hpp,
+    });
+    if (error) throw new Error(error.message);
   }
   return arr.length;
 }
@@ -87,9 +83,10 @@ export async function deleteHppTemplate(target) {
   }).catch(() => {});
 }
 
-export async function saveHppConfigValue(key, nilai, userEmail) {
-  await supabase
-    .from("hpp_config")
-    .update({ nilai, updated_at: new Date().toISOString(), updated_by: userEmail })
-    .eq("key", key);
+// Identitas (updated_by) diambil RPC dari auth.uid() -> profiles, bukan
+// parameter client lagi — lihat
+// supabase/migrations/20261120_save_hpp_template_config.sql.
+export async function saveHppConfigValue(key, nilai) {
+  const { error } = await supabase.rpc("save_hpp_config_value", { p_key: key, p_nilai: nilai });
+  if (error) throw new Error(error.message);
 }

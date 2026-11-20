@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@deera/shared/lib/supabase", () => ({ supabase: { from: vi.fn() } }));
+vi.mock("@deera/shared/lib/supabase", () => ({ supabase: { from: vi.fn(), rpc: vi.fn() } }));
 vi.mock("../history/api", () => ({ logHistory: vi.fn().mockResolvedValue(undefined) }));
 
 import { supabase } from "@deera/shared/lib/supabase";
@@ -120,46 +120,31 @@ describe("fetchBahanOptions", () => {
 });
 
 describe("saveHppTemplates", () => {
-  it("inserts when no existing template for kode_produk", async () => {
-    const hppChain = makeOrderChain();
-    const prodChain = makeEqChain();
-    supabase.from.mockReturnValueOnce(hppChain).mockReturnValueOnce(prodChain);
-    await saveHppTemplates([{ kode_produk: "D-01-OSK", total_hpp: 50000, bahan_items: [] }], {
-      templates: [],
-      userEmail: "a@b.com",
-    });
-    expect(hppChain.insert).toHaveBeenCalled();
+  // Upsert hpp_template + sync products.hpp + lookup existing-by-kode
+  // sekarang 1 RPC atomik di server (save_hpp_template) — lihat
+  // supabase/migrations/20261120_save_hpp_template_config.sql.
+  it("memanggil save_hpp_template per payload dengan field yang benar", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
+    await saveHppTemplates([{ kode_produk: "D-01-OSK", total_hpp: 50000, bahan_items: [] }]);
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      "save_hpp_template",
+      expect.objectContaining({ p_kode_produk: "D-01-OSK", p_total_hpp: 50000 }),
+    );
   });
-  it("updates when existing template found", async () => {
-    const hppChain = makeOrderChain();
-    const prodChain = makeEqChain();
-    supabase.from.mockReturnValueOnce(hppChain).mockReturnValueOnce(prodChain);
-    await saveHppTemplates([{ kode_produk: "D-01-OSK", total_hpp: 60000, bahan_items: [] }], {
-      templates: [{ id: "t1", kode_produk: "D-01-OSK", total_hpp: 50000 }],
-      userEmail: "a@b.com",
-    });
-    expect(hppChain.update).toHaveBeenCalled();
-  });
-  it("also updates products.hpp", async () => {
-    const hppChain = makeOrderChain();
-    const prodChain = makeEqChain();
-    supabase.from.mockReturnValueOnce(hppChain).mockReturnValueOnce(prodChain);
-    await saveHppTemplates([{ kode_produk: "D-02-SFN", total_hpp: 70000, bahan_items: [] }], {
-      templates: [],
-      userEmail: "a@b.com",
-    });
-    expect(supabase.from).toHaveBeenCalledWith("products");
+  it("throw kalau RPC gagal", async () => {
+    supabase.rpc.mockResolvedValue({ error: { message: "boom" } });
+    await expect(
+      saveHppTemplates([{ kode_produk: "D-01-OSK", total_hpp: 50000, bahan_items: [] }]),
+    ).rejects.toThrow("boom");
   });
   it("returns count of payloads processed", async () => {
-    supabase.from.mockReturnValue(makeEqChain());
-    const n = await saveHppTemplates(
-      [
-        { kode_produk: "D-03-OSK", total_hpp: 1000, bahan_items: [] },
-        { kode_produk: "D-04-OSK", total_hpp: 2000, bahan_items: [] },
-      ],
-      { templates: [], userEmail: "x@y.com" },
-    );
+    supabase.rpc.mockResolvedValue({ error: null });
+    const n = await saveHppTemplates([
+      { kode_produk: "D-03-OSK", total_hpp: 1000, bahan_items: [] },
+      { kode_produk: "D-04-OSK", total_hpp: 2000, bahan_items: [] },
+    ]);
     expect(n).toBe(2);
+    expect(supabase.rpc).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -174,10 +159,18 @@ describe("deleteHppTemplate", () => {
 });
 
 describe("saveHppConfigValue", () => {
-  it("calls update on hpp_config", async () => {
-    const chain = makeEqChain();
-    supabase.from.mockReturnValue(chain);
-    await saveHppConfigValue({ key: "plastik", nilai: 2000, userEmail: "a@b.com" });
-    expect(chain.update).toHaveBeenCalled();
+  // Identitas (updated_by) diambil RPC dari auth.uid() -> profiles,
+  // bukan parameter client lagi.
+  it("memanggil save_hpp_config_value dengan key & nilai", async () => {
+    supabase.rpc.mockResolvedValue({ error: null });
+    await saveHppConfigValue("plastik", 2000);
+    expect(supabase.rpc).toHaveBeenCalledWith("save_hpp_config_value", {
+      p_key: "plastik",
+      p_nilai: 2000,
+    });
+  });
+  it("throw kalau RPC gagal", async () => {
+    supabase.rpc.mockResolvedValue({ error: { message: "boom" } });
+    await expect(saveHppConfigValue("plastik", 2000)).rejects.toThrow("boom");
   });
 });

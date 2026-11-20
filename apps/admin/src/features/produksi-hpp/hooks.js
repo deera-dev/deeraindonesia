@@ -31,7 +31,7 @@ export function useBahanOptions() {
 
 export function useSaveHppTemplates() {
   const { mutateAsync } = useSaveHppTemplatesMutation();
-  return (payloads, templates, userEmail) => mutateAsync({ payloads, templates, userEmail });
+  return (payloads) => mutateAsync(payloads);
 }
 
 export function useDeleteHppTemplate() {
@@ -41,7 +41,7 @@ export function useDeleteHppTemplate() {
 
 export function useSaveHppConfig() {
   const { mutateAsync } = useSaveHppConfigMutation();
-  return (key, nilai, userEmail) => mutateAsync({ key, nilai, userEmail });
+  return (key, nilai) => mutateAsync({ key, nilai });
 }
 
 export function useHppTemplateFilter() {

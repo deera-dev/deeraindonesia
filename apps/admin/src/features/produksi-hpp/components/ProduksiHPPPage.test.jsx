@@ -4,7 +4,6 @@ import React from "react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@deera/shared/features/auth/hooks", () => ({ useAuth: vi.fn() }));
 vi.mock("@deera/shared/features/products/hooks", () => ({
   useProducts: vi.fn(),
   useInvalidateProducts: vi.fn(),
@@ -104,7 +103,6 @@ vi.mock("./HPPFilterModal", () => ({
   ),
 }));
 
-import { useAuth } from "@deera/shared/features/auth/hooks";
 import { useInvalidateProducts, useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { useBatches } from "../../produksi-record/hooks";
@@ -133,7 +131,6 @@ function setup() {
   const saveFn = vi.fn().mockResolvedValue(undefined);
   const deleteFn = vi.fn().mockResolvedValue(undefined);
   const saveConfigFn = vi.fn().mockResolvedValue(undefined);
-  useAuth.mockReturnValue({ user: { email: "a@b.com" } });
   useProducts.mockReturnValue([{ kode: "D-07-OSK", nama: "Gamis Oskelin" }]);
   useInvalidateProducts.mockReturnValue(vi.fn());
   useHppTemplates.mockReturnValue({ templates: [mockTpl], loading: false });
