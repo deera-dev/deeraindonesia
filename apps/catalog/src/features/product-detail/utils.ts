@@ -1,5 +1,5 @@
-import type { Product } from "@deera/shared/features/products/schema";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
+import type { Product } from "../../shared/products/schema";
 import { sortCatalogProducts } from "../product-catalog/utils";
 
 const CATALOG_BASE_URL = "https://catalog.deera.id";

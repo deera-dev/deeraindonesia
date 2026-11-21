@@ -1,5 +1,5 @@
-import type { Product } from "@deera/shared/features/products/schema";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
+import type { Product } from "../../../shared/products/schema";
 import { filterProducts } from "../utils";
 
 interface SearchModalProps {

@@ -1,7 +1,7 @@
-import type { Product } from "@deera/shared/features/products/schema";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import type { Product } from "../../../shared/products/schema";
 import FavoriteButton from "../../favorites/components/FavoriteButton";
 import { useFavorites } from "../../favorites/hooks";
 import { countSeriWarna, TERLARIS_LABELS } from "../utils";

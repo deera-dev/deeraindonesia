@@ -7,7 +7,7 @@ const productsListState = { products: [] };
 const receivedKode = [];
 let lastKode;
 
-vi.mock("@deera/shared/features/products/hooks", () => ({
+vi.mock("../../../shared/products/hooks", () => ({
   useProduct: (kode) => {
     lastKode = kode;
     receivedKode.push(kode);

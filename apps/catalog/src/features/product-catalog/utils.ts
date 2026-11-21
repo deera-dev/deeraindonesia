@@ -1,4 +1,4 @@
-import type { Product } from "@deera/shared/features/products/schema";
+import type { Product } from "../../shared/products/schema";
 
 export function isBaru(createdAt: string | null | undefined, days = 14): boolean {
   if (!createdAt) return false;

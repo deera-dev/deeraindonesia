@@ -1,5 +1,5 @@
-import type { Product } from "@deera/shared/features/products/schema";
 import type { ReactNode } from "react";
+import type { Product } from "../../../shared/products/schema";
 import { getFilterOptions } from "../utils";
 
 interface ChipProps {

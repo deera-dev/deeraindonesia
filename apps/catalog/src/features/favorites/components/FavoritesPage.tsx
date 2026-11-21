@@ -1,7 +1,7 @@
-import { useProducts } from "@deera/shared/features/products/hooks";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { useProducts } from "../../../shared/products/hooks";
 import { useFavorites } from "../hooks";
 import { shareFavoritesViaWA } from "../utils";
 import FavoriteButton from "./FavoriteButton";

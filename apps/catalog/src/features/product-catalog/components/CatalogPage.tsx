@@ -1,6 +1,6 @@
-import { useProducts } from "@deera/shared/features/products/hooks";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHeroPreload } from "../../../shared/hooks/useHeroPreload";
+import { useProducts } from "../../../shared/products/hooks";
 import { useFavorites } from "../../favorites/hooks";
 import {
   useBaruSet,

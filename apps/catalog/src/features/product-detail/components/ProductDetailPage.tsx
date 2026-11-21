@@ -1,9 +1,9 @@
-import { useProduct, useProducts } from "@deera/shared/features/products/hooks";
 import { cldUrl, cldVideoPoster, cldVideoUrl } from "@deera/shared/lib/cloudinary";
 import { Link, Navigate, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { WhatsApp } from "../../../shared/components/WhatsApp";
 import useDocumentMeta from "../../../shared/hooks/useDocumentMeta";
+import { useProduct, useProducts } from "../../../shared/products/hooks";
 import { trackEvent } from "../../analytics";
 import FavoriteButton from "../../favorites/components/FavoriteButton";
 import { useFavorites } from "../../favorites/hooks";

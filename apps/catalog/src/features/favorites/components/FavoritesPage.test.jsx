@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithRouter } from "../../../../../../test/helpers/renderWithRouter.jsx";
 
 const productsState = { products: [], loading: false };
-vi.mock("@deera/shared/features/products/hooks", () => ({
+vi.mock("../../../shared/products/hooks", () => ({
   useProducts: () => productsState,
 }));
 

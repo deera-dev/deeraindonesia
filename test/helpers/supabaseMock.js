@@ -26,6 +26,7 @@ const CHAIN_METHODS = [
   "filter",
 ];
 
+/** @param {{data?: any, error?: any}} [result] */
 export function makeBuilder(result = { data: null, error: null }) {
   const builder = {};
   CHAIN_METHODS.forEach((m) => {
