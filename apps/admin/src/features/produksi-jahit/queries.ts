@@ -10,18 +10,19 @@ import {
   setTukangPotongForBatch,
   unassignCard,
 } from "./api";
+import type { DoneJahitCardsFilter } from "./schema";
 
 export const jahitCardsKeys = { all: ["jahit-cards"] };
 export const karyawanJahitKeys = { all: ["karyawan-jahit"] };
 export const doneJahitCardsKeys = {
-  filtered: (filter) => ["jahit-cards-done", filter],
+  filtered: (filter: DoneJahitCardsFilter) => ["jahit-cards-done", filter],
 };
 
 export function useJahitCardsQuery() {
   return useQuery({ queryKey: jahitCardsKeys.all, queryFn: fetchJahitCards });
 }
 
-export function useDoneJahitCardsQuery(filter, enabled) {
+export function useDoneJahitCardsQuery(filter: DoneJahitCardsFilter, enabled: boolean) {
   return useQuery({
     queryKey: doneJahitCardsKeys.filtered(filter),
     queryFn: () => fetchDoneJahitCards(filter),

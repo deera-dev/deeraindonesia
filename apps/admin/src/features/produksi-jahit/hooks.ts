@@ -9,20 +9,21 @@ import {
   useSetTukangPotongForBatchMutation,
   useUnassignCardMutation,
 } from "./queries";
+import type { DoneJahitCardsFilter } from "./schema";
 
 export function useJahitCards() {
   const { data, isLoading } = useJahitCardsQuery();
   return { cards: data ?? [], loading: isLoading };
 }
 
-export function useDoneJahitCards(filter, enabled) {
+export function useDoneJahitCards(filter: DoneJahitCardsFilter, enabled: boolean) {
   const { data, isLoading } = useDoneJahitCardsQuery(filter, enabled);
   return { cards: data ?? [], loading: isLoading };
 }
 
 export function useMarkCardDone() {
   const { mutateAsync } = useMarkCardDoneMutation();
-  return (params) => mutateAsync(params);
+  return (params: Parameters<typeof mutateAsync>[0]) => mutateAsync(params);
 }
 
 export function useKaryawanJahit() {
@@ -32,7 +33,10 @@ export function useKaryawanJahit() {
 
 export function useReceiveCard() {
   const { mutateAsync, isPending } = useReceiveCardMutation();
-  return { receive: (params) => mutateAsync(params), receiving: isPending };
+  return {
+    receive: (params: Parameters<typeof mutateAsync>[0]) => mutateAsync(params),
+    receiving: isPending,
+  };
 }
 
 export function useLookupJahitCard() {
@@ -42,15 +46,21 @@ export function useLookupJahitCard() {
 
 export function useUnassignCard() {
   const { mutateAsync } = useUnassignCardMutation();
-  return (params) => mutateAsync(params);
+  return (params: Parameters<typeof mutateAsync>[0]) => mutateAsync(params);
 }
 
 export function useSetTukangPotongForBatch() {
   const { mutateAsync, isPending } = useSetTukangPotongForBatchMutation();
-  return { setTukangPotong: (params) => mutateAsync(params), setting: isPending };
+  return {
+    setTukangPotong: (params: Parameters<typeof mutateAsync>[0]) => mutateAsync(params),
+    setting: isPending,
+  };
 }
 
 export function useMarkCardsDone() {
   const { mutateAsync, isPending } = useMarkCardsDoneMutation();
-  return { markCardsDone: (params) => mutateAsync(params), marking: isPending };
+  return {
+    markCardsDone: (params: Parameters<typeof mutateAsync>[0]) => mutateAsync(params),
+    marking: isPending,
+  };
 }

@@ -1,6 +1,13 @@
 import { THEME } from "@deera/shared/lib/themeColors";
+import type { HistoryEntry } from "./schema";
 
-export const ACTION_META = {
+export interface ActionMeta {
+  label: string;
+  color: string;
+  badgeCls: string;
+}
+
+export const ACTION_META: Record<string, ActionMeta> = {
   tambah: {
     label: "Tambah Produk",
     color: THEME.success,
@@ -201,7 +208,7 @@ export const ACTION_META = {
   },
 };
 
-export function getMeta(action) {
+export function getMeta(action: string): ActionMeta {
   return (
     ACTION_META[action] ?? {
       label: action,
@@ -211,35 +218,35 @@ export function getMeta(action) {
   );
 }
 
-export function presetToDates(preset) {
+export function presetToDates(preset: string): { dateFrom: string | null; dateTo: string | null } {
   const now = new Date();
-  const today = now.toISOString().split("T")[0];
+  const today = now.toISOString().split("T")[0]!;
   if (preset === "today") return { dateFrom: today, dateTo: today };
   if (preset === "week") {
     const d = new Date(now);
     d.setDate(d.getDate() - 6);
-    return { dateFrom: d.toISOString().split("T")[0], dateTo: today };
+    return { dateFrom: d.toISOString().split("T")[0]!, dateTo: today };
   }
   if (preset === "month") {
     const d = new Date(now);
     d.setDate(d.getDate() - 29);
-    return { dateFrom: d.toISOString().split("T")[0], dateTo: today };
+    return { dateFrom: d.toISOString().split("T")[0]!, dateTo: today };
   }
   return { dateFrom: null, dateTo: null };
 }
 
-export function formatTime(iso) {
+export function formatTime(iso: string | null | undefined): string {
   if (!iso) return "";
   return new Date(iso).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 }
 
-export function formatGroupDate(iso) {
+export function formatGroupDate(iso: string | null | undefined): string {
   if (!iso) return "";
   const d = new Date(iso);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const itemDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const diff = (today - itemDay) / 86400000;
+  const diff = (today.getTime() - itemDay.getTime()) / 86400000;
   if (diff === 0) return "Hari Ini";
   if (diff === 1) return "Kemarin";
   return d.toLocaleDateString("id-ID", {
@@ -250,16 +257,22 @@ export function formatGroupDate(iso) {
   });
 }
 
-export function groupByDate(items) {
-  const groups = [];
-  let lastKey = null;
+export interface HistoryGroup {
+  key: string;
+  label: string;
+  items: HistoryEntry[];
+}
+
+export function groupByDate(items: HistoryEntry[]): HistoryGroup[] {
+  const groups: HistoryGroup[] = [];
+  let lastKey: string | null = null;
   for (const item of items) {
     const key = new Date(item.changed_at).toLocaleDateString("id-ID");
     if (key !== lastKey) {
       groups.push({ key, label: formatGroupDate(item.changed_at), items: [] });
       lastKey = key;
     }
-    groups[groups.length - 1].items.push(item);
+    groups[groups.length - 1]!.items.push(item);
   }
   return groups;
 }
@@ -274,7 +287,7 @@ const SKIP_KEYS = new Set([
   "video",
   "foto",
 ]);
-const KEY_LABEL = {
+const KEY_LABEL: Record<string, string> = {
   nama: "Nama",
   bahan: "Bahan",
   hpp: "HPP",
@@ -289,7 +302,7 @@ const KEY_LABEL = {
   notes: "Catatan",
 };
 
-function fmtVal(v) {
+function fmtVal(v: unknown): string {
   if (v == null || v === "") return "kosong";
   if (Array.isArray(v)) return `${v.length} item`;
   if (typeof v === "object") return "diubah";
@@ -298,10 +311,11 @@ function fmtVal(v) {
   return s.length > 24 ? `${s.slice(0, 24)}…` : s;
 }
 
-export function summarizeHistory(item) {
+export function summarizeHistory(item: HistoryEntry | null | undefined): string {
   const before = item?.before_snapshot;
   const after = item?.snapshot;
-  const isObj = (o) => o && typeof o === "object" && !Array.isArray(o);
+  const isObj = (o: unknown): o is Record<string, unknown> =>
+    !!o && typeof o === "object" && !Array.isArray(o);
 
   if (isObj(before) && isObj(after)) {
     const keys = Object.keys(after).filter(
@@ -319,13 +333,16 @@ export function summarizeHistory(item) {
   }
 
   if (isObj(after)) {
-    const parts = [];
+    const parts: string[] = [];
     const no = after.transfer_no ?? after.batch_no ?? after.nomor;
     if (no) parts.push(String(no));
     if (after.from_location && after.to_location)
       parts.push(`${after.from_location} → ${after.to_location}`);
     if (Array.isArray(after.items)) {
-      const qty = after.items.reduce((n, i) => n + (Number(i?.qty ?? i?.jumlah) || 0), 0);
+      const qty = after.items.reduce(
+        (n: number, i: Record<string, unknown>) => n + (Number(i?.qty ?? i?.jumlah) || 0),
+        0,
+      );
       parts.push(qty ? `${after.items.length} baris · ${qty} pcs` : `${after.items.length} item`);
     }
     if (after.total_kain) parts.push(`${after.total_kain} potong`);

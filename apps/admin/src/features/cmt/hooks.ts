@@ -19,27 +19,39 @@ export function useCmtJahitKirim() {
 
 export function useAvailablePotongan() {
   const { mutateAsync, isPending } = useAvailablePotonganMutation();
-  return { fetchPotongan: (kode) => mutateAsync(kode), fetching: isPending };
+  return {
+    fetchPotongan: (kode: string | null | undefined) => mutateAsync(kode),
+    fetching: isPending,
+  };
 }
 
 export function useCreateKirimCmtJahit() {
   const { mutateAsync, isPending } = useCreateKirimCmtJahitMutation();
-  return { createKirim: (params) => mutateAsync(params), creating: isPending };
+  return {
+    createKirim: (params: Parameters<typeof mutateAsync>[0]) => mutateAsync(params),
+    creating: isPending,
+  };
 }
 
 export function useSetorKirimCmtJahit() {
   const { mutateAsync, isPending } = useSetorKirimCmtJahitMutation();
-  return { setorKirim: (params) => mutateAsync(params), submitting: isPending };
+  return {
+    setorKirim: (params: Parameters<typeof mutateAsync>[0]) => mutateAsync(params),
+    submitting: isPending,
+  };
 }
 
 export function useBatalKirimCmtJahit() {
   const { mutateAsync } = useBatalKirimCmtJahitMutation();
-  return (params) => mutateAsync(params);
+  return (params: Parameters<typeof mutateAsync>[0]) => mutateAsync(params);
 }
 
 export function useUpdateHargaUpahKirim() {
   const { mutateAsync, isPending } = useUpdateHargaUpahKirimMutation();
-  return { updateHargaUpah: (params) => mutateAsync(params), saving: isPending };
+  return {
+    updateHargaUpah: (params: Parameters<typeof mutateAsync>[0]) => mutateAsync(params),
+    saving: isPending,
+  };
 }
 
 export function useCmtSetoranFull() {
@@ -49,7 +61,10 @@ export function useCmtSetoranFull() {
 
 export function useCreateSetoranFull() {
   const { mutateAsync, isPending } = useCreateSetoranFullMutation();
-  return { createSetoranFull: (params) => mutateAsync(params), creating: isPending };
+  return {
+    createSetoranFull: (params: Parameters<typeof mutateAsync>[0]) => mutateAsync(params),
+    creating: isPending,
+  };
 }
 
 export function useCmtFullKirim() {
@@ -59,10 +74,13 @@ export function useCmtFullKirim() {
 
 export function useCreateCmtFullKirim() {
   const { mutateAsync, isPending } = useCreateCmtFullKirimMutation();
-  return { createKirimBahan: (params) => mutateAsync(params), creating: isPending };
+  return {
+    createKirimBahan: (params: Parameters<typeof mutateAsync>[0]) => mutateAsync(params),
+    creating: isPending,
+  };
 }
 
 export function useDeleteCmtFullKirim() {
   const { mutateAsync } = useDeleteCmtFullKirimMutation();
-  return (id) => mutateAsync(id);
+  return (id: string) => mutateAsync(id);
 }

@@ -1,18 +1,26 @@
-export function newSetoranFullItem() {
+import type {
+  BahanKirimItem,
+  CardGroup,
+  CmtJahitKirimRow,
+  JahitCardAvailable,
+  KirimGroup,
+  KodeGroup,
+  SetoranFullItem,
+} from "./schema";
+
+export function newSetoranFullItem(): SetoranFullItem {
   return { size: "", warna: "", qty: "" };
 }
 
-export function newBahanItem() {
+export function newBahanItem(): BahanKirimItem {
   return { nama_bahan: "", kode_bahan: "", satuan: "yard", jumlah: "" };
 }
 
-// Gabungkan kartu buku potongan (jahit_cards) yang dipilih utk dikirim ke
-// CMT per kode+size+warna — beberapa kartu (misal dari 2 batch berbeda)
-// bisa punya kombinasi kode+size+warna yang sama, qty-nya dijumlah jadi
-// satu baris cmt_jahit_kirim, semua card id-nya ditautkan ke baris itu.
-export function groupCardsByKodeSizeWarna(cards) {
-  const order = [];
-  const byKey = {};
+export function groupCardsByKodeSizeWarna(
+  cards: JahitCardAvailable[] | null | undefined,
+): CardGroup[] {
+  const order: string[] = [];
+  const byKey: Record<string, CardGroup> = {};
   for (const c of cards ?? []) {
     const key = `${c.kode_produk}__${c.size}__${c.warna}`;
     if (!byKey[key]) {
@@ -26,19 +34,15 @@ export function groupCardsByKodeSizeWarna(cards) {
       };
       order.push(key);
     }
-    byKey[key].qty += Number(c.qty) || 0;
-    byKey[key].cardIds.push(c.id);
+    byKey[key]!.qty += Number(c.qty) || 0;
+    byKey[key]!.cardIds.push(c.id);
   }
-  return order.map((k) => byKey[k]);
+  return order.map((k) => byKey[k]!);
 }
 
-// Status satu baris kirim CMT Jahit: 'dikirim' (masih di vendor) ->
-// 'setor' (sudah balik, menunggu diserap Finishing) -> 'selesai' (sudah
-// nambah stok via rekonsiliasi Finishing) | 'batal'.
-// Satu kirim_no bisa punya baris dengan status campuran (misal diserap
-// Finishing satu-satu per kode) — urutan prioritas: masih ada yang
-// 'dikirim' > masih ada yang 'setor' > semua 'selesai' > semua 'batal'.
-export function kirimGroupStatus(rows) {
+export function kirimGroupStatus(
+  rows: CmtJahitKirimRow[] | null | undefined,
+): "dikirim" | "setor" | "selesai" | "batal" {
   if (!rows?.length) return "dikirim";
   if (rows.every((r) => r.status === "batal")) return "batal";
   if (rows.some((r) => r.status === "dikirim")) return "dikirim";
@@ -46,16 +50,16 @@ export function kirimGroupStatus(rows) {
   return "selesai";
 }
 
-export function statusLabel(status) {
+export function statusLabel(status: string | null | undefined): string {
   if (status === "setor") return "Sudah Setor — Menunggu Finishing";
   if (status === "selesai") return "Selesai";
   if (status === "batal") return "Dibatalkan";
   return "Dikirim ke Vendor";
 }
 
-export function groupKirimByNo(rows) {
-  const order = [];
-  const byNo = {};
+export function groupKirimByNo(rows: CmtJahitKirimRow[] | null | undefined): KirimGroup[] {
+  const order: string[] = [];
+  const byNo: Record<string, Omit<KirimGroup, "status" | "totalQtyKirim" | "totalQtySetor">> = {};
   for (const r of rows ?? []) {
     if (!byNo[r.kirim_no]) {
       byNo[r.kirim_no] = {
@@ -69,10 +73,10 @@ export function groupKirimByNo(rows) {
       };
       order.push(r.kirim_no);
     }
-    byNo[r.kirim_no].rows.push(r);
+    byNo[r.kirim_no]!.rows.push(r);
   }
   return order.map((no) => {
-    const g = byNo[no];
+    const g = byNo[no]!;
     return {
       ...g,
       status: kirimGroupStatus(g.rows),
@@ -82,26 +86,22 @@ export function groupKirimByNo(rows) {
   });
 }
 
-export function calcTotalUpahSetoranFull(items, hargaUpah) {
+export function calcTotalUpahSetoranFull(
+  items: SetoranFullItem[] | null | undefined,
+  hargaUpah: number | string | null | undefined,
+): number {
   const totalQty = (items ?? []).reduce((s, it) => s + (Number(it.qty) || 0), 0);
   return totalQty * (Number(hargaUpah) || 0);
 }
 
-// Perkiraan total modal yang harus dibayar ke vendor CMT Jahit utk satu
-// kirim — admin: "buat juga perkiraan total modal yang harus dikeluarkan
-// buat bayar cmt nya". Pakai qty_setor kalau baris itu sudah disetor
-// (angka betulan yang balik), fallback ke qty kirim kalau belum (estimasi
-// dari rencana kirim).
-export function calcTotalUpahKirim(group) {
+export function calcTotalUpahKirim(group: KirimGroup | null | undefined): number {
   const totalQty = (group?.rows ?? []).reduce((s, r) => s + (Number(r.qty_setor ?? r.qty) || 0), 0);
   return totalQty * (Number(group?.hargaUpah) || 0);
 }
 
-// Kelompokkan baris kirim CMT Jahit per kode produk utk tabel Surat Jalan
-// (SuratJalanCmtModal) — satu kirim bisa berisi beberapa kode sekaligus.
-export function groupRowsByKode(rows) {
-  const order = [];
-  const byKode = {};
+export function groupRowsByKode(rows: CmtJahitKirimRow[] | null | undefined): KodeGroup[] {
+  const order: string[] = [];
+  const byKode: Record<string, KodeGroup> = {};
   for (const r of rows ?? []) {
     if (!byKode[r.kode_produk]) {
       byKode[r.kode_produk] = {
@@ -112,8 +112,8 @@ export function groupRowsByKode(rows) {
       };
       order.push(r.kode_produk);
     }
-    byKode[r.kode_produk].rows.push(r);
-    byKode[r.kode_produk].totalQty += Number(r.qty) || 0;
+    byKode[r.kode_produk]!.rows.push(r);
+    byKode[r.kode_produk]!.totalQty += Number(r.qty) || 0;
   }
-  return order.map((k) => byKode[k]);
+  return order.map((k) => byKode[k]!);
 }

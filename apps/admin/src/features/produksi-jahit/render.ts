@@ -2,8 +2,8 @@ import qrcode from "qrcode-generator";
 
 const LOGO_URL = "/kartu-jahit-logo-qr.svg";
 
-let logoPromise = null;
-function loadLogo() {
+let logoPromise: Promise<HTMLImageElement | null> | null = null;
+function loadLogo(): Promise<HTMLImageElement | null> {
   if (!logoPromise) {
     logoPromise = new Promise((resolve) => {
       const img = new Image();
@@ -16,12 +16,14 @@ function loadLogo() {
   return logoPromise;
 }
 
-const odd = (v) => (Math.round(v) % 2 === 0 ? Math.round(v) + 1 : Math.round(v));
+const odd = (v: number) => (Math.round(v) % 2 === 0 ? Math.round(v) + 1 : Math.round(v));
 
-export async function drawQr(canvas, text, sizePx = 240) {
+export async function drawQr(
+  canvas: HTMLCanvasElement,
+  text: string,
+  sizePx = 240,
+): Promise<CanvasRenderingContext2D> {
   const logo = await loadLogo();
-  // Error correction level H (~30%) supaya QR tetap terbaca walau area
-  // tengah ditutup logo Deera, sama seperti barcode produk di cetak-label.
   const qr = qrcode(0, "H");
   qr.addData(text);
   qr.make();
@@ -30,7 +32,7 @@ export async function drawQr(canvas, text, sizePx = 240) {
   const size = mod * n;
   canvas.width = size;
   canvas.height = size;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d")!;
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, size, size);
 
@@ -72,7 +74,7 @@ export async function drawQr(canvas, text, sizePx = 240) {
   return ctx;
 }
 
-export async function qrDataUrl(text, sizePx = 240) {
+export async function qrDataUrl(text: string, sizePx = 240): Promise<string> {
   const canvas = document.createElement("canvas");
   await drawQr(canvas, text, sizePx);
   return canvas.toDataURL("image/png");

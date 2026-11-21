@@ -1,10 +1,11 @@
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
+import type { BatchSizeInput, DoneJahitCardsFilter, JahitCard, KaryawanJahit } from "./schema";
 
 const JAHIT_CARD_SELECT =
   "*, produksi_batch(tanggal_produksi, upah_jahit, tukang_potong_id, tukang_potong_nama)";
 
-export async function fetchJahitCards() {
+export async function fetchJahitCards(): Promise<JahitCard[]> {
   const { data, error } = await supabase
     .from("jahit_cards")
     .select(JAHIT_CARD_SELECT)
@@ -14,7 +15,11 @@ export async function fetchJahitCards() {
   return data ?? [];
 }
 
-export async function fetchDoneJahitCards({ dateFrom = null, dateTo = null, search = "" } = {}) {
+export async function fetchDoneJahitCards({
+  dateFrom = null,
+  dateTo = null,
+  search = "",
+}: DoneJahitCardsFilter = {}): Promise<JahitCard[]> {
   let q = supabase
     .from("jahit_cards")
     .select(JAHIT_CARD_SELECT)
@@ -30,7 +35,7 @@ export async function fetchDoneJahitCards({ dateFrom = null, dateTo = null, sear
   return data ?? [];
 }
 
-export async function fetchKaryawanJahit() {
+export async function fetchKaryawanJahit(): Promise<KaryawanJahit[]> {
   const { data, error } = await supabase
     .from("karyawan")
     .select("id, nama")
@@ -41,10 +46,15 @@ export async function fetchKaryawanJahit() {
   return data ?? [];
 }
 
-// Dipanggil dari PrintKartuModal kalau T.Potong batch belum pernah diisi —
-// admin set langsung di situ saat mau cetak, supaya kartu berikutnya dari
-// batch yang sama otomatis sudah terisi juga (tidak ditanya ulang tiap cetak).
-export async function setTukangPotongForBatch({ batchId, tukangPotongId, tukangPotongNama }) {
+export async function setTukangPotongForBatch({
+  batchId,
+  tukangPotongId,
+  tukangPotongNama,
+}: {
+  batchId: string;
+  tukangPotongId: string;
+  tukangPotongNama: string;
+}): Promise<void> {
   const { error } = await supabase
     .from("produksi_batch")
     .update({ tukang_potong_id: tukangPotongId, tukang_potong_nama: tukangPotongNama })
@@ -52,7 +62,17 @@ export async function setTukangPotongForBatch({ batchId, tukangPotongId, tukangP
   if (error) throw error;
 }
 
-export async function createJahitCardsForBatch({ batchId, kode, nama, sizes }) {
+export async function createJahitCardsForBatch({
+  batchId,
+  kode,
+  nama,
+  sizes,
+}: {
+  batchId: string;
+  kode: string;
+  nama: string;
+  sizes: BatchSizeInput[];
+}): Promise<JahitCard[]> {
   if (!batchId || !sizes?.length) return [];
 
   const { data: existing, error: fetchErr } = await supabase
@@ -62,7 +82,14 @@ export async function createJahitCardsForBatch({ batchId, kode, nama, sizes }) {
   if (fetchErr) throw fetchErr;
 
   const have = new Set((existing ?? []).map((r) => `${r.size}__${r.warna}`));
-  const rows = [];
+  const rows: Array<{
+    batch_id: string;
+    kode_produk: string;
+    nama_produk: string;
+    size: string;
+    warna: string;
+    qty: number;
+  }> = [];
   for (const sz of sizes) {
     for (const w of sz.warna ?? []) {
       const key = `${sz.size}__${w.warna}`;
@@ -84,7 +111,15 @@ export async function createJahitCardsForBatch({ batchId, kode, nama, sizes }) {
   return inserted ?? rows;
 }
 
-export async function renameJahitCardsForBatch({ batchId, kode, nama }) {
+export async function renameJahitCardsForBatch({
+  batchId,
+  kode,
+  nama,
+}: {
+  batchId: string;
+  kode: string;
+  nama: string;
+}): Promise<void> {
   if (!batchId) return;
   const { error } = await supabase
     .from("jahit_cards")
@@ -93,7 +128,7 @@ export async function renameJahitCardsForBatch({ batchId, kode, nama }) {
   if (error) throw error;
 }
 
-export async function fetchJahitCardById(id) {
+export async function fetchJahitCardById(id: string): Promise<JahitCard | null> {
   const { data, error } = await supabase
     .from("jahit_cards")
     .select(JAHIT_CARD_SELECT)
@@ -103,12 +138,21 @@ export async function fetchJahitCardById(id) {
   return data ?? null;
 }
 
-// Scan & Terima Setoran: satu aksi yang menggabungkan assign penjahit +
-// pindah ke Ready Finishing sekaligus, dipicu begitu admin scan barcode
-// kartu fisik yang disetor penjahit. Jumlah bisa dikoreksi di modal kalau
-// hasil setoran kurang/lebih dari rencana — qty di kartu ditimpa dengan
-// angka final ini (jadi acuan Finishing & Gajian setelahnya).
-export async function receiveCard({ cardId, karyawanId, karyawanNama, qty, kode, nama }) {
+export async function receiveCard({
+  cardId,
+  karyawanId,
+  karyawanNama,
+  qty,
+  kode,
+  nama,
+}: {
+  cardId: string;
+  karyawanId: string;
+  karyawanNama: string;
+  qty: number;
+  kode: string;
+  nama: string;
+}): Promise<void> {
   const now = new Date().toISOString();
   const { error } = await supabase
     .from("jahit_cards")
@@ -134,9 +178,15 @@ export async function receiveCard({ cardId, karyawanId, karyawanNama, qty, kode,
   }).catch(() => {});
 }
 
-// "Batalkan Terima": membalikkan kartu yang sudah di-receiveCard kembali
-// ke Belum Diterima, kalau admin salah scan atau salah input.
-export async function unassignCard({ cardId, kode, nama }) {
+export async function unassignCard({
+  cardId,
+  kode,
+  nama,
+}: {
+  cardId: string;
+  kode: string;
+  nama: string;
+}): Promise<void> {
   const { error } = await supabase
     .from("jahit_cards")
     .update({
@@ -160,7 +210,15 @@ export async function unassignCard({ cardId, kode, nama }) {
   }).catch(() => {});
 }
 
-export async function markCardDone({ cardId, kode, nama }) {
+export async function markCardDone({
+  cardId,
+  kode,
+  nama,
+}: {
+  cardId: string;
+  kode: string;
+  nama: string;
+}): Promise<void> {
   const now = new Date().toISOString();
   const { error } = await supabase
     .from("jahit_cards")
@@ -177,7 +235,15 @@ export async function markCardDone({ cardId, kode, nama }) {
   }).catch(() => {});
 }
 
-export async function markCardsDone({ cardIds, kode, nama }) {
+export async function markCardsDone({
+  cardIds,
+  kode,
+  nama,
+}: {
+  cardIds: string[];
+  kode: string;
+  nama: string;
+}): Promise<void> {
   if (!cardIds?.length) return;
   const now = new Date().toISOString();
   const { error } = await supabase

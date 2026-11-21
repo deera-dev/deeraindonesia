@@ -1,4 +1,5 @@
 import { supabase } from "@deera/shared/lib/supabase";
+import type { HistoryEntry, HistoryFilter, LogHistoryInput } from "./schema";
 
 export async function logHistory({
   action,
@@ -7,7 +8,7 @@ export async function logHistory({
   nama,
   snapshot,
   before = null,
-}) {
+}: LogHistoryInput): Promise<void> {
   try {
     const { error } = await supabase.rpc("log_history", {
       p_action: action,
@@ -23,7 +24,11 @@ export async function logHistory({
   }
 }
 
-export async function fetchHistory({ dateFrom = null, dateTo = null, category = "all" } = {}) {
+export async function fetchHistory({
+  dateFrom = null,
+  dateTo = null,
+  category = "all",
+}: HistoryFilter = {}): Promise<HistoryEntry[]> {
   let q = supabase
     .from("product_history")
     .select("*")
@@ -41,7 +46,7 @@ export async function fetchHistory({ dateFrom = null, dateTo = null, category = 
   return data ?? [];
 }
 
-export async function fetchHistoryByKode(kode) {
+export async function fetchHistoryByKode(kode: string | null | undefined): Promise<HistoryEntry[]> {
   if (!kode) return [];
   const { data, error } = await supabase
     .from("product_history")
@@ -52,7 +57,7 @@ export async function fetchHistoryByKode(kode) {
   return data ?? [];
 }
 
-export async function deleteHistoryEntry(id) {
+export async function deleteHistoryEntry(id: string): Promise<void> {
   const { error } = await supabase.from("product_history").delete().eq("id", id);
   if (error) throw error;
 }
