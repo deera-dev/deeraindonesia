@@ -1,15 +1,16 @@
 import { supabase } from "@deera/shared/lib/supabase";
 import { markTokoVisitedViaTrip } from "../ngorder/api";
+import type { CreateTripInput, Trip, TripOpenRow, TripToko, UpdateTripPatch } from "./schema";
 import { toggleTokoVisited, validateTrip } from "./utils";
 
 const TABLE = "ngorder_trip";
 
-const cleanList = (arr) => [
-  ...new Set((arr ?? []).map((s) => String(s ?? "").trim()).filter(Boolean)),
+const cleanList = (arr: unknown): string[] => [
+  ...new Set((Array.isArray(arr) ? arr : []).map((s) => String(s ?? "").trim()).filter(Boolean)),
 ];
-const cleanMoney = (n) => Math.max(0, Math.round(Number(n) || 0));
+const cleanMoney = (n: unknown): number => Math.max(0, Math.round(Number(n) || 0));
 
-const NORMALIZERS = {
+const NORMALIZERS: Record<string, (v: unknown) => unknown> = {
   nama: (v) => String(v ?? "").trim(),
   tanggal_mulai: (v) => v,
   tanggal_selesai: (v) => v,
@@ -20,16 +21,16 @@ const NORMALIZERS = {
   sampel: (v) => v ?? [],
   toko: (v) => v ?? [],
   biaya: (v) => v ?? [],
-  catatan: (v) => (v ?? "").trim() || null,
+  catatan: (v) => String(v ?? "").trim() || null,
 };
 
-function normalize(input) {
-  const out = {};
+function normalize(input: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
   for (const [key, fn] of Object.entries(NORMALIZERS)) if (key in input) out[key] = fn(input[key]);
   return out;
 }
 
-export async function fetchTrips() {
+export async function fetchTrips(): Promise<Trip[]> {
   const { data, error } = await supabase
     .from(TABLE)
     .select("*")
@@ -38,13 +39,10 @@ export async function fetchTrips() {
   return data ?? [];
 }
 
-// Insert tunggal, sudah atomik dari sananya — cuma identitas yang
-// diperbaiki (created_by_email dulu dari objek `user` client, sekarang
-// dari auth.uid()) — lihat supabase/migrations/20261120_ngorder_crud.sql.
-export async function createTrip(input) {
+export async function createTrip(input: CreateTripInput): Promise<Trip> {
   const problem = validateTrip(input);
   if (problem) throw new Error(problem);
-  const payload = normalize(input);
+  const payload = normalize(input as unknown as Record<string, unknown>);
   const { data, error } = await supabase.rpc("create_ngorder_trip", {
     p_nama: payload.nama,
     p_tanggal_mulai: payload.tanggal_mulai,
@@ -59,54 +57,51 @@ export async function createTrip(input) {
   return data;
 }
 
-export async function updateTrip(id, patch) {
+export async function updateTrip(id: string, patch: UpdateTripPatch): Promise<Trip> {
   if (!id) throw new Error("id jadwal wajib diisi.");
-  const payload = { ...normalize(patch), updated_at: new Date().toISOString() };
+  const payload = {
+    ...normalize(patch as unknown as Record<string, unknown>),
+    updated_at: new Date().toISOString(),
+  };
   if ("nama" in payload && !payload.nama) throw new Error("Nama jadwal wajib diisi.");
   const { data, error } = await supabase.from(TABLE).update(payload).eq("id", id).select().single();
   if (error) throw error;
   return data;
 }
 
-export async function deleteTrip(id) {
+export async function deleteTrip(id: string): Promise<void> {
   if (!id) throw new Error("id jadwal wajib diisi.");
   const { error } = await supabase.from(TABLE).delete().eq("id", id);
   if (error) throw error;
 }
 
-export async function fetchTripOpens(tripId) {
+export async function fetchTripOpens(tripId: string | null | undefined): Promise<TripOpenRow[]> {
   if (!tripId) return [];
   const { data, error } = await supabase.rpc("get_ngorder_trip_opens", { p_trip_id: tripId });
   if (error) throw error;
   return data ?? [];
 }
 
-// Centang "dikunjungi" di checklist trip -> ikut tercatat sbg kunjungan
-// selesai di toko_kunjungan (tab Peta, fitur ngorder), biar gak perlu
-// dicatat 2x. Uncheck TIDAK membatalkan catatan kunjungan itu (sengaja --
-// lihat §2 docs/reports/audit-report-m4-admin.md, hindari ngilangin
-// catatan kunjungan nyata cuma gara-gara klik salah di checklist).
-export async function toggleTripTokoVisited(tripId, toko, tokoId) {
+export async function toggleTripTokoVisited(
+  tripId: string,
+  toko: TripToko[],
+  tokoId: string,
+): Promise<Trip> {
   const next = toggleTokoVisited(toko, tokoId);
   const trip = await updateTrip(tripId, { toko: next });
 
   const justVisited = next.find((t) => t.toko_id === tokoId)?.dikunjungi;
   if (justVisited) {
-    markTokoVisitedViaTrip(tokoId).catch((err) =>
+    markTokoVisitedViaTrip(tokoId).catch((err: unknown) =>
       console.warn("markTokoVisitedViaTrip error:", err),
     );
   }
   return trip;
 }
 
-// Sinkronisasi dgn toko_kunjungan (fitur ngorder, tab Peta) — begitu toko
-// ditandai "selesai" di sana, checklist di trip manapun yang masih aktif
-// (rencana/berjalan) dan belum centang toko itu ikut tercentang otomatis.
-// Trip yang sudah selesai/batal TIDAK disentuh (laporan histori gak
-// berubah sendiri). Dipanggil dari ngorder/api.js (updateKunjungan).
-// Dulu loop update per trip tanpa transaction — sekarang 1 UPDATE
-// statement atomik (bukan loop sama sekali, lihat migration).
-export async function markTokoVisitedInActiveTrips(tokoId) {
+export async function markTokoVisitedInActiveTrips(
+  tokoId: string | null | undefined,
+): Promise<void> {
   if (!tokoId) return;
   const { error } = await supabase.rpc("mark_toko_visited_in_active_trips", {
     p_toko_id: tokoId,
