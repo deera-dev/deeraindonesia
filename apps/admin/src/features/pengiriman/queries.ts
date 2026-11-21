@@ -5,13 +5,14 @@ import {
   fetchPengiriman,
   updatePengiriman as updatePengirimanApi,
 } from "./api";
+import type { PengirimanFormPayload } from "./schema";
 
 export const pengirimanKeys = {
   all: ["pengiriman"],
-  list: (from, to) => ["pengiriman", from, to],
+  list: (from: string | null, to: string | null) => ["pengiriman", from, to],
 };
 
-export function usePengirimanQuery(dateFrom = null, dateTo = null) {
+export function usePengirimanQuery(dateFrom: string | null = null, dateTo: string | null = null) {
   return useQuery({
     queryKey: pengirimanKeys.list(dateFrom, dateTo),
     queryFn: () => fetchPengiriman(dateFrom, dateTo),
@@ -21,7 +22,7 @@ export function usePengirimanQuery(dateFrom = null, dateTo = null) {
 export function useCreatePengirimanMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload) => createPengirimanApi(payload),
+    mutationFn: (payload: PengirimanFormPayload) => createPengirimanApi(payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: pengirimanKeys.all }),
   });
 }
@@ -29,7 +30,13 @@ export function useCreatePengirimanMutation() {
 export function useUpdatePengirimanMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ pengiriman, payload }) => updatePengirimanApi(pengiriman, payload),
+    mutationFn: ({
+      pengiriman,
+      payload,
+    }: {
+      pengiriman: { id: string };
+      payload: PengirimanFormPayload;
+    }) => updatePengirimanApi(pengiriman, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: pengirimanKeys.all }),
   });
 }
@@ -37,7 +44,7 @@ export function useUpdatePengirimanMutation() {
 export function useDeletePengirimanMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (pengiriman) => deletePengirimanApi(pengiriman),
+    mutationFn: (pengiriman: { id: string }) => deletePengirimanApi(pengiriman),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: pengirimanKeys.all }),
   });
 }

@@ -1,6 +1,10 @@
 import { supabase } from "@deera/shared/lib/supabase";
+import type { Pengiriman, PengirimanFormPayload } from "./schema";
 
-export async function fetchPengiriman(dateFrom = null, dateTo = null) {
+export async function fetchPengiriman(
+  dateFrom: string | null = null,
+  dateTo: string | null = null,
+): Promise<Pengiriman[]> {
   let q = supabase.from("pengiriman").select("*").order("created_at", { ascending: false });
 
   if (dateFrom) q = q.gte("tanggal", dateFrom);
@@ -21,7 +25,7 @@ export async function createPengiriman({
   isiKarung,
   namaEkspedisi,
   namaPengirim,
-}) {
+}: PengirimanFormPayload): Promise<Pengiriman> {
   const { data, error } = await supabase.rpc("create_pengiriman", {
     p_tanggal: tanggal,
     p_nama_penerima: namaPenerima,
@@ -37,7 +41,10 @@ export async function createPengiriman({
   return data;
 }
 
-export async function updatePengiriman(pengiriman, payload) {
+export async function updatePengiriman(
+  pengiriman: { id: string },
+  payload: PengirimanFormPayload,
+): Promise<Pengiriman> {
   const {
     tanggal,
     namaPenerima,
@@ -66,7 +73,7 @@ export async function updatePengiriman(pengiriman, payload) {
   return data;
 }
 
-export async function deletePengiriman(pengiriman) {
+export async function deletePengiriman(pengiriman: { id: string }): Promise<void> {
   const { error } = await supabase.from("pengiriman").delete().eq("id", pengiriman.id);
   if (error) throw error;
 }

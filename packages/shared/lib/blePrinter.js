@@ -43,6 +43,11 @@ export const FAST_DELAY_MS = 0;
 //    berapa banyak data "belum dikonfirmasi" yang bisa menumpuk di buffer
 //    chip sebelum di-flush paksa, tanpa bayar ongkos round-trip di SETIAP
 //    paket spt opsi 2, dan tanpa delay buatan spt opsi 3.
+/**
+ * @param {BluetoothRemoteGATTCharacteristic} characteristic
+ * @param {Uint8Array} data
+ * @param {{onProgress?: (fraction: number) => void, chunk?: number, delay?: number, forceResponse?: boolean, ackEvery?: number}} [options]
+ */
 export async function writeBleFast(
   characteristic,
   data,

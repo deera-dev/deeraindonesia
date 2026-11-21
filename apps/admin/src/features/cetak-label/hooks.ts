@@ -2,19 +2,20 @@ import { useMemo, useState } from "react";
 import { useProducedByKode } from "../produk/hooks";
 import { printLabels } from "./print";
 import { labelDataUrl } from "./render";
+import type { PrintProgress } from "./schema";
 import { buildLabelRows, clampCopies, totalCopies } from "./utils";
 
-export function useLabelPrint(kode) {
+export function useLabelPrint(kode: string) {
   const { producedBySize, isLoading } = useProducedByKode(kode);
   const base = useMemo(() => buildLabelRows(producedBySize), [producedBySize]);
-  const [edited, setEdited] = useState({});
+  const [edited, setEdited] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
-  const [progress, setProgress] = useState(null);
+  const [progress, setProgress] = useState<PrintProgress | null>(null);
   const [error, setError] = useState("");
 
   const rows = base.map((r) => ({ ...r, qty: edited[r.size] ?? r.qty }));
 
-  function setQty(size, raw) {
+  function setQty(size: string, raw: string | number) {
     setEdited((e) => ({ ...e, [size]: clampCopies(raw) }));
   }
 
@@ -28,8 +29,9 @@ export function useLabelPrint(kode) {
       );
       return true;
     } catch (err) {
-      if (err?.name === "NotFoundError") return false;
-      setError(err?.message || String(err));
+      const e = err as { name?: string; message?: string };
+      if (e?.name === "NotFoundError") return false;
+      setError(e?.message || String(err));
       return false;
     } finally {
       setBusy(false);

@@ -7,8 +7,8 @@ const FONT = "bold {size}px Arial, Helvetica, Roboto, sans-serif";
 const LOGO_URL = "/logo-label.svg";
 const LOGO_ASPECT = 4134 / 2824;
 
-let logoPromise = null;
-function loadLogo() {
+let logoPromise: Promise<HTMLImageElement | null> | null = null;
+function loadLogo(): Promise<HTMLImageElement | null> {
   if (!logoPromise) {
     logoPromise = new Promise((resolve) => {
       const img = new Image();
@@ -21,15 +21,18 @@ function loadLogo() {
   return logoPromise;
 }
 
-const fontAt = (size) => FONT.replace("{size}", size);
+const fontAt = (size: number) => FONT.replace("{size}", String(size));
 
-const odd = (v) => (Math.round(v) % 2 === 0 ? Math.round(v) + 1 : Math.round(v));
+const odd = (v: number) => (Math.round(v) % 2 === 0 ? Math.round(v) + 1 : Math.round(v));
 
-export async function drawLabel(canvas, { kode, size }) {
+export async function drawLabel(
+  canvas: HTMLCanvasElement,
+  { kode, size }: { kode: string; size: string },
+): Promise<CanvasRenderingContext2D> {
   const logo = await loadLogo();
   canvas.width = LABEL_W;
   canvas.height = LABEL_H;
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, LABEL_W, LABEL_H);
 
@@ -91,13 +94,25 @@ export async function drawLabel(canvas, { kode, size }) {
   return ctx;
 }
 
-export async function labelDataUrl({ kode, size }) {
+export async function labelDataUrl({
+  kode,
+  size,
+}: {
+  kode: string;
+  size: string;
+}): Promise<string> {
   const canvas = document.createElement("canvas");
   await drawLabel(canvas, { kode, size });
   return canvas.toDataURL("image/png");
 }
 
-export async function labelGray({ kode, size }) {
+export async function labelGray({
+  kode,
+  size,
+}: {
+  kode: string;
+  size: string;
+}): Promise<{ data: Uint8ClampedArray; w: number; h: number }> {
   const canvas = document.createElement("canvas");
   const ctx = await drawLabel(canvas, { kode, size });
   const { data } = ctx.getImageData(0, 0, LABEL_W, LABEL_H);

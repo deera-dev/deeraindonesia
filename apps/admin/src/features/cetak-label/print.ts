@@ -6,10 +6,14 @@ import {
 } from "@deera/shared/lib/blePrinter";
 import { grayToBitmap, rgbaToGray } from "@deera/shared/lib/tsplImage";
 import { labelGray } from "./render";
+import type { LabelItem, PrintProgress } from "./schema";
 import { buildLabelJob, concatJobs } from "./utils";
 
-export async function printLabels(items, { onProgress } = {}) {
-  if (!navigator.bluetooth) {
+export async function printLabels(
+  items: LabelItem[],
+  { onProgress }: { onProgress?: (progress: PrintProgress) => void } = {},
+): Promise<void> {
+  if (!(navigator as Navigator & { bluetooth?: unknown }).bluetooth) {
     throw new Error(
       "Web Bluetooth tidak tersedia. Pakai Chrome/Edge di HP/PC dengan Bluetooth aktif (HTTPS).",
     );
@@ -29,7 +33,7 @@ export async function printLabels(items, { onProgress } = {}) {
     onProgress?.({ stage: "connect", pct: 0 });
     const conn = await bleConnect();
     await writeBleFast(conn.char, bytes, {
-      onProgress: (p) => onProgress?.({ stage: "send", pct: Math.round(p * 100) }),
+      onProgress: (p: number) => onProgress?.({ stage: "send", pct: Math.round(p * 100) }),
     });
     scheduleIdleDisconnect();
   } catch (err) {
