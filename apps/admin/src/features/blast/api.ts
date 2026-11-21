@@ -1,7 +1,14 @@
 import { supabase } from "@deera/shared/lib/supabase";
 import { updateToko } from "../ngorder/api";
+import type {
+  BlastCampaign,
+  CampaignDetail,
+  CreateCampaignInput,
+  MessageTemplate,
+  TargetCounts,
+} from "./schema";
 
-export async function fetchCampaigns() {
+export async function fetchCampaigns(): Promise<BlastCampaign[]> {
   const { data, error } = await supabase
     .from("blast_campaign")
     .select("*")
@@ -10,19 +17,19 @@ export async function fetchCampaigns() {
   return data ?? [];
 }
 
-export async function fetchTargetCountsByCampaign() {
+export async function fetchTargetCountsByCampaign(): Promise<Record<string, TargetCounts>> {
   const { data, error } = await supabase.from("blast_target").select("campaign_id, status");
   if (error) throw error;
-  const map = {};
+  const map: Record<string, TargetCounts> = {};
   for (const row of data ?? []) {
     const c = (map[row.campaign_id] ??= { total: 0, terkirim: 0, dilewati: 0, pending: 0 });
     c.total++;
-    c[row.status] = (c[row.status] ?? 0) + 1;
+    c[row.status as keyof TargetCounts] = (c[row.status as keyof TargetCounts] ?? 0) + 1;
   }
   return map;
 }
 
-export async function fetchCampaignDetail(campaignId) {
+export async function fetchCampaignDetail(campaignId: string): Promise<CampaignDetail> {
   const [{ data: campaign, error: campaignErr }, { data: targets, error: targetsErr }] =
     await Promise.all([
       supabase.from("blast_campaign").select("*").eq("id", campaignId).single(),
@@ -37,7 +44,12 @@ export async function fetchCampaignDetail(campaignId) {
 // terpisah tanpa transaction, bisa nyisain campaign "hantu" (0 target)
 // kalau step kedua gagal. Sekarang 1 RPC atomik, identitas dari
 // auth.uid() — lihat supabase/migrations/20261120_blast_crud.sql.
-export async function createCampaign({ nama, productKodes, message, targets }) {
+export async function createCampaign({
+  nama,
+  productKodes,
+  message,
+  targets,
+}: CreateCampaignInput): Promise<BlastCampaign> {
   if (!nama?.trim()) throw new Error("Nama blast wajib diisi.");
   if (!targets?.length) throw new Error("Pilih minimal satu target.");
 
@@ -52,8 +64,8 @@ export async function createCampaign({ nama, productKodes, message, targets }) {
   return data;
 }
 
-export async function markTargetStatus(targetId, status) {
-  const payload = { status };
+export async function markTargetStatus(targetId: string, status: string) {
+  const payload: { status: string; sent_at?: string } = { status };
   if (status === "terkirim") payload.sent_at = new Date().toISOString();
   const { data, error } = await supabase
     .from("blast_target")
@@ -72,7 +84,7 @@ export async function markTargetStatus(targetId, status) {
   return data;
 }
 
-export async function markCampaignSelesai(campaignId) {
+export async function markCampaignSelesai(campaignId: string): Promise<void> {
   const { error } = await supabase
     .from("blast_campaign")
     .update({ status: "selesai" })
@@ -80,12 +92,12 @@ export async function markCampaignSelesai(campaignId) {
   if (error) throw error;
 }
 
-export async function deleteCampaign(campaignId) {
+export async function deleteCampaign(campaignId: string): Promise<void> {
   const { error } = await supabase.from("blast_campaign").delete().eq("id", campaignId);
   if (error) throw error;
 }
 
-export async function fetchMessageTemplates() {
+export async function fetchMessageTemplates(): Promise<MessageTemplate[]> {
   const { data, error } = await supabase
     .from("blast_message_template")
     .select("*")
@@ -94,7 +106,13 @@ export async function fetchMessageTemplates() {
   return data ?? [];
 }
 
-export async function createMessageTemplate({ nama, pesan }) {
+export async function createMessageTemplate({
+  nama,
+  pesan,
+}: {
+  nama: string;
+  pesan: string;
+}): Promise<MessageTemplate> {
   const namaTrim = (nama ?? "").trim();
   if (!namaTrim) throw new Error("Nama template wajib diisi.");
   if (!(pesan ?? "").trim()) throw new Error("Isi pesan template wajib diisi.");
@@ -107,9 +125,14 @@ export async function createMessageTemplate({ nama, pesan }) {
   return data;
 }
 
-export async function updateMessageTemplate(id, { nama, pesan }) {
+export async function updateMessageTemplate(
+  id: string,
+  { nama, pesan }: { nama?: string; pesan?: string },
+): Promise<MessageTemplate> {
   if (!id) throw new Error("id template wajib diisi.");
-  const payload = { updated_at: new Date().toISOString() };
+  const payload: { updated_at: string; nama?: string; pesan?: string } = {
+    updated_at: new Date().toISOString(),
+  };
   if (nama !== undefined) payload.nama = (nama ?? "").trim();
   if (pesan !== undefined) payload.pesan = pesan;
   const { data, error } = await supabase
@@ -122,7 +145,7 @@ export async function updateMessageTemplate(id, { nama, pesan }) {
   return data;
 }
 
-export async function deleteMessageTemplate(id) {
+export async function deleteMessageTemplate(id: string): Promise<void> {
   if (!id) throw new Error("id template wajib diisi.");
   const { error } = await supabase.from("blast_message_template").delete().eq("id", id);
   if (error) throw error;

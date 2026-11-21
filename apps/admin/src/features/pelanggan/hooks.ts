@@ -14,7 +14,7 @@ export function usePelangganList() {
   return { pelanggan: data ?? [], loading: isLoading, error };
 }
 
-export function useSalesByPelanggan(pelangganId) {
+export function useSalesByPelanggan(pelangganId: string) {
   const { data, isLoading, error } = useSalesByPelangganQuery(pelangganId);
   return { sales: data ?? [], loading: isLoading, error };
 }

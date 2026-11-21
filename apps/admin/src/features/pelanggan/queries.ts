@@ -10,7 +10,7 @@ import {
 
 export const pelangganKeys = {
   list: ["pelanggan", "list"],
-  salesByPelanggan: (id) => ["pelanggan", "sales", id],
+  salesByPelanggan: (id: string) => ["pelanggan", "sales", id],
   pins: ["pelanggan", "pins"],
   needingGeocode: ["pelanggan", "needing-geocode"],
   namaNeedingGeocode: ["pelanggan", "nama-needing-geocode"],
@@ -20,7 +20,7 @@ export function usePelangganListQuery() {
   return useQuery({ queryKey: pelangganKeys.list, queryFn: fetchPelangganList });
 }
 
-export function useSalesByPelangganQuery(pelangganId) {
+export function useSalesByPelangganQuery(pelangganId: string) {
   return useQuery({
     queryKey: pelangganKeys.salesByPelanggan(pelangganId),
     queryFn: () => fetchSalesByPelanggan(pelangganId),
@@ -49,7 +49,17 @@ export function usePelangganNamaNeedingGeocodeQuery() {
 export function useSetPelangganLocationMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, lat, lng, source }) => setPelangganLocation(id, { lat, lng, source }),
+    mutationFn: ({
+      id,
+      lat,
+      lng,
+      source,
+    }: {
+      id: string;
+      lat: number;
+      lng: number;
+      source: string;
+    }) => setPelangganLocation(id, { lat, lng, source }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: pelangganKeys.pins });
       qc.invalidateQueries({ queryKey: pelangganKeys.needingGeocode });

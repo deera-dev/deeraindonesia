@@ -1,8 +1,10 @@
-export function fmtRp(n) {
-  return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
+import type { Pelanggan, SaleItem } from "./schema";
+
+export function fmtRp(n: number | string | null | undefined): string {
+  return `Rp ${(Number(n) || 0).toLocaleString("id-ID")}`;
 }
 
-export function fmtDate(d) {
+export function fmtDate(d: string | null | undefined): string {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("id-ID", {
     day: "2-digit",
@@ -11,12 +13,22 @@ export function fmtDate(d) {
   });
 }
 
-export function groupSaleItems(items) {
+export interface GroupedSaleItem {
+  kode: string;
+  size: string | null;
+  harga: number;
+  hpp: number;
+  qty: number;
+  subtotal: number;
+  warnaBreakdown: Array<{ warna: string; qty: number }>;
+}
+
+export function groupSaleItems(items: SaleItem[] | null | undefined): GroupedSaleItem[] {
   return (items ?? []).map((item) => {
     const harga = Number(item.harga) || 0;
     const hpp = Number(item.hpp) || 0;
     let qty = 0;
-    let warnaBreakdown = [];
+    let warnaBreakdown: Array<{ warna: string; qty: number }> = [];
     if (Array.isArray(item.warna) && item.warna.length > 0) {
       warnaBreakdown = item.warna.map((w) => ({ warna: w.nama ?? "-", qty: Number(w.qty) || 0 }));
       qty = warnaBreakdown.reduce((sum, w) => sum + w.qty, 0);
@@ -35,7 +47,7 @@ export function groupSaleItems(items) {
   });
 }
 
-export function matchesSearch(pelanggan, query) {
+export function matchesSearch(pelanggan: Pelanggan, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   return (
@@ -44,7 +56,7 @@ export function matchesSearch(pelanggan, query) {
   );
 }
 
-export function extractDaerahQuery(alamat) {
+export function extractDaerahQuery(alamat: string | null | undefined): string | null {
   const parts = (alamat ?? "")
     .split(",")
     .map((s) => s.trim())
@@ -54,7 +66,7 @@ export function extractDaerahQuery(alamat) {
   return tail.length ? `${tail.join(", ")}, Indonesia` : null;
 }
 
-export function buildPelangganGeocodeQueries(alamat) {
+export function buildPelangganGeocodeQueries(alamat: string | null | undefined): string[] {
   const full = alamat ?? "";
   const coarse = extractDaerahQuery(full);
   const queries = [`${full}, Indonesia`, full];
@@ -62,7 +74,10 @@ export function buildPelangganGeocodeQueries(alamat) {
   return queries;
 }
 
-export function isApproxGeocodeMatch(alamat, matchedQuery) {
+export function isApproxGeocodeMatch(
+  alamat: string | null | undefined,
+  matchedQuery: string,
+): boolean {
   const coarse = extractDaerahQuery(alamat);
   return !!coarse && matchedQuery === coarse;
 }
@@ -138,7 +153,7 @@ const DAERAH_ALIASES = new Map(
   }),
 );
 
-export function extractDaerahFromNama(nama) {
+export function extractDaerahFromNama(nama: string | null | undefined): string | null {
   const raw = (nama ?? "").trim();
   if (!raw) return null;
   const tokens = raw
@@ -150,9 +165,9 @@ export function extractDaerahFromNama(nama) {
   if (tokens.length === 0) return null;
   if (tokens.length >= 2) {
     const twoWord = `${tokens[tokens.length - 2]} ${tokens[tokens.length - 1]}`;
-    if (DAERAH_ALIASES.has(twoWord)) return DAERAH_ALIASES.get(twoWord);
+    if (DAERAH_ALIASES.has(twoWord)) return DAERAH_ALIASES.get(twoWord)!;
   }
-  const lastWord = tokens[tokens.length - 1];
+  const lastWord = tokens[tokens.length - 1]!;
   return DAERAH_ALIASES.get(lastWord) ?? null;
 }
 
@@ -164,8 +179,8 @@ export const PELANGGAN_FILTERS = [
   { key: "tanpa-alamat", label: "Tanpa alamat" },
 ];
 
-export function applyPelangganFilter(list, mode = "semua") {
-  const has = (v) => !!String(v ?? "").trim();
+export function applyPelangganFilter(list: Pelanggan[], mode = "semua"): Pelanggan[] {
+  const has = (v: unknown) => !!String(v ?? "").trim();
   switch (mode) {
     case "ada-hp":
       return list.filter((p) => has(p.no_hp));

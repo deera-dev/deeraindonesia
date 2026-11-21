@@ -1,12 +1,13 @@
 import { supabase } from "@deera/shared/lib/supabase";
+import type { Pelanggan, Sale } from "./schema";
 
-export async function fetchPelangganList() {
+export async function fetchPelangganList(): Promise<Pelanggan[]> {
   const { data, error } = await supabase.from("pelanggan").select("*").order("nama");
   if (error) throw error;
   return data ?? [];
 }
 
-export async function fetchSalesByPelanggan(pelangganId) {
+export async function fetchSalesByPelanggan(pelangganId: string): Promise<Sale[]> {
   const { data, error } = await supabase
     .from("sales")
     .select(
@@ -19,7 +20,7 @@ export async function fetchSalesByPelanggan(pelangganId) {
   return data ?? [];
 }
 
-export async function searchPelanggan(query) {
+export async function searchPelanggan(query: string): Promise<Pelanggan[]> {
   const q = (query ?? "").trim();
   if (!q) return [];
   const { data, error } = await supabase
@@ -32,7 +33,7 @@ export async function searchPelanggan(query) {
   return data ?? [];
 }
 
-export async function findPelangganByNama(nama) {
+export async function findPelangganByNama(nama: string): Promise<Pelanggan | null> {
   const q = (nama ?? "").trim();
   if (!q) return null;
   const { data, error } = await supabase
@@ -45,7 +46,17 @@ export async function findPelangganByNama(nama) {
   return data ?? null;
 }
 
-export async function createPelanggan({ nama, no_hp, alamat, ekspedisi_biasa }) {
+export async function createPelanggan({
+  nama,
+  no_hp,
+  alamat,
+  ekspedisi_biasa,
+}: {
+  nama: string;
+  no_hp?: string | null;
+  alamat?: string | null;
+  ekspedisi_biasa?: string | null;
+}): Promise<Pelanggan> {
   const namaTrim = (nama ?? "").trim();
   if (!namaTrim) throw new Error("Nama pelanggan wajib diisi.");
   const payload = {
@@ -60,9 +71,12 @@ export async function createPelanggan({ nama, no_hp, alamat, ekspedisi_biasa }) 
   return data;
 }
 
-export async function updatePelangganInfo(id, patch) {
+export async function updatePelangganInfo(
+  id: string,
+  patch: { no_hp?: string | null; alamat?: string | null; ekspedisi_biasa?: string | null },
+): Promise<Pelanggan> {
   if (!id) throw new Error("id pelanggan wajib diisi.");
-  const payload = { updated_at: new Date().toISOString() };
+  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (patch.no_hp?.trim()) payload.no_hp = patch.no_hp.trim();
   if (patch.alamat?.trim()) payload.alamat = patch.alamat.trim();
   if (patch.ekspedisi_biasa?.trim()) payload.ekspedisi_biasa = patch.ekspedisi_biasa.trim();
@@ -76,7 +90,9 @@ export async function updatePelangganInfo(id, patch) {
   return data;
 }
 
-export async function fetchPelangganPins() {
+export async function fetchPelangganPins(): Promise<
+  Pick<Pelanggan, "id" | "nama" | "no_hp" | "alamat" | "lat" | "lng" | "geocode_source">[]
+> {
   const { data, error } = await supabase
     .from("pelanggan")
     .select("id, nama, no_hp, alamat, lat, lng, geocode_source")
@@ -86,7 +102,9 @@ export async function fetchPelangganPins() {
   return data ?? [];
 }
 
-export async function fetchPelangganNeedingGeocode() {
+export async function fetchPelangganNeedingGeocode(): Promise<
+  Pick<Pelanggan, "id" | "nama" | "alamat">[]
+> {
   const { data, error } = await supabase
     .from("pelanggan")
     .select("id, nama, alamat")
@@ -97,7 +115,9 @@ export async function fetchPelangganNeedingGeocode() {
   return data ?? [];
 }
 
-export async function fetchPelangganNamaNeedingGeocode() {
+export async function fetchPelangganNamaNeedingGeocode(): Promise<
+  Pick<Pelanggan, "id" | "nama">[]
+> {
   const { data, error } = await supabase
     .from("pelanggan")
     .select("id, nama")
@@ -107,7 +127,10 @@ export async function fetchPelangganNamaNeedingGeocode() {
   return data ?? [];
 }
 
-export async function setPelangganLocation(id, { lat, lng, source }) {
+export async function setPelangganLocation(
+  id: string,
+  { lat, lng, source }: { lat: number; lng: number; source: string },
+): Promise<Pelanggan> {
   if (!id) throw new Error("id pelanggan wajib diisi.");
   const { data, error } = await supabase
     .from("pelanggan")

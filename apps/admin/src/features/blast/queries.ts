@@ -13,12 +13,13 @@ import {
   markTargetStatus,
   updateMessageTemplate,
 } from "./api";
+import type { CreateCampaignInput } from "./schema";
 import { calcProgress } from "./utils";
 
 export const blastKeys = {
   campaigns: ["blast", "campaigns"],
   targetCounts: ["blast", "target-counts"],
-  detail: (id) => ["blast", "campaign", id],
+  detail: (id: string) => ["blast", "campaign", id],
   templates: ["blast", "templates"],
 };
 
@@ -30,7 +31,7 @@ export function useTargetCountsQuery() {
   return useQuery({ queryKey: blastKeys.targetCounts, queryFn: fetchTargetCountsByCampaign });
 }
 
-export function useCampaignDetailQuery(campaignId) {
+export function useCampaignDetailQuery(campaignId: string) {
   return useQuery({
     queryKey: blastKeys.detail(campaignId),
     queryFn: () => fetchCampaignDetail(campaignId),
@@ -41,7 +42,7 @@ export function useCampaignDetailQuery(campaignId) {
 export function useCreateCampaignMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: createCampaign,
+    mutationFn: (input: CreateCampaignInput) => createCampaign(input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: blastKeys.campaigns });
       qc.invalidateQueries({ queryKey: blastKeys.targetCounts });
@@ -49,10 +50,11 @@ export function useCreateCampaignMutation() {
   });
 }
 
-export function useMarkTargetMutation(campaignId) {
+export function useMarkTargetMutation(campaignId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ targetId, status }) => markTargetStatus(targetId, status),
+    mutationFn: ({ targetId, status }: { targetId: string; status: string }) =>
+      markTargetStatus(targetId, status),
     onSuccess: async () => {
       const detail = await qc.fetchQuery({
         queryKey: blastKeys.detail(campaignId),
@@ -96,7 +98,8 @@ export function useCreateMessageTemplateMutation() {
 export function useUpdateMessageTemplateMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, patch }) => updateMessageTemplate(id, patch),
+    mutationFn: ({ id, patch }: { id: string; patch: { nama?: string; pesan?: string } }) =>
+      updateMessageTemplate(id, patch),
     onSuccess: () => qc.invalidateQueries({ queryKey: blastKeys.templates }),
   });
 }
