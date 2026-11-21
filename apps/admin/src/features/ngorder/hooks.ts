@@ -11,6 +11,7 @@ import {
   useSetTokoLocationMutation,
   useUpdateKunjunganMutation,
 } from "./queries";
+import type { Actor, Toko, TokoKunjungan } from "./schema";
 import { clearLegacyRencana, readLegacyRencanaIds, usePetaFilterStore } from "./store";
 import { buildGeocodeQueries, mapStyles, tokoAutoGeocodeQueue } from "./utils";
 
@@ -58,7 +59,7 @@ export {
   tokoWithLocation,
 } from "./utils";
 
-export function useCurrentActor() {
+export function useCurrentActor(): Actor {
   const { user } = useAuth();
   return useMemo(
     () => ({
@@ -69,7 +70,8 @@ export function useCurrentActor() {
   );
 }
 
-const showError = (err) => toast.error(err?.message ?? "Gagal menyimpan rencana kunjungan.");
+const showError = (err: unknown) =>
+  toast.error((err as { message?: string })?.message ?? "Gagal menyimpan rencana kunjungan.");
 
 export function usePetaRencana() {
   const actor = useCurrentActor();
@@ -79,7 +81,7 @@ export function usePetaRencana() {
   const update = useUpdateKunjunganMutation();
   const byToko = useMemo(() => new Map(rows.map((r) => [r.toko_id, r])), [rows]);
 
-  function toggle(tokoId) {
+  function toggle(tokoId: string) {
     const row = byToko.get(tokoId);
     if (row?.id?.startsWith("tmp-")) return;
     if (row) remove.mutate([row], { onError: showError });
@@ -91,19 +93,25 @@ export function usePetaRencana() {
     byToko,
     isLoading,
     toggle,
-    addMany: (tokoIds) => add.mutate({ tokoIds, user: actor }, { onError: showError }),
-    remove: (row) => remove.mutate([row], { onError: showError }),
-    clear: (list = rows) =>
+    addMany: (tokoIds: string[]) => add.mutate({ tokoIds, user: actor }, { onError: showError }),
+    remove: (row: TokoKunjungan) => remove.mutate([row], { onError: showError }),
+    clear: (list: TokoKunjungan[] = rows) =>
       remove.mutate(
         list.filter((r) => !r.id?.startsWith("tmp-")),
         { onError: showError },
       ),
-    updateKunjungan: (row, patch) => update.mutateAsync({ row, patch }),
+    updateKunjungan: (
+      row: TokoKunjungan,
+      patch: Parameters<typeof update.mutateAsync>[0]["patch"],
+    ) => update.mutateAsync({ row, patch }),
     isUpdating: update.isPending,
   };
 }
 
-export function useMigrateLegacyRencana(tokoList, rencana) {
+export function useMigrateLegacyRencana(
+  tokoList: Toko[],
+  rencana: { isLoading: boolean; byToko: Map<string, TokoKunjungan> },
+) {
   const actor = useCurrentActor();
   const doneRef = useRef(false);
   const add = useAddRencanaMutation();
@@ -134,10 +142,10 @@ export function useMigrateLegacyRencana(tokoList, rencana) {
   }, [actor, tokoList, rencana.isLoading, rencana.byToko, add]);
 }
 
-export function useAutoGeocodeToko(tokoList, enabled) {
+export function useAutoGeocodeToko(tokoList: Toko[], enabled: boolean) {
   const setLocation = useSetTokoLocationMutation();
   const markFailed = useMarkGeocodeFailedMutation();
-  const [progress, setProgress] = useState(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const startedRef = useRef(false);
   const aliveRef = useRef(true);
   const latestRef = useRef({ setLocation, markFailed });
@@ -159,7 +167,7 @@ export function useAutoGeocodeToko(tokoList, enabled) {
       let ok = 0;
       setProgress({ done: 0, total: queue.length });
       for (let i = 0; i < queue.length && aliveRef.current; i++) {
-        const t = queue[i];
+        const t = queue[i]!;
         try {
           const loc = await geocodeAddressMulti(buildGeocodeQueries(t));
           if (loc) {
@@ -173,8 +181,8 @@ export function useAutoGeocodeToko(tokoList, enabled) {
           } else {
             await latestRef.current.markFailed.mutateAsync(t.id);
           }
-        } catch (err) {
-          if (err?.quotaExceeded) break;
+        } catch (err: unknown) {
+          if ((err as { quotaExceeded?: boolean })?.quotaExceeded) break;
         }
         if (aliveRef.current) setProgress({ done: i + 1, total: queue.length });
       }

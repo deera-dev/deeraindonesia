@@ -1,7 +1,18 @@
 import { supabase } from "@deera/shared/lib/supabase";
 import { markTokoVisitedInActiveTrips } from "../ngorder-jadwal/api";
+import type {
+  CreateKirimanInput,
+  CreateTokoInput,
+  GeocodeLocation,
+  ItemStatus,
+  KunjunganPatch,
+  SampelKirimanItem,
+  Toko,
+  TokoKunjungan,
+  TokoPatch,
+} from "./schema";
 
-export async function fetchTokoList() {
+export async function fetchTokoList(): Promise<Toko[]> {
   const { data, error } = await supabase.from("toko").select("*").order("nama");
   if (error) throw error;
   return data ?? [];
@@ -17,7 +28,7 @@ export async function createToko({
   media_sosial,
   status_approach,
   kesan,
-}) {
+}: CreateTokoInput): Promise<Toko> {
   const namaTrim = (nama ?? "").trim();
   if (!namaTrim) throw new Error("Nama toko wajib diisi.");
   const payload = {
@@ -37,9 +48,9 @@ export async function createToko({
   return data;
 }
 
-export async function updateToko(id, patch) {
+export async function updateToko(id: string, patch: TokoPatch): Promise<Toko> {
   if (!id) throw new Error("id toko wajib diisi.");
-  const payload = { updated_at: new Date().toISOString() };
+  const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if ("nama" in patch) payload.nama = (patch.nama ?? "").trim();
   if ("alamat" in patch) payload.alamat = patch.alamat?.trim() || null;
   if ("kontak_nama" in patch) payload.kontak_nama = patch.kontak_nama?.trim() || null;
@@ -62,13 +73,13 @@ export async function updateToko(id, patch) {
   return data;
 }
 
-export async function deleteToko(id) {
+export async function deleteToko(id: string): Promise<void> {
   if (!id) throw new Error("id toko wajib diisi.");
   const { error } = await supabase.from("toko").delete().eq("id", id);
   if (error) throw error;
 }
 
-export async function fetchTokoItems(tokoId) {
+export async function fetchTokoItems(tokoId: string): Promise<SampelKirimanItem[]> {
   const { data, error } = await supabase
     .from("sampel_kiriman_item")
     .select("*, sampel_kiriman(tanggal, catatan)")
@@ -78,11 +89,12 @@ export async function fetchTokoItems(tokoId) {
   return data ?? [];
 }
 
-// Dulu insert sampel_kiriman lalu insert bulk sampel_kiriman_item — 2
-// tabel tanpa transaction, bisa nyisain kiriman "hantu" (0 item) kalau
-// step kedua gagal. Sekarang 1 RPC atomik, identitas dari auth.uid() —
-// lihat supabase/migrations/20261120_ngorder_crud.sql.
-export async function createKiriman({ tokoId, tanggal, catatan, items }) {
+export async function createKiriman({
+  tokoId,
+  tanggal,
+  catatan,
+  items,
+}: CreateKirimanInput): Promise<unknown> {
   if (!tokoId) throw new Error("Toko wajib dipilih.");
   if (!items?.length) throw new Error("Pilih minimal satu produk untuk dikirim.");
 
@@ -97,7 +109,10 @@ export async function createKiriman({ tokoId, tanggal, catatan, items }) {
   return data;
 }
 
-export async function updateItemStatus(itemId, status) {
+export async function updateItemStatus(
+  itemId: string,
+  status: ItemStatus,
+): Promise<SampelKirimanItem> {
   const { data, error } = await supabase
     .from("sampel_kiriman_item")
     .update({ status, updated_at: new Date().toISOString() })
@@ -108,7 +123,10 @@ export async function updateItemStatus(itemId, status) {
   return data;
 }
 
-export async function setTokoLocation(id, { lat, lng, source }) {
+export async function setTokoLocation(
+  id: string,
+  { lat, lng, source }: GeocodeLocation & { source: string },
+): Promise<Toko> {
   if (!id) throw new Error("id toko wajib diisi.");
   const { data, error } = await supabase
     .from("toko")
@@ -120,11 +138,11 @@ export async function setTokoLocation(id, { lat, lng, source }) {
   return data;
 }
 
-function isBlankKunjungan(row) {
+function isBlankKunjungan(row: TokoKunjungan): boolean {
   return row.status === "rencana" && !row.hasil?.trim() && !row.request?.trim() && !row.kesan;
 }
 
-export async function fetchRencana() {
+export async function fetchRencana(): Promise<TokoKunjungan[]> {
   const { data, error } = await supabase
     .from("toko_kunjungan")
     .select("*")
@@ -134,7 +152,7 @@ export async function fetchRencana() {
   return data ?? [];
 }
 
-export async function fetchKunjunganToko(tokoId) {
+export async function fetchKunjunganToko(tokoId: string): Promise<TokoKunjungan[]> {
   const { data, error } = await supabase
     .from("toko_kunjungan")
     .select("*")
@@ -144,12 +162,7 @@ export async function fetchKunjunganToko(tokoId) {
   return (data ?? []).filter((r) => !isBlankKunjungan(r));
 }
 
-// Dulu select dedup + loop insert satu-satu dgn try/catch per-row utk
-// unique violation (toko_kunjungan_aktif_uniq) — sekarang 1 RPC, bulk
-// insert dgn ON CONFLICT (toko_id) WHERE aktif DO NOTHING, sekalian
-// atomik. dipilih_oleh_email/nama dari auth.uid(), bukan objek `user`
-// client — lihat supabase/migrations/20261120_ngorder_crud.sql.
-export async function addRencana({ tokoIds }) {
+export async function addRencana({ tokoIds }: { tokoIds: string[] }): Promise<TokoKunjungan[]> {
   const ids = [...new Set(tokoIds ?? [])].filter(Boolean);
   if (!ids.length) return [];
   const { data, error } = await supabase.rpc("add_rencana_kunjungan", { p_toko_ids: ids });
@@ -157,8 +170,7 @@ export async function addRencana({ tokoIds }) {
   return data ?? [];
 }
 
-// Delete batch + update batch sekarang 1 RPC atomik.
-export async function removeRencana(rows) {
+export async function removeRencana(rows: TokoKunjungan[]): Promise<void> {
   const list = (rows ?? []).filter(Boolean);
   const blank = list.filter(isBlankKunjungan).map((r) => r.id);
   const keep = list.filter((r) => !isBlankKunjungan(r)).map((r) => r.id);
@@ -170,12 +182,13 @@ export async function removeRencana(rows) {
   if (error) throw new Error(error.message);
 }
 
-// Dulu update toko_kunjungan lalu (kalau status jadi selesai) update
-// toko TANPA try/catch — kalau step kedua gagal, seluruh function throw
-// padahal step pertama sudah ter-commit (kunjungan selesai tapi
-// toko.status_approach belum ikut). Sekarang 1 RPC atomik, identitas
-// dari auth.uid().
-export async function updateKunjungan({ row, patch }) {
+export async function updateKunjungan({
+  row,
+  patch,
+}: {
+  row: TokoKunjungan;
+  patch: KunjunganPatch;
+}): Promise<TokoKunjungan> {
   if (!row?.id) throw new Error("Kunjungan tidak ditemukan.");
   const { data, error } = await supabase.rpc("update_kunjungan", {
     p_id: row.id,
@@ -183,25 +196,16 @@ export async function updateKunjungan({ row, patch }) {
   });
   if (error) throw new Error(error.message);
   if (data.status === "selesai") {
-    // Best-effort — jangan gagalkan update kunjungan cuma karena sinkron
-    // checklist trip-nya gagal.
-    markTokoVisitedInActiveTrips(data.toko_id).catch((err) =>
+    markTokoVisitedInActiveTrips(data.toko_id).catch((err: unknown) =>
       console.warn("markTokoVisitedInActiveTrips error:", err),
     );
   }
   return data;
 }
 
-// Sinkronisasi dgn checklist trip (fitur ngorder-jadwal) — begitu toko
-// dicentang "dikunjungi" di checklist, tercatat juga sbg kunjungan selesai
-// di sini (tanpa hasil/kesan — itu bisa diisi belakangan lewat tab Peta).
-// Kalau toko ini sudah pernah ditandai selesai, gak diapa-apain lagi.
-// Dipanggil dari ngorder-jadwal/api.js saat toggle checklist.
-//
-// Jalur insert-baru (toko belum pernah ada kunjungan aktif) dulu insert
-// toko_kunjungan lalu update toko sbg 2 langkah tanpa transaction —
-// sekarang RPC terpisah (create_kunjungan_selesai) yg disatukan.
-export async function markTokoVisitedViaTrip(tokoId) {
+export async function markTokoVisitedViaTrip(
+  tokoId: string | null | undefined,
+): Promise<TokoKunjungan | null> {
   if (!tokoId) return null;
   const { data: existing, error: fetchErr } = await supabase
     .from("toko_kunjungan")
@@ -223,7 +227,7 @@ export async function markTokoVisitedViaTrip(tokoId) {
   return data;
 }
 
-export async function markGeocodeFailed(id) {
+export async function markGeocodeFailed(id: string): Promise<void> {
   const { error } = await supabase
     .from("toko")
     .update({ geocode_source: "gagal", geocoded_at: new Date().toISOString() })
@@ -231,7 +235,7 @@ export async function markGeocodeFailed(id) {
   if (error) throw error;
 }
 
-export async function resolveGoogleMapsLink(url) {
+export async function resolveGoogleMapsLink(url: string): Promise<unknown> {
   const res = await fetch("/api/resolve-maps-link", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -242,14 +246,19 @@ export async function resolveGoogleMapsLink(url) {
   return data;
 }
 
-export function subscribeNgorder(onChange) {
+export function subscribeNgorder(
+  onChange: (
+    kind: "kunjungan" | "toko",
+    payload: { new?: { toko_id?: string }; old?: { toko_id?: string } },
+  ) => void,
+): () => void {
   const channel = supabase
     .channel("ngorder-kunjungan")
     .on("postgres_changes", { event: "*", schema: "public", table: "toko_kunjungan" }, (p) =>
-      onChange("kunjungan", p),
+      onChange("kunjungan", p as never),
     )
     .on("postgres_changes", { event: "*", schema: "public", table: "toko" }, (p) =>
-      onChange("toko", p),
+      onChange("toko", p as never),
     )
     .subscribe();
   return () => {

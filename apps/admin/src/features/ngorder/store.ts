@@ -1,7 +1,18 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export const usePetaFilterStore = create(
+interface PetaFilterState {
+  daerah: string;
+  approach: string;
+  search: string;
+  sheetTab: string;
+  setFilter: (
+    patch: Partial<Pick<PetaFilterState, "daerah" | "approach" | "search" | "sheetTab">>,
+  ) => void;
+  resetFilter: () => void;
+}
+
+export const usePetaFilterStore = create<PetaFilterState>()(
   persist(
     (set) => ({
       daerah: "",
@@ -20,7 +31,7 @@ export const usePetaFilterStore = create(
 
 const LEGACY_RENCANA_KEY = "ngorder_peta_rencana_v1";
 
-export function readLegacyRencanaIds() {
+export function readLegacyRencanaIds(): string[] {
   try {
     const raw = window.localStorage.getItem(LEGACY_RENCANA_KEY);
     const ids = raw ? JSON.parse(raw)?.state?.selectedIds : null;
@@ -30,7 +41,7 @@ export function readLegacyRencanaIds() {
   }
 }
 
-export function clearLegacyRencana() {
+export function clearLegacyRencana(): void {
   try {
     window.localStorage.removeItem(LEGACY_RENCANA_KEY);
   } catch {
