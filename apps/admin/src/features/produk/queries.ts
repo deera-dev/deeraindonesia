@@ -16,22 +16,23 @@ import {
   fetchStokWarnaByKode,
   saveProduct,
 } from "./api";
+import type { SaveProductParams } from "./schema";
 
 export const produkKeys = {
   stokMap: ["produk", "stok-map"],
-  stokWarna: (kode) => ["produk", "stok-warna", kode],
-  salesByKode: (kode) => ["produk", "sales", kode],
-  dikirimByKode: (kode) => ["produk", "dikirim", kode],
-  salesDetailByKode: (kode) => ["produk", "sales-detail", kode],
+  stokWarna: (kode: string) => ["produk", "stok-warna", kode],
+  salesByKode: (kode: string) => ["produk", "sales", kode],
+  dikirimByKode: (kode: string) => ["produk", "dikirim", kode],
+  salesDetailByKode: (kode: string) => ["produk", "sales-detail", kode],
   soldQtyMap: ["produk", "sold-qty-map"],
-  producedByKode: (kode) => ["produk", "produced", kode],
+  producedByKode: (kode: string) => ["produk", "produced", kode],
 };
 
 export function useStokMapQuery() {
   return useQuery({ queryKey: produkKeys.stokMap, queryFn: fetchStokMap });
 }
 
-export function useStokWarnaByKodeQuery(kode, { enabled = true } = {}) {
+export function useStokWarnaByKodeQuery(kode: string, { enabled = true } = {}) {
   return useQuery({
     queryKey: produkKeys.stokWarna(kode),
     queryFn: () => fetchStokWarnaByKode(kode),
@@ -39,7 +40,7 @@ export function useStokWarnaByKodeQuery(kode, { enabled = true } = {}) {
   });
 }
 
-export function useSalesByKodeQuery(kode) {
+export function useSalesByKodeQuery(kode: string) {
   return useQuery({
     queryKey: produkKeys.salesByKode(kode),
     queryFn: () => fetchSalesByKode(kode),
@@ -47,7 +48,7 @@ export function useSalesByKodeQuery(kode) {
   });
 }
 
-export function useDikirimByKodeQuery(kode) {
+export function useDikirimByKodeQuery(kode: string) {
   return useQuery({
     queryKey: produkKeys.dikirimByKode(kode),
     queryFn: () => fetchDikirimByKode(kode),
@@ -55,7 +56,7 @@ export function useDikirimByKodeQuery(kode) {
   });
 }
 
-export function useSalesDetailByKodeQuery(kode) {
+export function useSalesDetailByKodeQuery(kode: string) {
   return useQuery({
     queryKey: produkKeys.salesDetailByKode(kode),
     queryFn: () => fetchSalesDetailByKode(kode),
@@ -71,7 +72,7 @@ export function useProductBadgesQuery(days = 30) {
   });
 }
 
-export function useProductBadgeHistoryQuery(kode) {
+export function useProductBadgeHistoryQuery(kode: string) {
   return useQuery({
     queryKey: ["produk", "badge-history", kode],
     queryFn: () => fetchProductBadgeHistory(kode),
@@ -80,7 +81,7 @@ export function useProductBadgeHistoryQuery(kode) {
   });
 }
 
-export function useProductBadgeReasonQuery(kode, enabled = true) {
+export function useProductBadgeReasonQuery(kode: string, enabled = true) {
   return useQuery({
     queryKey: ["produk", "badge-reason", kode],
     queryFn: () => fetchProductBadgeReason(kode),
@@ -89,7 +90,7 @@ export function useProductBadgeReasonQuery(kode, enabled = true) {
   });
 }
 
-export function useProductAchievementsQuery(kode) {
+export function useProductAchievementsQuery(kode: string) {
   return useQuery({
     queryKey: ["produk", "achievements", kode],
     queryFn: () => fetchProductAchievements(kode),
@@ -98,7 +99,7 @@ export function useProductAchievementsQuery(kode) {
   });
 }
 
-export function useProductPriceHistoryQuery(kode) {
+export function useProductPriceHistoryQuery(kode: string) {
   return useQuery({
     queryKey: ["produk", "price-history", kode],
     queryFn: () => fetchProductPriceHistory(kode),
@@ -111,7 +112,7 @@ export function useSoldQtyMapQuery() {
   return useQuery({ queryKey: produkKeys.soldQtyMap, queryFn: fetchSoldQtyMap });
 }
 
-export function useProducedByKodeQuery(kode) {
+export function useProducedByKodeQuery(kode: string) {
   return useQuery({
     queryKey: produkKeys.producedByKode(kode),
     queryFn: () => fetchProducedByKode(kode),
@@ -119,7 +120,10 @@ export function useProducedByKodeQuery(kode) {
   });
 }
 
-function invalidateProdukQueries(queryClient, invalidateProducts) {
+function invalidateProdukQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  invalidateProducts: () => void,
+) {
   invalidateProducts();
   queryClient.invalidateQueries({ queryKey: produkKeys.stokMap });
 }
@@ -128,7 +132,7 @@ export function useSaveProductMutation() {
   const queryClient = useQueryClient();
   const invalidateProducts = useInvalidateProducts();
   return useMutation({
-    mutationFn: (payload) => saveProduct(payload),
+    mutationFn: (payload: SaveProductParams) => saveProduct(payload),
     onSuccess: () => invalidateProdukQueries(queryClient, invalidateProducts),
   });
 }
@@ -137,7 +141,7 @@ export function useDeleteProductCascadeMutation() {
   const queryClient = useQueryClient();
   const invalidateProducts = useInvalidateProducts();
   return useMutation({
-    mutationFn: (kode) => deleteProductCascade(kode),
+    mutationFn: (kode: string) => deleteProductCascade(kode),
     onSuccess: () => invalidateProdukQueries(queryClient, invalidateProducts),
   });
 }

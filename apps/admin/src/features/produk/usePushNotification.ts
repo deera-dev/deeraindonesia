@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
-function urlBase64ToUint8Array(base64String) {
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
@@ -25,6 +25,7 @@ export function usePushNotification() {
     }
     if (!user?.email) return;
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    const email = user.email;
 
     async function setup() {
       try {
@@ -41,7 +42,7 @@ export function usePushNotification() {
           }
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
           });
         }
 
@@ -50,7 +51,7 @@ export function usePushNotification() {
           endpoint: subJson.endpoint,
           p256dh: subJson.keys?.p256dh ?? "",
           auth: subJson.keys?.auth ?? "",
-          user_email: user.email,
+          user_email: email,
           subscription: subJson,
           updated_at: new Date().toISOString(),
         };

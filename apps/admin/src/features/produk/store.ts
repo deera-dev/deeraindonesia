@@ -1,6 +1,18 @@
 import { create } from "zustand";
 
-export const DEFAULT_PRODUCT_FILTER = {
+export interface ProductFilter {
+  size: string;
+  warna: string;
+  stokStatus: string;
+  lokasi: string;
+  hargaMin: string;
+  hargaMax: string;
+  hppMin: string;
+  hppMax: string;
+  sort: string;
+}
+
+export const DEFAULT_PRODUCT_FILTER: ProductFilter = {
   size: "",
   warna: "",
   stokStatus: "semua",
@@ -12,7 +24,18 @@ export const DEFAULT_PRODUCT_FILTER = {
   sort: "terbaru",
 };
 
-export const useProductFilterStore = create((set, get) => ({
+interface ProductFilterState {
+  applied: ProductFilter;
+  draft: ProductFilter;
+  isModalOpen: boolean;
+  openModal: () => void;
+  closeModal: () => void;
+  setDraft: (patch: Partial<ProductFilter>) => void;
+  applyDraft: () => void;
+  resetAll: () => void;
+}
+
+export const useProductFilterStore = create<ProductFilterState>((set) => ({
   applied: { ...DEFAULT_PRODUCT_FILTER },
   draft: { ...DEFAULT_PRODUCT_FILTER },
   isModalOpen: false,

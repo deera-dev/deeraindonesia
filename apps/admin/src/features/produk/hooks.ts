@@ -23,24 +23,24 @@ export function useStokMap() {
   return { stokMap: data ?? {}, reload: refetch };
 }
 
-export function useStokWarnaByKode(kode, options) {
+export function useStokWarnaByKode(kode: string, options?: { enabled?: boolean }) {
   const { data, isLoading } = useStokWarnaByKodeQuery(kode, options);
   return { stokWarnaMap: data ?? {}, loading: isLoading };
 }
 
 // data = { [size]: { gudang, cideng, tegalgubug, total } } -- per ukuran,
 // lihat catatan di api.js.
-export function useSalesByKode(kode) {
+export function useSalesByKode(kode: string) {
   const { data, isLoading } = useSalesByKodeQuery(kode);
   return { data: data ?? {}, isLoading };
 }
 
-export function useDikirimByKode(kode) {
+export function useDikirimByKode(kode: string) {
   const { data, isLoading } = useDikirimByKodeQuery(kode);
   return { data: data ?? {}, isLoading };
 }
 
-export function useSalesDetailByKode(kode) {
+export function useSalesDetailByKode(kode: string) {
   const { data, isLoading } = useSalesDetailByKodeQuery(kode);
   return { data: data ?? [], isLoading };
 }
@@ -50,22 +50,22 @@ export function useProductBadges(days = 30) {
   return data ?? {};
 }
 
-export function useProductBadgeHistory(kode) {
+export function useProductBadgeHistory(kode: string) {
   const { data } = useProductBadgeHistoryQuery(kode);
   return data ?? [];
 }
 
-export function useProductBadgeReason(kode, enabled = true) {
+export function useProductBadgeReason(kode: string, enabled = true) {
   const { data } = useProductBadgeReasonQuery(kode, enabled);
   return data?.reason ?? null;
 }
 
-export function useProductAchievements(kode) {
+export function useProductAchievements(kode: string) {
   const { data } = useProductAchievementsQuery(kode);
   return data ?? [];
 }
 
-export function useProductPriceHistory(kode) {
+export function useProductPriceHistory(kode: string) {
   const { data, isLoading } = useProductPriceHistoryQuery(kode);
   return { history: data ?? [], loading: isLoading };
 }
@@ -75,19 +75,19 @@ export function useSoldQtyMap() {
   return data ?? {};
 }
 
-export function useProducedByKode(kode) {
+export function useProducedByKode(kode: string) {
   const { data, isLoading } = useProducedByKodeQuery(kode);
   return { producedBySize: data ?? {}, isLoading };
 }
 
 export function useSaveProduct() {
   const { mutateAsync } = useSaveProductMutation();
-  return (payload) => mutateAsync(payload);
+  return (payload: Parameters<typeof mutateAsync>[0]) => mutateAsync(payload);
 }
 
 export function useDeleteProductCascade() {
   const { mutateAsync } = useDeleteProductCascadeMutation();
-  return (kode) => mutateAsync(kode);
+  return (kode: string) => mutateAsync(kode);
 }
 
 export function useProductFilter() {
@@ -100,7 +100,7 @@ export function useProductFilter() {
   const applyDraft = useProductFilterStore((s) => s.applyDraft);
   const resetAll = useProductFilterStore((s) => s.resetAll);
 
-  const hasActiveFilter = Object.keys(DEFAULT_PRODUCT_FILTER).some(
+  const hasActiveFilter = (Object.keys(DEFAULT_PRODUCT_FILTER) as Array<keyof typeof applied>).some(
     (key) => applied[key] !== DEFAULT_PRODUCT_FILTER[key],
   );
 

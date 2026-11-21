@@ -5,11 +5,12 @@ import {
   overSizeImageNotice,
 } from "@deera/shared/lib/mediaUpload";
 import { generateWABulkText, generateWAText } from "@deera/shared/lib/waFormat";
+import type { ProductVariant } from "./schema";
 
 let shareInFlight = false;
-let shareInFlightTimer = null;
+let shareInFlightTimer: ReturnType<typeof setTimeout> | null = null;
 
-export function fmtTanggal(dateStr) {
+export function fmtTanggal(dateStr?: string | null): string {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("id-ID", {
     day: "2-digit",
@@ -18,7 +19,7 @@ export function fmtTanggal(dateStr) {
   });
 }
 
-export function fmtWaktu(iso) {
+export function fmtWaktu(iso?: string | null): string {
   if (!iso) return "-";
   return new Date(iso).toLocaleString("id-ID", {
     day: "numeric",
@@ -29,7 +30,7 @@ export function fmtWaktu(iso) {
   });
 }
 
-async function fetchWithTimeout(url, ms = 1500) {
+async function fetchWithTimeout(url: string, ms = 1500): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
@@ -39,12 +40,20 @@ async function fetchWithTimeout(url, ms = 1500) {
   }
 }
 
-export async function shareProductViaWA(product) {
+interface ShareableProduct {
+  kode: string;
+  nama?: string;
+  seri_warna?: string | null;
+  image?: string | null;
+  video?: string | null;
+}
+
+export async function shareProductViaWA(product: ShareableProduct) {
   if (shareInFlight) {
     return { method: "busy" };
   }
   shareInFlight = true;
-  clearTimeout(shareInFlightTimer);
+  clearTimeout(shareInFlightTimer!);
   shareInFlightTimer = setTimeout(() => {
     shareInFlight = false;
   }, 8000);
@@ -56,7 +65,7 @@ export async function shareProductViaWA(product) {
       return { method: "wa-link" };
     }
 
-    let candidate = null;
+    let candidate: { url: string; kind: "image" | "video"; suffix: string } | null = null;
     if (product.seri_warna) {
       candidate = {
         url: cldUrl(product.seri_warna, { width: 1080 }),
@@ -69,7 +78,7 @@ export async function shareProductViaWA(product) {
       candidate = { url: product.video, kind: "video", suffix: "" };
     }
 
-    const files = [];
+    const files: File[] = [];
     if (candidate) {
       try {
         const res = await fetchWithTimeout(candidate.url, candidate.kind === "video" ? 2500 : 1500);
@@ -95,7 +104,8 @@ export async function shareProductViaWA(product) {
         await navigator.share({ files, text });
         return { method: "share-file" };
       } catch (err) {
-        if (err?.name === "AbortError" || err?.name === "InvalidStateError")
+        const e = err as { name?: string };
+        if (e?.name === "AbortError" || e?.name === "InvalidStateError")
           return { method: "aborted" };
       }
     }
@@ -104,24 +114,24 @@ export async function shareProductViaWA(product) {
       await navigator.share({ text });
       return { method: "share-text" };
     } catch (err) {
-      if (err?.name === "AbortError" || err?.name === "InvalidStateError")
-        return { method: "aborted" };
+      const e = err as { name?: string };
+      if (e?.name === "AbortError" || e?.name === "InvalidStateError") return { method: "aborted" };
     }
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
     return { method: "wa-link" };
   } finally {
-    clearTimeout(shareInFlightTimer);
+    clearTimeout(shareInFlightTimer!);
     shareInFlight = false;
   }
 }
 
-export async function shareProductsViaWA(products) {
+export async function shareProductsViaWA(products: ShareableProduct[]) {
   if (shareInFlight) {
     return { method: "busy" };
   }
   shareInFlight = true;
-  clearTimeout(shareInFlightTimer);
+  clearTimeout(shareInFlightTimer!);
   shareInFlightTimer = setTimeout(() => {
     shareInFlight = false;
   }, 8000);
@@ -142,7 +152,7 @@ export async function shareProductsViaWA(products) {
             ? { p, url: cldUrl(p.image, { width: 1080 }), suffix: "" }
             : null,
       )
-      .filter(Boolean);
+      .filter((c): c is { p: ShareableProduct; url: string; suffix: string } => c !== null);
 
     const results = await Promise.allSettled(
       candidates.map(async ({ p, url, suffix }) => {
@@ -153,14 +163,17 @@ export async function shareProductsViaWA(products) {
         return new File([blob], `${p.kode}${suffix}.${ext}`, { type: blob.type });
       }),
     );
-    const files = results.filter((r) => r.status === "fulfilled").map((r) => r.value);
+    const files = results
+      .filter((r): r is PromiseFulfilledResult<File> => r.status === "fulfilled")
+      .map((r) => r.value);
 
     if (files.length > 0 && navigator.canShare?.({ files })) {
       try {
         await navigator.share({ files, text });
         return { method: "share-file", fileCount: files.length };
       } catch (err) {
-        if (err?.name === "AbortError" || err?.name === "InvalidStateError")
+        const e = err as { name?: string };
+        if (e?.name === "AbortError" || e?.name === "InvalidStateError")
           return { method: "aborted" };
       }
     }
@@ -169,19 +182,35 @@ export async function shareProductsViaWA(products) {
       await navigator.share({ text });
       return { method: "share-text" };
     } catch (err) {
-      if (err?.name === "AbortError" || err?.name === "InvalidStateError")
-        return { method: "aborted" };
+      const e = err as { name?: string };
+      if (e?.name === "AbortError" || e?.name === "InvalidStateError") return { method: "aborted" };
     }
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
     return { method: "wa-link" };
   } finally {
-    clearTimeout(shareInFlightTimer);
+    clearTimeout(shareInFlightTimer!);
     shareInFlight = false;
   }
 }
 
-export async function processImageFile(file, { onNotice, onError } = {}) {
+export interface ProcessImageResult {
+  type: "file";
+  file: File;
+  preview: string;
+  status: "done";
+  originalSizeMB: number;
+  compressedSizeMB: number;
+  compressed: boolean;
+}
+
+export async function processImageFile(
+  file: File,
+  {
+    onNotice,
+    onError,
+  }: { onNotice?: (notice: unknown) => void; onError?: (msg: string) => void } = {},
+): Promise<ProcessImageResult | null> {
   const preview = URL.createObjectURL(file);
   const originalSizeMB = file.size / (1024 * 1024);
 
@@ -222,11 +251,42 @@ export async function processImageFile(file, { onNotice, onError } = {}) {
   }
 }
 
-export function filterAndSortProducts(
-  products,
-  filter,
-  { stokMap = {}, soldQtyMap = {}, search = "" } = {},
-) {
+interface ProductForFilter {
+  kode: string;
+  nama?: string | null;
+  bahan?: string | null;
+  variants?: ProductVariant[];
+  warna?: string[];
+  hpp?: number;
+  created_at?: string;
+}
+
+export function filterAndSortProducts<T extends ProductForFilter>(
+  products: T[] | null | undefined,
+  filter: {
+    hargaMin: string;
+    hargaMax: string;
+    hppMin: string;
+    hppMax: string;
+    size: string;
+    warna: string;
+    stokStatus: string;
+    lokasi: string;
+    sort: string;
+  },
+  {
+    stokMap = {},
+    soldQtyMap = {},
+    search = "",
+  }: {
+    stokMap?: Record<
+      string,
+      { gudang?: number; cideng?: number; tegalgubug?: number; ngorder?: number }
+    >;
+    soldQtyMap?: Record<string, number>;
+    search?: string;
+  } = {},
+): T[] {
   const q = search.trim().toLowerCase();
   const hargaMin = filter.hargaMin === "" ? null : Number(filter.hargaMin);
   const hargaMax = filter.hargaMax === "" ? null : Number(filter.hargaMax);
@@ -258,7 +318,11 @@ export function filterAndSortProducts(
     if (filter.stokStatus === "habis" && total > 0) return false;
     if (filter.stokStatus === "ada" && total === 0) return false;
 
-    if (filter.lokasi && filter.lokasi !== "semua" && !((s[filter.lokasi] ?? 0) > 0)) {
+    if (
+      filter.lokasi &&
+      filter.lokasi !== "semua" &&
+      !((s[filter.lokasi as keyof typeof s] ?? 0) > 0)
+    ) {
       return false;
     }
 
@@ -279,11 +343,11 @@ export function filterAndSortProducts(
     return true;
   });
 
-  const byNama = (a, b) =>
+  const byNama = (a: T, b: T) =>
     (a.nama ?? "").localeCompare(b.nama ?? "", "id", { sensitivity: "base" });
-  const byTanggal = (a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? "");
-  const byTerlaris = (a, b) => (soldQtyMap[a.kode] ?? 0) - (soldQtyMap[b.kode] ?? 0);
-  const byTerbaruThenNama = (a, b) => {
+  const byTanggal = (a: T, b: T) => (a.created_at ?? "").localeCompare(b.created_at ?? "");
+  const byTerlaris = (a: T, b: T) => (soldQtyMap[a.kode] ?? 0) - (soldQtyMap[b.kode] ?? 0);
+  const byTerbaruThenNama = (a: T, b: T) => {
     const d = -byTanggal(a, b);
     return d !== 0 ? d : byNama(a, b);
   };
@@ -305,7 +369,17 @@ export function filterAndSortProducts(
   }
 }
 
-export const BADGE_META = {
+export interface BadgeMeta {
+  label: string;
+  hint: string;
+  border: string;
+  bg: string;
+  icon: string;
+  tier: string;
+  frame: string;
+}
+
+export const BADGE_META: Record<string, BadgeMeta> = {
   terlaris: {
     label: "Terlaris",
     hint: "Penjualan terbanyak",
@@ -380,8 +454,17 @@ export const BADGE_ORDER = [
   "kurang_jalan",
 ];
 
-export function describeBadgeHistory(history, currentBadge) {
-  const fmt = (iso) =>
+export function describeBadgeHistory(
+  history: Array<{
+    badge: string;
+    first_seen: string;
+    last_seen: string;
+    days?: number;
+    reason?: string | null;
+  }>,
+  currentBadge: string,
+) {
+  const fmt = (iso: string) =>
     new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
   return (history ?? [])
     .filter((h) => BADGE_META[h.badge])
@@ -394,8 +477,8 @@ export function describeBadgeHistory(history, currentBadge) {
           : `${fmt(h.first_seen)} – ${fmt(h.last_seen)}`;
       return {
         badge: h.badge,
-        label: BADGE_META[h.badge].label,
-        tier: BADGE_META[h.badge].tier,
+        label: BADGE_META[h.badge]!.label,
+        tier: BADGE_META[h.badge]!.tier,
         current,
         text: current
           ? `Sedang menyandang sejak ${fmt(h.first_seen)} (${hari} hari)`
