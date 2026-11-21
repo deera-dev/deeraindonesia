@@ -8,6 +8,7 @@ import {
   saveHppConfigValue,
   saveHppTemplates,
 } from "./api";
+import type { DeleteHppTemplateTarget, SaveHppTemplatePayload } from "./schema";
 
 export const produksiHppKeys = {
   templates: ["produksi-hpp", "templates"],
@@ -35,7 +36,8 @@ export function useBahanOptionsQuery() {
 export function useSaveHppTemplatesMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payloads) => saveHppTemplates(payloads),
+    mutationFn: (payloads: SaveHppTemplatePayload | SaveHppTemplatePayload[]) =>
+      saveHppTemplates(payloads),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiHppKeys.templates });
     },
@@ -45,7 +47,7 @@ export function useSaveHppTemplatesMutation() {
 export function useDeleteHppTemplateMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (target) => deleteHppTemplate(target),
+    mutationFn: (target: DeleteHppTemplateTarget) => deleteHppTemplate(target),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiHppKeys.templates });
     },
@@ -55,7 +57,7 @@ export function useDeleteHppTemplateMutation() {
 export function useSaveHppConfigMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ key, nilai }) => saveHppConfigValue(key, nilai),
+    mutationFn: ({ key, nilai }: { key: string; nilai: number }) => saveHppConfigValue(key, nilai),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: produksiHppKeys.config });
       queryClient.invalidateQueries({ queryKey: produksiHppKeys.configRows });

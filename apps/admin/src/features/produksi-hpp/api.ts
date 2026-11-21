@@ -1,7 +1,15 @@
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
+import type {
+  BahanOption,
+  DeleteHppTemplateTarget,
+  HppConfigMap,
+  HppConfigRow,
+  HppTemplate,
+  SaveHppTemplatePayload,
+} from "./schema";
 
-export async function fetchHppTemplates() {
+export async function fetchHppTemplates(): Promise<HppTemplate[]> {
   const { data } = await supabase
     .from("hpp_template")
     .select("*")
@@ -9,19 +17,19 @@ export async function fetchHppTemplates() {
   return data ?? [];
 }
 
-export async function fetchHppConfig() {
+export async function fetchHppConfig(): Promise<HppConfigMap> {
   const { data } = await supabase.from("hpp_config").select("*");
-  const map = {};
+  const map: HppConfigMap = {};
   for (const r of data ?? []) map[r.key] = r.nilai;
   return map;
 }
 
-export async function fetchHppConfigRows() {
+export async function fetchHppConfigRows(): Promise<HppConfigRow[]> {
   const { data } = await supabase.from("hpp_config").select("*").order("key");
   return data ?? [];
 }
 
-export async function fetchBahanOptions() {
+export async function fetchBahanOptions(): Promise<BahanOption[]> {
   const [{ data: beli }, { data: pinjam }] = await Promise.all([
     supabase
       .from("bahan_pembelian")
@@ -35,23 +43,20 @@ export async function fetchBahanOptions() {
   return [
     ...(beli ?? []).map((r) => ({
       ...r,
-      _type: "beli",
-      _label: `[Beli] ${r.nama_bahan}${r.kode_bahan ? " (" + r.kode_bahan + ")" : ""}`,
+      _type: "beli" as const,
+      _label: `[Beli] ${r.nama_bahan}${r.kode_bahan ? ` (${r.kode_bahan})` : ""}`,
     })),
     ...(pinjam ?? []).map((r) => ({
       ...r,
-      _type: "pinjam",
-      _label: `[Pinjam] ${r.nama_bahan}${r.kode_bahan ? " (" + r.kode_bahan + ")" : ""}`,
+      _type: "pinjam" as const,
+      _label: `[Pinjam] ${r.nama_bahan}${r.kode_bahan ? ` (${r.kode_bahan})` : ""}`,
     })),
   ];
 }
 
-// save_hpp_template dulu 2 tulis berurutan tanpa transaction per payload
-// (upsert hpp_template, lalu update products.hpp) + lookup "existing"
-// dari snapshot client yang bisa basi. Sekarang 1 RPC atomik yang juga
-// baca state terbaru langsung dari DB — lihat
-// supabase/migrations/20261120_save_hpp_template_config.sql.
-export async function saveHppTemplates(payloads) {
+export async function saveHppTemplates(
+  payloads: SaveHppTemplatePayload | SaveHppTemplatePayload[],
+): Promise<number> {
   const arr = Array.isArray(payloads) ? payloads : [payloads];
   for (const payload of arr) {
     const { error } = await supabase.rpc("save_hpp_template", {
@@ -72,7 +77,7 @@ export async function saveHppTemplates(payloads) {
   return arr.length;
 }
 
-export async function deleteHppTemplate(target) {
+export async function deleteHppTemplate(target: DeleteHppTemplateTarget): Promise<void> {
   await supabase.from("hpp_template").delete().eq("id", target.id);
   logHistory({
     action: "hpp-hapus",
@@ -83,10 +88,7 @@ export async function deleteHppTemplate(target) {
   }).catch(() => {});
 }
 
-// Identitas (updated_by) diambil RPC dari auth.uid() -> profiles, bukan
-// parameter client lagi — lihat
-// supabase/migrations/20261120_save_hpp_template_config.sql.
-export async function saveHppConfigValue(key, nilai) {
+export async function saveHppConfigValue(key: string, nilai: number): Promise<void> {
   const { error } = await supabase.rpc("save_hpp_config_value", { p_key: key, p_nilai: nilai });
   if (error) throw new Error(error.message);
 }

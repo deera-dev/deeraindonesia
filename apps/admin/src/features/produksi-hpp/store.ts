@@ -1,12 +1,24 @@
 import { create } from "zustand";
+import type { HppFilter } from "./schema";
 
-export const DEFAULT_HPP_FILTER = {
+export const DEFAULT_HPP_FILTER: HppFilter = {
   hppMin: "",
   hppMax: "",
   sort: "terbaru",
 };
 
-export const useHppTemplateFilterStore = create((set) => ({
+interface HppTemplateFilterState {
+  applied: HppFilter;
+  draft: HppFilter;
+  isModalOpen: boolean;
+  openModal: () => void;
+  closeModal: () => void;
+  setDraft: (patch: Partial<HppFilter>) => void;
+  applyDraft: () => void;
+  resetAll: () => void;
+}
+
+export const useHppTemplateFilterStore = create<HppTemplateFilterState>()((set) => ({
   applied: { ...DEFAULT_HPP_FILTER },
   draft: { ...DEFAULT_HPP_FILTER },
   isModalOpen: false,

@@ -7,6 +7,7 @@ import {
   useSaveHppConfigMutation,
   useSaveHppTemplatesMutation,
 } from "./queries";
+import type { HppFilter } from "./schema";
 import { DEFAULT_HPP_FILTER, useHppTemplateFilterStore } from "./store";
 
 export function useHppTemplates() {
@@ -31,17 +32,17 @@ export function useBahanOptions() {
 
 export function useSaveHppTemplates() {
   const { mutateAsync } = useSaveHppTemplatesMutation();
-  return (payloads) => mutateAsync(payloads);
+  return (payloads: Parameters<typeof mutateAsync>[0]) => mutateAsync(payloads);
 }
 
 export function useDeleteHppTemplate() {
   const { mutateAsync } = useDeleteHppTemplateMutation();
-  return (target) => mutateAsync(target);
+  return (target: Parameters<typeof mutateAsync>[0]) => mutateAsync(target);
 }
 
 export function useSaveHppConfig() {
   const { mutateAsync } = useSaveHppConfigMutation();
-  return (key, nilai) => mutateAsync({ key, nilai });
+  return (key: string, nilai: number) => mutateAsync({ key, nilai });
 }
 
 export function useHppTemplateFilter() {
@@ -54,7 +55,7 @@ export function useHppTemplateFilter() {
   const applyDraft = useHppTemplateFilterStore((s) => s.applyDraft);
   const resetAll = useHppTemplateFilterStore((s) => s.resetAll);
 
-  const hasActiveFilter = Object.keys(DEFAULT_HPP_FILTER).some(
+  const hasActiveFilter = (Object.keys(DEFAULT_HPP_FILTER) as Array<keyof HppFilter>).some(
     (key) => applied[key] !== DEFAULT_HPP_FILTER[key],
   );
 

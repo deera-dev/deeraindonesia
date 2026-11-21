@@ -1,8 +1,17 @@
-export function fmtRp(n) {
-  return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
+import type {
+  BahanItem,
+  HppConfigRow,
+  HppFilter,
+  HppTemplate,
+  KancingExtra,
+  ProduksiBatchLike,
+} from "./schema";
+
+export function fmtRp(n: number | string | null | undefined): string {
+  return `Rp ${(Number(n) || 0).toLocaleString("id-ID")}`;
 }
 
-export function fmt4(n) {
+export function fmt4(n: number | string): string {
   return Number(n)
     .toFixed(4)
     .replace(/\.?0+$/, "");
@@ -10,31 +19,35 @@ export function fmt4(n) {
 
 export const LENGTH_UNITS = new Set(["yard", "meter", "m", "cm"]);
 
-export function convertUnit(value, fromUnit, toUnit) {
+export function convertUnit(
+  value: number,
+  fromUnit: string | null | undefined,
+  toUnit: string | null | undefined,
+): number {
   if (!fromUnit || !toUnit) return value;
-  const norm = (u) => (u === "m" ? "meter" : u);
+  const norm = (u: string) => (u === "m" ? "meter" : u);
   const f = norm(fromUnit);
   const t = norm(toUnit);
   if (f === t) return value;
   if (!LENGTH_UNITS.has(f) || !LENGTH_UNITS.has(t)) return value;
-  const toMeter = { yard: 0.9144, meter: 1, cm: 0.01 };
-  const fromMeter = { yard: 1 / 0.9144, meter: 1, cm: 100 };
+  const toMeter: Record<string, number> = { yard: 0.9144, meter: 1, cm: 0.01 };
+  const fromMeter: Record<string, number> = { yard: 1 / 0.9144, meter: 1, cm: 100 };
   return value * (toMeter[f] ?? 1) * (fromMeter[t] ?? 1);
 }
 
-export function satuanUkurOptions(satuanBeli) {
+export function satuanUkurOptions(satuanBeli: string): string[] {
   if (LENGTH_UNITS.has(satuanBeli)) return ["yard", "meter", "cm"];
   return [satuanBeli];
 }
 
-export function calcQtyPerBaju(item) {
+export function calcQtyPerBaju(item: BahanItem): number {
   const qtyRaw = Number(item.qty_dipakai) || 0;
   const nBaju = Math.max(Number(item.untuk_n_baju) || 1, 1);
   const perBaju = qtyRaw / nBaju;
   return convertUnit(perBaju, item.satuan_ukur || item.satuan, item.satuan);
 }
 
-export function normItem(b) {
+export function normItem(b: BahanItem): BahanItem {
   const hasTambahan = b.qty_dipakai !== undefined && b.untuk_n_baju !== undefined;
   const jenis = b.jenis ?? (hasTambahan ? "tambahan" : "motif");
   const warna_qtys = b.warna_qtys ?? [];
@@ -52,6 +65,20 @@ export function normItem(b) {
   };
 }
 
+export interface BiayaLainBreakdownParams {
+  upah_jahit: number | string;
+  bordir: number | string;
+  kancing_qty: number | string;
+  kancing_extra?: KancingExtra[];
+  biaya_studio: number | string;
+  config?: Record<string, number> | null;
+}
+
+export interface BiayaLainRow {
+  label: string;
+  val: number;
+}
+
 export function biayaLainBreakdown({
   upah_jahit,
   bordir,
@@ -59,7 +86,7 @@ export function biayaLainBreakdown({
   kancing_extra,
   biaya_studio,
   config,
-}) {
+}: BiayaLainBreakdownParams): BiayaLainRow[] {
   const kancingSatuan = config?.kancing_satuan ?? 500;
   const kancingQty = Number(kancing_qty) || 0;
   const biayaKancing = kancingQty * kancingSatuan;
@@ -85,6 +112,16 @@ export function biayaLainBreakdown({
   ];
 }
 
+export interface CalcTotalParams extends BiayaLainBreakdownParams {
+  bahanItems: BahanItem[];
+}
+
+export interface CalcTotalResult {
+  total: number;
+  biayaKain: number;
+  breakdown: BiayaLainRow[];
+}
+
 export function calcTotal({
   bahanItems,
   upah_jahit,
@@ -93,7 +130,7 @@ export function calcTotal({
   kancing_extra,
   biaya_studio,
   config,
-}) {
+}: CalcTotalParams): CalcTotalResult {
   const biayaKain = bahanItems.reduce(
     (s, b) => s + calcQtyPerBaju(b) * (Number(b.harga_satuan) || 0),
     0,
@@ -113,7 +150,7 @@ export function calcTotal({
 
 export const fieldCls =
   "px-3 py-2.5 bg-skin-input border border-skin-bdr text-skin-text text-sm focus:outline-none focus:border-skin-accent transition";
-export const fieldFullCls = "w-full " + fieldCls;
+export const fieldFullCls = `w-full ${fieldCls}`;
 export const labelCls =
   "block text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1";
 
@@ -123,8 +160,10 @@ export const HPP_TABS = [
   { key: "harga-dasar", label: "Harga Dasar" },
 ];
 
-export function produksiTotalPcsByKode(batches) {
-  const map = {};
+export function produksiTotalPcsByKode(
+  batches: ProduksiBatchLike[] | null | undefined,
+): Record<string, number> {
+  const map: Record<string, number> = {};
   for (const b of batches ?? []) {
     if (!b.kode_produk) continue;
     const batchQty = (b.sizes ?? []).reduce(
@@ -136,24 +175,34 @@ export function produksiTotalPcsByKode(batches) {
   return map;
 }
 
-export function resolveJumlahBajuStudio(inputVal, produksiTotalPcs) {
+export function resolveJumlahBajuStudio(
+  inputVal: number | string | null | undefined,
+  produksiTotalPcs: number | string | null | undefined,
+): number {
   if (inputVal !== "" && inputVal != null) return Number(inputVal) || 0;
   return Number(produksiTotalPcs) || 0;
 }
 
-export function calcBiayaStudioPerBaju(inputVal, produksiTotalPcs, studioConfig) {
+export function calcBiayaStudioPerBaju(
+  inputVal: number | string | null | undefined,
+  produksiTotalPcs: number | string | null | undefined,
+  studioConfig: number | string | null | undefined,
+): number {
   const n = resolveJumlahBajuStudio(inputVal, produksiTotalPcs);
   return n > 0 ? Math.round((Number(studioConfig) || 0) / n) : 0;
 }
 
-export function getBatchSiblingKodes(batches, kodeProduk) {
+export function getBatchSiblingKodes(
+  batches: ProduksiBatchLike[] | null | undefined,
+  kodeProduk: string | null | undefined,
+): string[] {
   if (!kodeProduk) return [];
   const ownBatches = (batches ?? [])
     .filter((b) => b.kode_produk === kodeProduk && b.batch_no)
     .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
   const latest = ownBatches[0];
   if (!latest) return [];
-  const siblingKodes = new Set();
+  const siblingKodes = new Set<string>();
   for (const b of batches ?? []) {
     if (b.batch_no === latest.batch_no && b.kode_produk && b.kode_produk !== kodeProduk) {
       siblingKodes.add(b.kode_produk);
@@ -172,13 +221,18 @@ export const CONFIG_GROUPS = [
   { label: "Studio & Lainnya", keys: ["studio", "poin_denny", "poin_haikal"] },
 ];
 
-export function groupConfigRows(rows) {
+export interface ConfigGroupResult {
+  label: string;
+  rows: HppConfigRow[];
+}
+
+export function groupConfigRows(rows: HppConfigRow[] | null | undefined): ConfigGroupResult[] {
   const byKey = new Map((rows ?? []).map((r) => [r.key, r]));
-  const used = new Set();
-  const groups = [];
+  const used = new Set<string>();
+  const groups: ConfigGroupResult[] = [];
 
   for (const g of CONFIG_GROUPS) {
-    const groupRows = [];
+    const groupRows: HppConfigRow[] = [];
     for (const key of g.keys) {
       const row = byKey.get(key);
       if (row) {
@@ -195,7 +249,16 @@ export function groupConfigRows(rows) {
   return groups;
 }
 
-export function filterAndSortHppTemplates(templates, filter, { products = [], search = "" } = {}) {
+export interface ProductLike {
+  kode: string;
+  nama?: string | null;
+}
+
+export function filterAndSortHppTemplates(
+  templates: HppTemplate[] | null | undefined,
+  filter: HppFilter,
+  { products = [], search = "" }: { products?: ProductLike[]; search?: string } = {},
+): HppTemplate[] {
   const q = search.trim().toLowerCase();
   const hppMin = filter.hppMin === "" ? null : Number(filter.hppMin);
   const hppMax = filter.hppMax === "" ? null : Number(filter.hppMax);
@@ -219,11 +282,13 @@ export function filterAndSortHppTemplates(templates, filter, { products = [], se
     return true;
   });
 
-  const byKode = (a, b) => (a.kode_produk ?? "").localeCompare(b.kode_produk ?? "");
-  const byHpp = (a, b) => (Number(a.total_hpp) || 0) - (Number(b.total_hpp) || 0);
-  const byTerbaruThenNama = (a, b) => {
-    const ia = kodeOrderIndex.has(a.kode_produk) ? kodeOrderIndex.get(a.kode_produk) : Infinity;
-    const ib = kodeOrderIndex.has(b.kode_produk) ? kodeOrderIndex.get(b.kode_produk) : Infinity;
+  const byKode = (a: HppTemplate, b: HppTemplate) =>
+    (a.kode_produk ?? "").localeCompare(b.kode_produk ?? "");
+  const byHpp = (a: HppTemplate, b: HppTemplate) =>
+    (Number(a.total_hpp) || 0) - (Number(b.total_hpp) || 0);
+  const byTerbaruThenNama = (a: HppTemplate, b: HppTemplate) => {
+    const ia = kodeOrderIndex.has(a.kode_produk) ? kodeOrderIndex.get(a.kode_produk)! : Infinity;
+    const ib = kodeOrderIndex.has(b.kode_produk) ? kodeOrderIndex.get(b.kode_produk)! : Infinity;
     return ia !== ib ? ia - ib : byKode(a, b);
   };
 
@@ -242,10 +307,31 @@ export function filterAndSortHppTemplates(templates, filter, { products = [], se
   }
 }
 
-const r1 = (n) => Math.round(n * 100) / 100;
+const r1 = (n: number) => Math.round(n * 100) / 100;
 
-export function avgPemakaianBahan(templates) {
-  const acc = { motif: [], polos: [] };
+export interface BahanStat {
+  n: number;
+  avg: number;
+  min: number;
+  max: number;
+  avgHarga: number | null;
+}
+
+export interface AvgPemakaianBahanResult {
+  motif: BahanStat | null;
+  polos: BahanStat | null;
+}
+
+export function avgPemakaianBahan(
+  templates: HppTemplate[] | null | undefined,
+): AvgPemakaianBahanResult {
+  const acc: {
+    motif: Array<{ qty: number; harga: number }>;
+    polos: Array<{ qty: number; harga: number }>;
+  } = {
+    motif: [],
+    polos: [],
+  };
   for (const t of templates ?? []) {
     for (const raw of t.bahan_items ?? []) {
       const b = normItem(raw);
@@ -257,7 +343,7 @@ export function avgPemakaianBahan(templates) {
       });
     }
   }
-  const stat = (list) => {
+  const stat = (list: Array<{ qty: number; harga: number }>): BahanStat | null => {
     if (list.length === 0) return null;
     const qs = list.map((x) => x.qty);
     const hs = list.map((x) => x.harga).filter((h) => h > 0);
@@ -272,17 +358,31 @@ export function avgPemakaianBahan(templates) {
   return { motif: stat(acc.motif), polos: stat(acc.polos) };
 }
 
-export function avgBiayaTetapTemplate(templates) {
+export function avgBiayaTetapTemplate(templates: HppTemplate[] | null | undefined): {
+  kancingQty: number;
+  biayaStudio: number;
+} {
   const list = templates ?? [];
   if (list.length === 0) return { kancingQty: 4, biayaStudio: 0 };
-  const avg = (key) => list.reduce((s, t) => s + (Number(t[key]) || 0), 0) / list.length;
+  const avg = (key: "kancing_qty" | "biaya_studio") =>
+    list.reduce((s, t) => s + (Number(t[key]) || 0), 0) / list.length;
   return {
     kancingQty: Math.round(avg("kancing_qty")),
     biayaStudio: Math.round(avg("biaya_studio")),
   };
 }
 
-export function biayaTetapKalkulator({ tipe = "gamis", config, templates }) {
+export interface BiayaTetapKalkulatorParams {
+  tipe?: "gamis" | "midi";
+  config?: Record<string, number> | null;
+  templates?: HppTemplate[] | null;
+}
+
+export function biayaTetapKalkulator({
+  tipe = "gamis",
+  config,
+  templates,
+}: BiayaTetapKalkulatorParams): { rows: BiayaLainRow[]; total: number } {
   const cfg = config ?? {};
   const upah = tipe === "midi" ? (cfg.jahit_midi ?? 35000) : (cfg.jahit_gamis ?? 45000);
   const { kancingQty, biayaStudio } = avgBiayaTetapTemplate(templates);
@@ -297,7 +397,19 @@ export function biayaTetapKalkulator({ tipe = "gamis", config, templates }) {
   return { rows, total: rows.reduce((s, r) => s + r.val, 0) };
 }
 
-export function hppTargetDari({ mode, hargaJual, marginPct, hppTarget }) {
+export interface HppTargetDariParams {
+  mode?: "jual" | "hpp";
+  hargaJual?: number | string;
+  marginPct?: number | string;
+  hppTarget?: number | string;
+}
+
+export function hppTargetDari({
+  mode,
+  hargaJual,
+  marginPct,
+  hppTarget,
+}: HppTargetDariParams): number {
   const v =
     mode === "jual"
       ? (Number(hargaJual) || 0) * (1 - (Number(marginPct) || 0) / 100)
@@ -305,7 +417,43 @@ export function hppTargetDari({ mode, hargaJual, marginPct, hppTarget }) {
   return v > 0 ? Math.round(v) : 0;
 }
 
-export function hitungBahanMulti({ hppMaks, biayaTetap, rows }) {
+export interface HitungBahanRow {
+  cari?: boolean;
+  pakai: number | string;
+  harga: number | string;
+}
+
+export interface HitungBahanMultiParams {
+  hppMaks: number | string;
+  biayaTetap: number | string;
+  rows: HitungBahanRow[];
+}
+
+export type HitungBahanResult =
+  | {
+      tipe: "cek";
+      hppMaks: number;
+      sisa: number;
+      bahanDiketahui: number;
+      selisih: number;
+      over: boolean;
+    }
+  | {
+      tipe: "cari";
+      hppMaks: number;
+      sisa: number;
+      bahanDiketahui: number;
+      budgetCari: number;
+      over: boolean;
+      hargaMaksPerYard: number;
+    }
+  | null;
+
+export function hitungBahanMulti({
+  hppMaks,
+  biayaTetap,
+  rows,
+}: HitungBahanMultiParams): HitungBahanResult {
   const target = Number(hppMaks) || 0;
   const list = (rows ?? []).map((r) => ({
     cari: !!r.cari,
