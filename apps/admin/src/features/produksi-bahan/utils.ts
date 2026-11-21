@@ -1,8 +1,10 @@
-export function fmtRp(n) {
-  return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
+import type { BahanItemRow, StatusBayar, TagihanGroup } from "./schema";
+
+export function fmtRp(n: number | string | null | undefined): string {
+  return `Rp ${(Number(n) || 0).toLocaleString("id-ID")}`;
 }
 
-export function fmtDate(d) {
+export function fmtDate(d: string | null | undefined): string {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("id-ID", {
     day: "2-digit",
@@ -11,7 +13,7 @@ export function fmtDate(d) {
   });
 }
 
-export function fmtDateShort(d) {
+export function fmtDateShort(d: string | null | undefined): string {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("id-ID", {
     day: "2-digit",
@@ -20,16 +22,16 @@ export function fmtDateShort(d) {
   });
 }
 
-export function addFourMonths(dateStr) {
+export function addFourMonths(dateStr: string): string {
   const d = new Date(dateStr);
   d.setMonth(d.getMonth() + 4);
-  return d.toISOString().split("T")[0];
+  return d.toISOString().split("T")[0]!;
 }
 
-export function daysUntil(dateStr) {
+export function daysUntil(dateStr: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  return Math.round((new Date(dateStr) - today) / 86400000);
+  return Math.round((new Date(dateStr).getTime() - today.getTime()) / 86400000);
 }
 
 export const inputCls =
@@ -44,7 +46,7 @@ export const TABS = [
   { key: "stok", label: "Stok Bahan" },
 ];
 
-export function fmtBulan(dateStr) {
+export function fmtBulan(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
   const [y, m] = dateStr.split("-");
   const names = [
@@ -64,7 +66,7 @@ export function fmtBulan(dateStr) {
   return `${names[Number(m) - 1]} ${y}`;
 }
 
-export function fmtTanggalLengkap(dateStr) {
+export function fmtTanggalLengkap(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("id-ID", {
     day: "2-digit",
@@ -73,39 +75,42 @@ export function fmtTanggalLengkap(dateStr) {
   });
 }
 
-export function hargaSatuanEfektif(r) {
+export function hargaSatuanEfektif(r: Partial<BahanItemRow> | null | undefined): number {
   if (r?.harga_satuan != null) return r.harga_satuan;
   const jumlah = Number(r?.jumlah) || 0;
   if (!jumlah) return 0;
   return Math.round((Number(r?.total_harga) || 0) / jumlah);
 }
 
-export function groupTagihanPerBulan(items, status = "belum") {
+export function groupTagihanPerBulan(
+  items: BahanItemRow[],
+  status: StatusBayar = "belum",
+): TagihanGroup[] {
   const filtered = items.filter((r) => r.status_bayar === status && r.jatuh_tempo);
-  const map = {};
+  const map: Record<string, TagihanGroup> = {};
   for (const r of filtered) {
-    const bulanKey = r.jatuh_tempo.slice(0, 7);
+    const bulanKey = r.jatuh_tempo!.slice(0, 7);
     if (!map[bulanKey]) map[bulanKey] = { bulan: bulanKey, total: 0, items: [] };
-    map[bulanKey].total += r.total_harga ?? 0;
-    map[bulanKey].items.push(r);
+    map[bulanKey]!.total += r.total_harga ?? 0;
+    map[bulanKey]!.items.push(r);
   }
   return Object.values(map).sort((a, b) => a.bulan.localeCompare(b.bulan));
 }
 
-export function generateTagihanWA(groups) {
+export function generateTagihanWA(groups: TagihanGroup[]): string {
   if (!groups.length) return "Tidak ada tagihan yang belum lunas.";
   const sep = "━━━━━━━━━━━━━━━━━━━";
-  const fmtRpWA = (n) => "Rp " + Number(n).toLocaleString("id-ID");
+  const fmtRpWA = (n: number) => `Rp ${Number(n).toLocaleString("id-ID")}`;
 
-  const lines = [];
+  const lines: string[] = [];
   lines.push("*🧾 TAGIHAN BAHAN BAKU — DEERA*");
   lines.push(sep);
   lines.push("");
 
   for (const g of groups) {
-    lines.push(`*📅 Jatuh Tempo: ${fmtBulan(g.bulan + "-01")}*`);
+    lines.push(`*📅 Jatuh Tempo: ${fmtBulan(`${g.bulan}-01`)}*`);
     for (const r of g.items) {
-      lines.push(`  • ${r.nama_bahan}${r.motif ? " / " + r.motif : ""}`);
+      lines.push(`  • ${r.nama_bahan}${r.motif ? ` / ${r.motif}` : ""}`);
       lines.push(
         `    Beli: ${fmtTanggalLengkap(r.tanggal)} · Tempo: ${fmtTanggalLengkap(r.jatuh_tempo)}`,
       );
@@ -113,7 +118,7 @@ export function generateTagihanWA(groups) {
       lines.push(`    *${fmtRpWA(r.total_harga)}*`);
     }
     lines.push(`  ${sep}`);
-    lines.push(`  *Total ${fmtBulan(g.bulan + "-01")}: ${fmtRpWA(g.total)}*`);
+    lines.push(`  *Total ${fmtBulan(`${g.bulan}-01`)}: ${fmtRpWA(g.total)}*`);
     lines.push("");
   }
 
@@ -125,7 +130,11 @@ export function generateTagihanWA(groups) {
   return lines.join("\n");
 }
 
-export function filterBahanItems(items, filterStatus, search) {
+export function filterBahanItems(
+  items: BahanItemRow[],
+  filterStatus: StatusBayar | "semua",
+  search: string,
+): BahanItemRow[] {
   const q = search.toLowerCase();
   return items.filter((item) => {
     const matchStatus = filterStatus === "semua" || item.status_bayar === filterStatus;
@@ -138,13 +147,16 @@ export function filterBahanItems(items, filterStatus, search) {
   });
 }
 
-export function sumBelumLunas(items) {
+export function sumBelumLunas(items: BahanItemRow[]): number {
   return items
     .filter((r) => r.status_bayar === "belum")
     .reduce((s, r) => s + (r.total_harga ?? 0), 0);
 }
 
-export function findRelatedPinjamRows(items, clicked) {
+export function findRelatedPinjamRows(
+  items: BahanItemRow[],
+  clicked: BahanItemRow,
+): BahanItemRow[] {
   const related = items.filter((r) => r.nama_pemberi === clicked.nama_pemberi);
   return related.length > 0 ? related : [clicked];
 }

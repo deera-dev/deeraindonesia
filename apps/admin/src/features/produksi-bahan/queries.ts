@@ -7,13 +7,20 @@ import {
   saveBahanItem,
   toggleLunas,
 } from "./api";
+import type {
+  BahanItemRow,
+  BahanTable,
+  DeleteBahanItemArgs,
+  DupeGroup,
+  SaveBahanItemArgs,
+} from "./schema";
 
 export const produksiBahanKeys = {
-  items: (table) => ["produksi-bahan", "items", table],
+  items: (table: BahanTable) => ["produksi-bahan", "items", table],
   stok: ["produksi-bahan", "stok"],
 };
 
-export function useBahanItemsQuery(table) {
+export function useBahanItemsQuery(table: BahanTable) {
   return useQuery({
     queryKey: produksiBahanKeys.items(table),
     queryFn: () => fetchBahanItems(table),
@@ -32,34 +39,34 @@ export function useInvalidateStokBahan() {
   return () => qc.invalidateQueries({ queryKey: produksiBahanKeys.stok });
 }
 
-export function useSaveBahanMutation(table) {
+export function useSaveBahanMutation(table: BahanTable) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args) => saveBahanItem({ table, ...args }),
+    mutationFn: (args: Omit<SaveBahanItemArgs, "table">) => saveBahanItem({ table, ...args }),
     onSuccess: () => qc.invalidateQueries({ queryKey: produksiBahanKeys.items(table) }),
   });
 }
 
-export function useToggleLunasMutation(table) {
+export function useToggleLunasMutation(table: BahanTable) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (item) => toggleLunas(table, item),
+    mutationFn: (item: BahanItemRow) => toggleLunas(table, item),
     onSuccess: () => qc.invalidateQueries({ queryKey: produksiBahanKeys.items(table) }),
   });
 }
 
-export function useDeleteBahanMutation(table) {
+export function useDeleteBahanMutation(table: BahanTable) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args) => deleteBahanItem({ table, ...args }),
+    mutationFn: (args: Omit<DeleteBahanItemArgs, "table">) => deleteBahanItem({ table, ...args }),
     onSuccess: () => qc.invalidateQueries({ queryKey: produksiBahanKeys.items(table) }),
   });
 }
 
-export function useMergeDupesMutation(table) {
+export function useMergeDupesMutation(table: BahanTable) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (groups) => mergeDupeGroups(table, groups),
+    mutationFn: (groups: DupeGroup[]) => mergeDupeGroups(table, groups),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["bahan", table] }),
   });
 }
