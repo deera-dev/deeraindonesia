@@ -1,7 +1,12 @@
 import { LOCATIONS } from "@deera/shared/lib/marketDay";
 import { supabase } from "@deera/shared/lib/supabase";
 
-export async function moveStokLokasi({ fromLocation, toLocation }) {
+export interface MoveStokLokasiParams {
+  fromLocation: string;
+  toLocation: string;
+}
+
+export async function moveStokLokasi({ fromLocation, toLocation }: MoveStokLokasiParams) {
   if (!LOCATIONS.includes(fromLocation) || !LOCATIONS.includes(toLocation)) {
     throw new Error("Lokasi tidak valid.");
   }

@@ -1,17 +1,18 @@
 import { supabase } from "@deera/shared/lib/supabase";
+import type { NotificationRow } from "./schema";
 
-export async function fetchMyNotifications(limit = 100) {
+export async function fetchMyNotifications(limit = 100): Promise<NotificationRow[]> {
   const { data, error } = await supabase.rpc("get_my_notifications", { p_limit: limit });
   if (error) throw error;
   return data ?? [];
 }
 
-export async function markNotificationsSeen() {
+export async function markNotificationsSeen(): Promise<void> {
   const { error } = await supabase.rpc("mark_notifications_seen");
   if (error) throw error;
 }
 
-export async function markNotificationRead(id) {
+export async function markNotificationRead(id: string): Promise<void> {
   const { error } = await supabase.rpc("mark_notification_read", { p_id: id });
   if (error) throw error;
 }

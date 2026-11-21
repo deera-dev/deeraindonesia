@@ -22,5 +22,5 @@ export function useMarkNotificationsSeen() {
 
 export function useMarkNotificationRead() {
   const m = useMarkNotificationReadMutation();
-  return (id) => m.mutate(id);
+  return (id: string) => m.mutate(id);
 }

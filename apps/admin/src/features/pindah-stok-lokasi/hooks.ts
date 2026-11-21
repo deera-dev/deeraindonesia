@@ -4,7 +4,15 @@ import { useMoveStokLokasiMutation } from "./queries";
 export function useMoveStokLokasi() {
   const { mutateAsync } = useMoveStokLokasiMutation();
 
-  return async ({ fromLocation, toLocation, password }) => {
+  return async ({
+    fromLocation,
+    toLocation,
+    password,
+  }: {
+    fromLocation: string;
+    toLocation: string;
+    password: string;
+  }) => {
     const user = await getCurrentUser();
     if (!user?.email) throw new Error("Sesi login tidak ditemukan, silakan login ulang.");
 

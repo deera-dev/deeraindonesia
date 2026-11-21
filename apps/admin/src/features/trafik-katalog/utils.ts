@@ -1,3 +1,5 @@
+import type { DateRange } from "./schema";
+
 export const PERIODS = [
   { key: "today", label: "Hari ini" },
   { key: 7, label: "7 hari" },
@@ -5,22 +7,25 @@ export const PERIODS = [
   { key: 90, label: "90 hari" },
 ];
 
-export function localDateStr(d = new Date()) {
+export function localDateStr(d: Date = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function addDays(dateStr, delta) {
+function addDays(dateStr: string, delta: number): string {
   const [y, m, d] = dateStr.split("-").map(Number);
-  return localDateStr(new Date(y, m - 1, d + delta));
+  return localDateStr(new Date(y!, m! - 1, d! + delta));
 }
 
-export function rangeForPreset(preset, today = localDateStr()) {
+export function rangeForPreset(preset: string | number, today: string = localDateStr()): DateRange {
   if (preset === "today") return { start: today, end: today };
   const days = Number(preset) || 30;
   return { start: addDays(today, -(days - 1)), end: today };
 }
 
-export function clampRange({ start, end } = {}, today = localDateStr()) {
+export function clampRange(
+  { start, end }: Partial<DateRange> = {},
+  today: string = localDateStr(),
+): DateRange {
   const s = start || today;
   const e = end || today;
   const lo = s > e ? e : s;
@@ -28,7 +33,7 @@ export function clampRange({ start, end } = {}, today = localDateStr()) {
   return { start: lo, end: hi > today ? today : hi };
 }
 
-export const CHANNEL_META = {
+export const CHANNEL_META: Record<string, { label: string; color: string }> = {
   ngorder: { label: "Share Ngorder (ke toko)", color: "#D97706" },
   google: { label: "Google (pencarian)", color: "#4285F4" },
   ai: { label: "AI (ChatGPT, Gemini, dll)", color: "#A855F7" },
@@ -47,24 +52,26 @@ export const CHANNEL_META = {
   lainnya: { label: "Situs lain", color: "#94A3B8" },
 };
 
-export function channelLabel(key) {
+export function channelLabel(key: string): string {
   return CHANNEL_META[key]?.label ?? key;
 }
-export function channelColor(key) {
+export function channelColor(key: string): string {
   return CHANNEL_META[key]?.color ?? "#94A3B8";
 }
 
-export function pct(part, total) {
+export function pct(part: number, total: number): number {
   if (!total) return 0;
   return Math.round((part / total) * 100);
 }
 
-export function dailyBars(daily) {
+export function dailyBars(
+  daily: Array<{ sessions: number; [key: string]: unknown }> | null | undefined,
+) {
   const max = Math.max(1, ...(daily ?? []).map((d) => d.sessions));
   return (daily ?? []).map((d) => ({ ...d, h: Math.max(4, Math.round((d.sessions / max) * 100)) }));
 }
 
-export function sourceLabel(row) {
+export function sourceLabel(row?: { channel?: string; source?: string } | null): string {
   if (row?.channel === "qr_produk" || row?.channel === "qr_struk") return channelLabel(row.channel);
   return row?.source ?? "";
 }
@@ -74,7 +81,9 @@ export function sourceLabel(row) {
 // country, sessions} dari by_location (lihat get_visit_stats RPC).
 // Country cuma ditampilkan kalau BUKAN Indonesia (default domestik,
 // jarang perlu ditulis "ID" di tiap baris).
-export function locationLabel(row) {
+export function locationLabel(
+  row?: { city?: string; region?: string; country?: string } | null,
+): string {
   const city = row?.city ?? "";
   const region = row?.region && row.region !== city ? row.region : "";
   const base = [city, region].filter(Boolean).join(", ");
@@ -82,7 +91,7 @@ export function locationLabel(row) {
   return (base || "Tidak diketahui") + country;
 }
 
-export function fmtDay(iso) {
+export function fmtDay(iso: string | null | undefined): string {
   const [, m, d] = String(iso ?? "").split("-");
   const bln = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
   return m && d ? `${Number(d)} ${bln[Number(m) - 1]}` : "";

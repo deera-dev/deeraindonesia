@@ -1,6 +1,7 @@
 import { supabase } from "@deera/shared/lib/supabase";
+import type { BukuPotonganData, ExpectedStokRow } from "./schema";
 
-export async function fetchBukuPotonganData() {
+export async function fetchBukuPotonganData(): Promise<BukuPotonganData> {
   const [stokRes, expRes, soldRes, dikirimRes] = await Promise.all([
     supabase.from("stok_warna").select("kode, size, warna, gudang, cideng, tegalgubug"),
     supabase.from("expected_stok").select("kode, size, warna, expected_qty"),
@@ -19,7 +20,7 @@ export async function fetchBukuPotonganData() {
   };
 }
 
-export async function upsertExpectedStok(rows) {
+export async function upsertExpectedStok(rows: ExpectedStokRow[]) {
   const upsertRows = rows.map((r) => ({ ...r, updated_at: new Date().toISOString() }));
   const { error } = await supabase
     .from("expected_stok")

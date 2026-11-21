@@ -1,4 +1,4 @@
-export function fmtRelative(iso, now = Date.now()) {
+export function fmtRelative(iso: string, now: number = Date.now()): string {
   const diff = Math.max(0, now - new Date(iso).getTime());
   const m = Math.floor(diff / 60000);
   if (m < 1) return "baru saja";

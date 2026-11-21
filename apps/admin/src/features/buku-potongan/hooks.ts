@@ -1,4 +1,5 @@
 import { useBukuPotonganDataQuery, useUpsertExpectedStokMutation } from "./queries";
+import type { ExpectedStokRow } from "./schema";
 
 export function useBukuPotonganData() {
   const { data, isLoading, error, refetch } = useBukuPotonganDataQuery();
@@ -16,5 +17,5 @@ export function useBukuPotonganData() {
 
 export function useSaveExpectedStok() {
   const { mutateAsync, isPending } = useUpsertExpectedStokMutation();
-  return { saveExpectedStok: (rows) => mutateAsync(rows), saving: isPending };
+  return { saveExpectedStok: (rows: ExpectedStokRow[]) => mutateAsync(rows), saving: isPending };
 }

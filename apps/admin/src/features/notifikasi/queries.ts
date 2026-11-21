@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchMyNotifications, markNotificationRead, markNotificationsSeen } from "./api";
+import type { NotificationRow } from "./schema";
 
 export const notifKeys = { all: ["notifikasi"] };
 
@@ -24,10 +25,10 @@ export function useMarkNotificationReadMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: markNotificationRead,
-    onMutate: async (id) => {
+    onMutate: async (id: string) => {
       await qc.cancelQueries({ queryKey: notifKeys.all });
-      const prev = qc.getQueryData(notifKeys.all);
-      qc.setQueryData(notifKeys.all, (old) =>
+      const prev = qc.getQueryData<NotificationRow[]>(notifKeys.all);
+      qc.setQueryData<NotificationRow[]>(notifKeys.all, (old) =>
         (old ?? []).map((n) => (n.id === id ? { ...n, is_unread: false } : n)),
       );
       return { prev };

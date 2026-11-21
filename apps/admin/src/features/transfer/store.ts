@@ -14,7 +14,16 @@ const DRAFT_KEY = "transfer_draft_v1";
   } catch {}
 })();
 
-const EMPTY_DRAFT = {
+export interface TransferDraft {
+  fromLoc?: string;
+  toLoc?: string;
+  notes?: string;
+  selected?: unknown[];
+  useCustomToLoc?: boolean;
+  customToLocText?: string;
+}
+
+const EMPTY_DRAFT: TransferDraft = {
   fromLoc: undefined,
   toLoc: undefined,
   notes: undefined,
@@ -23,7 +32,12 @@ const EMPTY_DRAFT = {
   customToLocText: undefined,
 };
 
-export const useTransferDraftStore = create(
+interface TransferDraftState extends TransferDraft {
+  save: (draft: TransferDraft) => void;
+  clear: () => void;
+}
+
+export const useTransferDraftStore = create<TransferDraftState>()(
   persist(
     (set) => ({
       ...EMPTY_DRAFT,
