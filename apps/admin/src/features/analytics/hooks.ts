@@ -148,7 +148,7 @@ export function useAnalyticsMarkets() {
   };
 }
 
-export function useAnalyticsMarketDetail(market) {
+export function useAnalyticsMarketDetail(market: string | null | undefined) {
   const { filter } = useAnalyticsFilter();
   const { data, isLoading, error, refetch } = useAnalyticsMarketDetailQuery({
     market,

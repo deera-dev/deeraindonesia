@@ -7,7 +7,18 @@ export const TREND_GRANULARITIES = [
   { value: "year", label: "Tahunan" },
 ];
 
-export const ANALYTICS_SECTION_GROUPS = [
+export interface AnalyticsTabItem {
+  key: string;
+  label: string;
+  description: string;
+}
+
+export interface AnalyticsSectionGroup {
+  groupLabel: string | null;
+  items: AnalyticsTabItem[];
+}
+
+export const ANALYTICS_SECTION_GROUPS: AnalyticsSectionGroup[] = [
   {
     groupLabel: null,
     items: [

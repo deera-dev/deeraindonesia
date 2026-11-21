@@ -9,12 +9,24 @@ import {
   EXECUTIVE_RETURN_RATE_WARNING,
   EXECUTIVE_RISK_LIMIT,
 } from "./constants";
+import type {
+  AnalyticsAdvanced,
+  AnalyticsForecast,
+  AnalyticsInventory,
+  AnalyticsOverview,
+  BusinessHealthItem,
+  ForecastHistoryPoint,
+  OpportunityItem,
+  PrioritizedQuickActions,
+  RestockForecastItem,
+  RiskItem,
+} from "./schema";
 
-export function fmtRp(n) {
-  return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
+export function fmtRp(n: number | string | null | undefined): string {
+  return `Rp ${(Number(n) || 0).toLocaleString("id-ID")}`;
 }
 
-export function fmtRpShort(n) {
+export function fmtRpShort(n: number | string | null | undefined): string {
   const v = Number(n) || 0;
   const sign = v < 0 ? "-" : "";
   const abs = Math.abs(v);
@@ -24,23 +36,23 @@ export function fmtRpShort(n) {
   return (sign ? "-" : "") + fmtRp(abs);
 }
 
-export function fmtNumber(n) {
+export function fmtNumber(n: number | string | null | undefined): string {
   return (Number(n) || 0).toLocaleString("id-ID");
 }
 
-export function fmtPercent(n) {
+export function fmtPercent(n: number | string | null | undefined): string {
   return (Number(n) || 0).toLocaleString("id-ID", { style: "percent", maximumFractionDigits: 1 });
 }
 
-export function fmtDecimal(n, maxFractionDigits = 2) {
+export function fmtDecimal(n: number | string | null | undefined, maxFractionDigits = 2): string {
   return (Number(n) || 0).toLocaleString("id-ID", { maximumFractionDigits: maxFractionDigits });
 }
 
-export function fmtPct1(v) {
+export function fmtPct1(v: number | string | null | undefined): string {
   return `${v}%`;
 }
 
-export function fmtDate(d) {
+export function fmtDate(d: string | null | undefined): string {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("id-ID", {
     day: "2-digit",
@@ -49,7 +61,7 @@ export function fmtDate(d) {
   });
 }
 
-export function fmtPeriode(periode, granularity) {
+export function fmtPeriode(periode: string | null | undefined, granularity: string): string {
   if (!periode) return "-";
   const d = new Date(periode);
   if (granularity === "year") return d.toLocaleDateString("id-ID", { year: "numeric" });
@@ -58,47 +70,50 @@ export function fmtPeriode(periode, granularity) {
   return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
 }
 
-export function localDateStr(d = new Date()) {
-  return (
-    d.getFullYear() +
-    "-" +
-    String(d.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(d.getDate()).padStart(2, "0")
-  );
+export function localDateStr(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export function dateRangeForDays(days, today = new Date()) {
+export function dateRangeForDays(
+  days: number,
+  today: Date = new Date(),
+): { fromDate: string; toDate: string } {
   const from = new Date(today);
   from.setDate(from.getDate() - (days - 1));
   return { fromDate: localDateStr(from), toDate: localDateStr(today) };
 }
 
-export function defaultDateRange(today = new Date()) {
+export function defaultDateRange(today: Date = new Date()): { fromDate: string; toDate: string } {
   return dateRangeForDays(DEFAULT_RANGE_DAYS, today);
 }
 
-export function daysUntil(dateStr) {
+export function daysUntil(dateStr: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  return Math.round((new Date(dateStr) - today) / 86400000);
+  return Math.round((new Date(dateStr).getTime() - today.getTime()) / 86400000);
 }
 
-export function classifyMarginHealth(overallMarginPct) {
+export type HealthStatus = "green" | "yellow" | "red";
+
+export function classifyMarginHealth(
+  overallMarginPct: number | string | null | undefined,
+): HealthStatus {
   const v = Number(overallMarginPct) || 0;
   if (v >= EXECUTIVE_MARGIN_HEALTHY_PCT) return "green";
   if (v >= EXECUTIVE_MARGIN_WARNING_PCT) return "yellow";
   return "red";
 }
 
-export function classifyReturnRateHealth(returnRate) {
+export function classifyReturnRateHealth(
+  returnRate: number | string | null | undefined,
+): HealthStatus {
   const v = Number(returnRate) || 0;
   if (v >= EXECUTIVE_RETURN_RATE_RISK) return "red";
   if (v >= EXECUTIVE_RETURN_RATE_WARNING) return "yellow";
   return "green";
 }
 
-export function classifyRevenueTrendHealth(pctChange) {
+export function classifyRevenueTrendHealth(pctChange: number | null | undefined): HealthStatus {
   if (pctChange == null) return "yellow";
   if (pctChange > 0) return "green";
   if (pctChange < 0) return "red";
@@ -111,8 +126,14 @@ export function buildBusinessHealth({
   returnRate,
   deadStockCount,
   overstockCount,
-}) {
-  const items = [
+}: {
+  momPctChange: number | null | undefined;
+  overallMarginPct: number;
+  returnRate: number;
+  deadStockCount: number;
+  overstockCount: number;
+}): BusinessHealthItem[] {
+  const items: BusinessHealthItem[] = [
     {
       status: classifyRevenueTrendHealth(momPctChange),
       label: "Penjualan (Bulan ke Bulan)",
@@ -149,7 +170,10 @@ export function buildBusinessHealth({
   return items;
 }
 
-export function buildBiggestOpportunity(restockForecast, limit = EXECUTIVE_OPPORTUNITY_LIMIT) {
+export function buildBiggestOpportunity(
+  restockForecast: RestockForecastItem[],
+  limit: number = EXECUTIVE_OPPORTUNITY_LIMIT,
+): OpportunityItem[] {
   return [...restockForecast]
     .sort((a, b) => (b.suggestedOrderQty ?? 0) - (a.suggestedOrderQty ?? 0))
     .slice(0, limit)
@@ -160,15 +184,21 @@ export function buildBiggestOpportunity(restockForecast, limit = EXECUTIVE_OPPOR
 }
 
 export function buildBiggestRisk(
-  { deadStock, negativeMarginProducts },
-  limit = EXECUTIVE_RISK_LIMIT,
-) {
-  const fromDeadStock = deadStock.map((d) => ({
+  {
+    deadStock,
+    negativeMarginProducts,
+  }: {
+    deadStock: Array<{ kode: string }>;
+    negativeMarginProducts: Array<{ kode: string; marginPct: number }>;
+  },
+  limit: number = EXECUTIVE_RISK_LIMIT,
+): RiskItem[] {
+  const fromDeadStock: RiskItem[] = deadStock.map((d) => ({
     kode: d.kode,
     category: "Stok Tidak Bergerak",
     detail: "Belum pernah terjual",
   }));
-  const fromMargin = negativeMarginProducts.map((m) => ({
+  const fromMargin: RiskItem[] = negativeMarginProducts.map((m) => ({
     kode: m.kode,
     category: "Margin Negatif",
     detail: `${fmtDecimal(m.marginPct)}% (jual rugi)`,
@@ -176,7 +206,10 @@ export function buildBiggestRisk(
   return [...fromDeadStock, ...fromMargin].slice(0, limit);
 }
 
-export function trendDirection(history, es) {
+export function trendDirection(
+  history: ForecastHistoryPoint[],
+  es: number | null | undefined,
+): "naik" | "turun" | "stabil" | null {
   if (es == null || !history.length) return null;
   const last = history[history.length - 1]?.value;
   if (last == null) return null;
@@ -185,8 +218,26 @@ export function trendDirection(history, es) {
   return "stabil";
 }
 
-export function buildExecutiveInsights({ overview, advanced, inventory, forecast }) {
-  const insights = [];
+export function buildExecutiveInsights({
+  overview,
+  advanced,
+  inventory,
+  forecast,
+}: {
+  overview: {
+    quickInsight: Pick<AnalyticsOverview["quickInsight"], "pasarTerbaik" | "produkTerlaris">;
+  };
+  advanced: {
+    periodComparison: Pick<AnalyticsAdvanced["periodComparison"], "mom">;
+    kpi: Pick<AnalyticsAdvanced["kpi"], "overallMarginPct" | "returnRate" | "returnRevenueImpact">;
+    marginRisk: Pick<AnalyticsAdvanced["marginRisk"], "negativeMarginProducts">;
+    revenueConcentration: Pick<AnalyticsAdvanced["revenueConcentration"], "top5Pct">;
+    newVsReturning: Pick<AnalyticsAdvanced["newVsReturning"], "newRevenue" | "returningRevenue">;
+  };
+  inventory: { stockHealth: Pick<AnalyticsInventory["stockHealth"], "dead"> };
+  forecast: { revenueForecast: Pick<AnalyticsForecast["revenueForecast"], "history" | "es"> };
+}): string[] {
+  const insights: string[] = [];
 
   const mom = advanced.periodComparison.mom;
   if (mom) {
@@ -200,8 +251,9 @@ export function buildExecutiveInsights({ overview, advanced, inventory, forecast
   );
 
   if (overview.quickInsight.pasarTerbaik) {
+    const loc = overview.quickInsight.pasarTerbaik.location as string;
     insights.push(
-      `Cabang ${LOCATION_LABELS[overview.quickInsight.pasarTerbaik.location] ?? overview.quickInsight.pasarTerbaik.location} menjadi penyumbang penjualan tertinggi periode ini.`,
+      `Cabang ${(LOCATION_LABELS as Record<string, string>)[loc] ?? loc} menjadi penyumbang penjualan tertinggi periode ini.`,
     );
   }
 
@@ -252,8 +304,23 @@ export function buildExecutiveInsights({ overview, advanced, inventory, forecast
   return insights.slice(0, EXECUTIVE_INSIGHT_MAX);
 }
 
-export function buildRecommendations({ advanced, inventory, forecast }) {
-  const recs = [];
+export function buildRecommendations({
+  advanced,
+  inventory,
+  forecast,
+}: {
+  advanced: {
+    marginRisk: Pick<AnalyticsAdvanced["marginRisk"], "negativeMarginProducts">;
+    marketConcentration: AnalyticsAdvanced["marketConcentration"];
+  };
+  inventory: {
+    suggestedRestock: AnalyticsInventory["suggestedRestock"];
+    stockHealth: Pick<AnalyticsInventory["stockHealth"], "overstock">;
+    overstock: AnalyticsInventory["overstock"];
+  };
+  forecast: { restockForecast: AnalyticsForecast["restockForecast"] };
+}): string[] {
+  const recs: string[] = [];
 
   if (inventory.suggestedRestock.length > 0) {
     const kodes = inventory.suggestedRestock
@@ -287,7 +354,7 @@ export function buildRecommendations({ advanced, inventory, forecast }) {
     const top = [...advanced.marketConcentration].sort((a, b) => b.value - a.value)[0];
     if (top)
       recs.push(
-        `Fokuskan promosi di cabang ${LOCATION_LABELS[top.location] ?? top.location} (kontribusi penjualan tertinggi, ${fmtPct1(top.pct)}).`,
+        `Fokuskan promosi di cabang ${(LOCATION_LABELS as Record<string, string>)[top.location] ?? top.location} (kontribusi penjualan tertinggi, ${fmtPct1(top.pct)}).`,
       );
   }
 
@@ -311,10 +378,19 @@ export function buildPrioritizedQuickActions({
   deadStockCount,
   demandTrend,
   revenueMomPctChange,
-}) {
-  const tinggi = [];
-  const sedang = [];
-  const rendah = [];
+}: {
+  restockCount: number;
+  restockKodes?: string[];
+  criticalStockCount: number;
+  negativeMarginCount: number;
+  lowStockCount: number;
+  deadStockCount: number;
+  demandTrend: "naik" | "turun" | "stabil" | null;
+  revenueMomPctChange: number | null | undefined;
+}): PrioritizedQuickActions {
+  const tinggi: PrioritizedQuickActions["tinggi"] = [];
+  const sedang: PrioritizedQuickActions["sedang"] = [];
+  const rendah: PrioritizedQuickActions["rendah"] = [];
 
   if (restockCount > 0) {
     tinggi.push({
