@@ -1,7 +1,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { WoDraft } from "./schema";
 
-export const useWoDraftStore = create(
+interface WoDraftState {
+  drafts: Record<string, WoDraft>;
+  saveDraft: (sampelId: string, patch: Partial<WoDraft>) => void;
+  clearDraft: (sampelId: string) => void;
+}
+
+export const useWoDraftStore = create<WoDraftState>()(
   persist(
     (set) => ({
       drafts: {},

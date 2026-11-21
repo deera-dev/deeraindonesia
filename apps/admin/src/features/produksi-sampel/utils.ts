@@ -1,14 +1,29 @@
+import type {
+  BahanItemFoto,
+  HistoryEntryLike,
+  ReorderUpdate,
+  Sampel,
+  SampelStatus,
+  TimelineEntry,
+  ZonaCatatan,
+  ZonaEntry,
+} from "./schema";
 
-export const fmtDate = (d) =>
+export const fmtDate = (d: string | null | undefined): string =>
   d
-    ? new Date(d + "T00:00:00").toLocaleDateString("id-ID", {
+    ? new Date(`${d}T00:00:00`).toLocaleDateString("id-ID", {
         day: "numeric",
         month: "long",
         year: "numeric",
       })
     : "-";
 
-export const STATUS_META = {
+export interface StatusMetaEntry {
+  label: string;
+  cls: string;
+}
+
+export const STATUS_META: Record<string, StatusMetaEntry> = {
   sedang_dibuat: {
     label: "Sedang Dibuat",
     cls: "bg-violet-500/10 text-violet-600 border border-violet-500/30",
@@ -35,40 +50,46 @@ export const STATUS_META = {
   },
 };
 
-export const isWoSelesai = (s) => s?.status === "approved" && !!s?.wo_selesai_at;
+export const isWoSelesai = (s: Sampel | null | undefined): boolean =>
+  s?.status === "approved" && !!s?.wo_selesai_at;
 
-export const isSedangDibuat = (s) => s?.status === "planning" && !!s?.wo_sampel_at;
+export const isSedangDibuat = (s: Sampel | null | undefined): boolean =>
+  s?.status === "planning" && !!s?.wo_sampel_at;
 
-export function filterByTab(sampels, tab) {
+export function filterByTab(sampels: Sampel[] | null | undefined, tab: string): Sampel[] {
   const list = sampels ?? [];
   if (tab === "planning") return list.filter((s) => s.status === "planning" && !s.wo_sampel_at);
   if (tab === "draft") return list.filter((s) => s.status === "draft" || isSedangDibuat(s));
   if (tab === "selesai") return list.filter(isWoSelesai);
   if (tab === "all") return list.filter((s) => !isWoSelesai(s));
   if (tab === "approved") return list.filter((s) => s.status === "approved" && !isWoSelesai(s));
-  return list.filter((s) => s.status === tab);
+  return list.filter((s) => s.status === (tab as SampelStatus));
 }
 
-export function referenceFotos(sampel) {
+export interface ReferenceFotos {
+  bahan: string[];
+  model: string[];
+}
+
+export function referenceFotos(sampel: Sampel | null | undefined): ReferenceFotos {
   const items = sampel?.bahan_items ?? [];
   const bahan = items.length
     ? items.map((b, i) => b?.foto ?? (i === 0 ? sampel?.bahan_foto : null))
     : [sampel?.bahan_foto];
   return {
-    bahan: bahan.filter(Boolean),
-    model: (sampel?.model_foto ?? []).filter(Boolean),
+    bahan: bahan.filter((f): f is string => !!f),
+    model: (sampel?.model_foto ?? []).filter((f): f is string => !!f),
   };
 }
 
-export function buildNomor() {
+export function buildNomor(): string {
   const d = new Date();
   const ymd = d.toISOString().slice(0, 10).replace(/-/g, "");
   const rand = Math.random().toString(36).slice(2, 5).toUpperCase();
   return `SPL-${ymd}-${rand}`;
 }
 
-
-export function sortPlanningQueue(sampels) {
+export function sortPlanningQueue(sampels: Sampel[] | null | undefined): Sampel[] {
   return (sampels ?? [])
     .filter((s) => s.status === "planning")
     .sort((a, b) => {
@@ -79,18 +100,18 @@ export function sortPlanningQueue(sampels) {
     });
 }
 
-export function nextPlanningUrutan(sampels) {
+export function nextPlanningUrutan(sampels: Sampel[] | null | undefined): number {
   const queue = sortPlanningQueue(sampels);
   if (queue.length === 0) return 0;
   const maxUrutan = Math.max(...queue.map((s) => s.urutan ?? -1));
   return maxUrutan + 1;
 }
 
-export function buildReorderUpdates(orderedIds) {
+export function buildReorderUpdates(orderedIds: string[] | null | undefined): ReorderUpdate[] {
   return (orderedIds ?? []).map((id, urutan) => ({ id, urutan }));
 }
 
-export function sortWithPinnedFirst(sampels) {
+export function sortWithPinnedFirst(sampels: Sampel[] | null | undefined): Sampel[] {
   return [...(sampels ?? [])].sort((a, b) => {
     const pa = a.pinned ? 1 : 0;
     const pb = b.pinned ? 1 : 0;
@@ -99,10 +120,9 @@ export function sortWithPinnedFirst(sampels) {
   });
 }
 
-
-export function formatDisplayName(nameOrEmail) {
+export function formatDisplayName(nameOrEmail: string | null | undefined): string {
   if (!nameOrEmail) return "";
-  const base = nameOrEmail.includes("@") ? nameOrEmail.split("@")[0] : nameOrEmail;
+  const base = nameOrEmail.includes("@") ? nameOrEmail.split("@")[0]! : nameOrEmail;
   return base
     .split(/[.\s_]+/)
     .filter(Boolean)
@@ -110,41 +130,53 @@ export function formatDisplayName(nameOrEmail) {
     .join(" ");
 }
 
-export function buildTimeline(history) {
+export function buildTimeline(history: HistoryEntryLike[] | null | undefined): TimelineEntry[] {
   return (history ?? [])
-    .map((h) => ({ type: "history", at: h.changed_at, raw: h }))
+    .map((h) => ({ type: "history" as const, at: h.changed_at, raw: h }))
     .sort((a, b) => (a.at ?? "").localeCompare(b.at ?? ""));
 }
 
 export const MAX_WO_REF_FOTOS = 6;
 
-function toPointers(text) {
+function toPointers(text: string | null | undefined): string[] {
   return String(text ?? "")
     .split(/\r?\n/)
-    .map((l) => l.replace(/^\s*[-\u2022*\u00b7]+\s*/, "").trim())
+    .map((l) => l.replace(/^\s*[-•*·]+\s*/, "").trim())
     .filter(Boolean);
 }
 
-export function splitCatatanPoints(text) {
+export function splitCatatanPoints(text: string | null | undefined): string[] {
   return String(text ?? "")
     .split(/\r?\n|,/)
-    .map((l) => l.replace(/^\s*[-\u2022*\u00b7]+\s*/, "").trim())
+    .map((l) => l.replace(/^\s*[-•*·]+\s*/, "").trim())
     .filter(Boolean);
 }
 
-export function listAllWoFotos(sampel) {
+export function listAllWoFotos(sampel: Sampel | null | undefined): string[] {
   const urls = [
     ...(sampel?.foto ?? []),
     ...(sampel?.model_foto ?? []),
     sampel?.bahan_foto,
     ...(sampel?.bahan_items ?? []).map((b) => b?.foto),
-  ].filter(Boolean);
+  ].filter((u): u is string => !!u);
   return [...new Set(urls)];
 }
 
-export function buildWoNotes(sampel, { excludeUrls = [], selected = null, maxRefs = MAX_WO_REF_FOTOS } = {}) {
-  const refFotos = [];
-  const labelFor = (url) => {
+export interface WoNotesResult {
+  text: string;
+  refFotos: Array<{ label: string; url: string }>;
+}
+
+export function buildWoNotes(
+  sampel: Sampel | null | undefined,
+  {
+    excludeUrls = [],
+    selected = null,
+    maxRefs = MAX_WO_REF_FOTOS,
+  }: { excludeUrls?: string[]; selected?: string[] | null; maxRefs?: number } = {},
+): WoNotesResult {
+  const refFotos: Array<{ label: string; url: string }> = [];
+  const labelFor = (url: string | null | undefined): string | null => {
     if (!url || excludeUrls.includes(url)) return null;
     if (selected && !selected.includes(url)) return null;
     const found = refFotos.find((r) => r.url === url);
@@ -160,15 +192,27 @@ export function buildWoNotes(sampel, { excludeUrls = [], selected = null, maxRef
   return { text: bullets.map((b) => `- ${b}`).join("\n"), refFotos };
 }
 
-export function productFotos(product) {
-  return [product?.image, ...(product?.detail ?? [])].filter(Boolean);
+export interface ProductLike {
+  id: string;
+  kode: string;
+  nama?: string | null;
+  image?: string | null;
+  detail?: string[];
 }
 
-export function repeatCandidates(products) {
+export function productFotos(product: ProductLike | null | undefined): string[] {
+  return [product?.image, ...(product?.detail ?? [])].filter((f): f is string => !!f);
+}
+
+export function repeatCandidates(products: ProductLike[] | null | undefined): ProductLike[] {
   return (products ?? []).filter((p) => !!p.image);
 }
 
-export function buildRepeatPrefill(product) {
+export function buildRepeatPrefill(product: ProductLike): {
+  nama: string;
+  modelFotos: string[];
+  repeat: { id: string; kode: string };
+} {
   return {
     nama: `Repeat ${product.kode ?? String(product.nama ?? "").replace(/^repeat\s+/i, "")}`.trim(),
     modelFotos: productFotos(product).slice(0, 3),
@@ -176,16 +220,23 @@ export function buildRepeatPrefill(product) {
   };
 }
 
-export function repeatFotoFor(sampel, products) {
-  const p = (products ?? []).find((x) => x.id === sampel?.repeat_dari_id || x.kode === sampel?.repeat_dari_kode);
+export function repeatFotoFor(
+  sampel: Sampel | null | undefined,
+  products: ProductLike[] | null | undefined,
+): string[] {
+  const p = (products ?? []).find(
+    (x) => x.id === sampel?.repeat_dari_id || x.kode === sampel?.repeat_dari_kode,
+  );
   const foto = p ? productFotos(p) : [];
-  return foto.length ? foto : sampel?.model_foto ?? [];
+  return foto.length ? foto : (sampel?.model_foto ?? []);
 }
 
-export function buildPrintHtml(dataUrls) {
+export function buildPrintHtml(dataUrls: string | string[]): string {
   const list = Array.isArray(dataUrls) ? dataUrls : [dataUrls];
   const imgs = list
-    .map((src, i) => `<img id="${i === 0 ? "wo" : "wo" + i}" src="${src}" alt="Work Order ${i + 1}">`)
+    .map(
+      (src, i) => `<img id="${i === 0 ? "wo" : `wo${i}`}" src="${src}" alt="Work Order ${i + 1}">`,
+    )
     .join("");
   return (
     '<!doctype html><html><head><meta charset="utf-8"><title>Work Order</title>' +
@@ -197,14 +248,14 @@ export function buildPrintHtml(dataUrls) {
   );
 }
 
-export function printImageA4(dataUrls) {
+export function printImageA4(dataUrls: string | string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     const iframe = document.createElement("iframe");
     iframe.setAttribute("aria-hidden", "true");
     iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
     document.body.appendChild(iframe);
     const cleanup = () => setTimeout(() => iframe.remove(), 1000);
-    const doc = iframe.contentDocument;
+    const doc = iframe.contentDocument!;
     doc.open();
     doc.write(buildPrintHtml(dataUrls));
     doc.close();
@@ -215,8 +266,8 @@ export function printImageA4(dataUrls) {
       if (done) return;
       done = true;
       try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
+        iframe.contentWindow!.focus();
+        iframe.contentWindow!.print();
         resolve();
       } catch (err) {
         reject(err);
@@ -243,8 +294,8 @@ export function printImageA4(dataUrls) {
   });
 }
 
-export function distinctBahan(sampels = []) {
-  const set = new Set();
+export function distinctBahan(sampels: Sampel[] = []): string[] {
+  const set = new Set<string>();
   for (const s of sampels ?? []) {
     for (const b of s?.bahan_items ?? []) {
       const n = (b?.nama_bahan ?? "").trim();
@@ -254,10 +305,10 @@ export function distinctBahan(sampels = []) {
   return [...set].sort((a, b) => a.localeCompare(b));
 }
 
-export function filterByBahan(sampels = [], bahan = "") {
+export function filterByBahan(sampels: Sampel[] = [], bahan = ""): Sampel[] {
   if (!bahan) return sampels;
   return (sampels ?? []).filter((s) =>
-    (s?.bahan_items ?? []).some((b) => (b?.nama_bahan ?? "").trim() === bahan),
+    (s?.bahan_items ?? []).some((b: BahanItemFoto) => (b?.nama_bahan ?? "").trim() === bahan),
   );
 }
 
@@ -276,17 +327,17 @@ export const MOTIF_OPTIONS = [
   { key: "polos", label: "Polos" },
 ];
 
-export function emptyZonaCatatan() {
+export function emptyZonaCatatan(): ZonaCatatan {
   return Object.fromEntries(
     WO_ZONA.map((z) => [z.key, { catatan: "", crop: null, motif: null, aktif: true }]),
   );
 }
 
-export function isZonaAktif(entry) {
+export function isZonaAktif(entry: ZonaEntry | null | undefined): boolean {
   return entry?.aktif !== false;
 }
 
-export function zonaHasContent(zona) {
+export function zonaHasContent(zona: ZonaCatatan | null | undefined): boolean {
   return WO_ZONA.some((z) => {
     const entry = zona?.[z.key];
     if (!isZonaAktif(entry)) return false;
@@ -294,7 +345,7 @@ export function zonaHasContent(zona) {
   });
 }
 
-export function photoGridDims(n) {
+export function photoGridDims(n: number): { cols: number; rows: number } {
   if (n <= 1) return { cols: 1, rows: 1 };
   if (n === 2) return { cols: 1, rows: 2 };
   if (n <= 4) return { cols: 2, rows: 2 };

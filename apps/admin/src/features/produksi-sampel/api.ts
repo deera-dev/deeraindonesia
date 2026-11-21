@@ -1,8 +1,19 @@
 import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
+import type {
+  BahanItemFoto,
+  Decision,
+  DecisionsMap,
+  PlanningEntry,
+  ReorderUpdate,
+  Sampel,
+  SampelMap,
+  WoSizeEntry,
+  ZonaCatatan,
+} from "./schema";
 import { buildNomor, zonaHasContent } from "./utils";
 
-export async function fetchSampels() {
+export async function fetchSampels(): Promise<Sampel[]> {
   const { data } = await supabase
     .from("sampel")
     .select("*")
@@ -10,7 +21,19 @@ export async function fetchSampels() {
   return data ?? [];
 }
 
-export async function updateSampel({ id, nomor, nama, tanggal, foto }) {
+export async function updateSampel({
+  id,
+  nomor,
+  nama,
+  tanggal,
+  foto,
+}: {
+  id: string;
+  nomor: string;
+  nama: string;
+  tanggal: string | null;
+  foto: string[];
+}): Promise<void> {
   const { error } = await supabase
     .from("sampel")
     .update({
@@ -31,11 +54,13 @@ export async function updateSampel({ id, nomor, nama, tanggal, foto }) {
   }).catch(() => {});
 }
 
-// Insert tunggal, sudah atomik dari sananya — cuma identitas yang
-// diperbaiki (created_by dulu dari userEmail/userName client, sekarang
-// dari auth.uid()) — lihat
-// supabase/migrations/20261120_produksi_sampel_crud.sql.
-export async function createPlanning(entry, bahanFotoUrl, modelFotoUrls, bahanItems, urutan) {
+export async function createPlanning(
+  entry: PlanningEntry,
+  bahanFotoUrl: string | null | undefined,
+  modelFotoUrls: string[] | undefined,
+  bahanItems: BahanItemFoto[] | undefined,
+  urutan: number | undefined,
+): Promise<Sampel> {
   const nomor = buildNomor();
   const { data, error } = await supabase.rpc("create_sampel_planning", {
     p_nomor: nomor,
@@ -54,7 +79,21 @@ export async function createPlanning(entry, bahanFotoUrl, modelFotoUrls, bahanIt
   return data;
 }
 
-export async function updatePlanning({ id, nomor, nama, tanggal, modelFotoUrls, bahanItems }) {
+export async function updatePlanning({
+  id,
+  nomor,
+  nama,
+  tanggal,
+  modelFotoUrls,
+  bahanItems,
+}: {
+  id: string;
+  nomor: string;
+  nama: string;
+  tanggal: string;
+  modelFotoUrls?: string[];
+  bahanItems?: BahanItemFoto[];
+}): Promise<void> {
   const patch = {
     nama,
     tanggal,
@@ -75,15 +114,23 @@ export async function updatePlanning({ id, nomor, nama, tanggal, modelFotoUrls, 
   }).catch(() => {});
 }
 
-// Dulu Promise.all dari N update independen tanpa transaction — sekarang
-// 1 RPC atomik.
-export async function reorderPlanning(updates) {
+export async function reorderPlanning(updates: ReorderUpdate[]): Promise<void> {
   if (!updates?.length) return;
   const { error } = await supabase.rpc("reorder_sampel_planning", { p_updates: updates });
   if (error) throw new Error(error.message);
 }
 
-export async function markSampelDibuat({ id, nomor, nama, foto }) {
+export async function markSampelDibuat({
+  id,
+  nomor,
+  nama,
+  foto,
+}: {
+  id: string;
+  nomor: string;
+  nama: string;
+  foto: string[];
+}): Promise<void> {
   const { error } = await supabase
     .from("sampel")
     .update({
@@ -104,7 +151,15 @@ export async function markSampelDibuat({ id, nomor, nama, foto }) {
   }).catch(() => {});
 }
 
-export function previousStepPatch(sampel, now = new Date().toISOString()) {
+export interface PreviousStepPlan {
+  step: "approved" | "draft" | "planning";
+  patch: Record<string, unknown>;
+}
+
+export function previousStepPatch(
+  sampel: Sampel,
+  now: string = new Date().toISOString(),
+): PreviousStepPlan | null {
   if (sampel.status === "approved" && sampel.wo_selesai_at) {
     return { step: "approved", patch: { wo_selesai_at: null } };
   }
@@ -130,7 +185,7 @@ export function previousStepPatch(sampel, now = new Date().toISOString()) {
   return null;
 }
 
-export async function mundurStepSampel(sampel) {
+export async function mundurStepSampel(sampel: Sampel): Promise<PreviousStepPlan["step"] | null> {
   const plan = previousStepPatch(sampel);
   if (!plan) return null;
   const now = new Date().toISOString();
@@ -150,7 +205,17 @@ export async function mundurStepSampel(sampel) {
   return plan.step;
 }
 
-export async function setWoSelesai({ id, nomor, nama, selesai }) {
+export async function setWoSelesai({
+  id,
+  nomor,
+  nama,
+  selesai,
+}: {
+  id: string;
+  nomor: string;
+  nama: string;
+  selesai: boolean;
+}): Promise<void> {
   const now = new Date().toISOString();
   const { error } = await supabase
     .from("sampel")
@@ -167,10 +232,15 @@ export async function setWoSelesai({ id, nomor, nama, selesai }) {
   }).catch(() => {});
 }
 
-// Update tunggal, sudah atomik dari sananya — cuma identitas yang
-// diperbaiki (approved_by dulu dari userEmail client, sekarang dari
-// auth.uid()).
-export async function approveRepeat({ id, foto, catatan }) {
+export async function approveRepeat({
+  id,
+  foto,
+  catatan,
+}: {
+  id: string;
+  foto?: string[];
+  catatan?: string | null;
+}): Promise<void> {
   const { error } = await supabase.rpc("approve_sampel_repeat", {
     p_id: id,
     p_foto: foto ?? [],
@@ -179,12 +249,11 @@ export async function approveRepeat({ id, foto, catatan }) {
   if (error) throw new Error(error.message);
 }
 
-// Dulu Promise.all dari N update independen (approve/tahan/reject per
-// sampel) tanpa transaction — kalau satu gagal, sisanya sudah ter-commit
-// duluan. Sekarang 1 RPC atomik, identitas dari auth.uid(). notify-
-// sampel-status TETAP fire-and-forget di luar RPC — lihat
-// supabase/migrations/20261120_produksi_sampel_crud.sql.
-export async function saveBatchDecisions(decisions, sampelMap, userEmail) {
+export async function saveBatchDecisions(
+  decisions: DecisionsMap,
+  sampelMap: SampelMap,
+  userEmail: string | null | undefined,
+): Promise<Array<[string, Decision]>> {
   const toProcess = Object.entries(decisions).filter(([, d]) => d.choice !== null);
   if (toProcess.length === 0) return toProcess;
 
@@ -224,12 +293,20 @@ export async function saveBatchDecisions(decisions, sampelMap, userEmail) {
   return toProcess;
 }
 
-export async function togglePinned(id, pinned) {
+export async function togglePinned(id: string, pinned: boolean): Promise<void> {
   const { error } = await supabase.from("sampel").update({ pinned }).eq("id", id);
   if (error) throw error;
 }
 
-export async function saveWoDraft({ sampel, sizes, zonaCatatan }) {
+export async function saveWoDraft({
+  sampel,
+  sizes,
+  zonaCatatan,
+}: {
+  sampel: Sampel;
+  sizes?: WoSizeEntry[];
+  zonaCatatan?: ZonaCatatan | null;
+}): Promise<void> {
   const patch = {
     wo_sizes: sizes ?? [],
     wo_catatan_zona: zonaHasContent(zonaCatatan) ? zonaCatatan : null,
@@ -238,10 +315,22 @@ export async function saveWoDraft({ sampel, sizes, zonaCatatan }) {
   if (error) throw error;
 }
 
-export async function logWorkOrder({ sampel, sizes, zonaCatatan }) {
-  const patch = {
+export async function logWorkOrder({
+  sampel,
+  sizes,
+  zonaCatatan,
+}: {
+  sampel: Sampel;
+  sizes?: WoSizeEntry[];
+  zonaCatatan?: ZonaCatatan | null;
+}): Promise<void> {
+  const patch: {
+    wo_sizes: WoSizeEntry[];
+    wo_catatan_zona: ZonaCatatan | null;
+    wo_sampel_at?: string;
+  } = {
     wo_sizes: sizes ?? [],
-    wo_catatan_zona: zonaHasContent(zonaCatatan) ? zonaCatatan : null,
+    wo_catatan_zona: zonaHasContent(zonaCatatan) ? (zonaCatatan ?? null) : null,
   };
   if (sampel.status === "planning" && !sampel.wo_sampel_at) {
     patch.wo_sampel_at = new Date().toISOString();
@@ -258,7 +347,7 @@ export async function logWorkOrder({ sampel, sizes, zonaCatatan }) {
   });
 }
 
-export async function deleteSampel(id) {
+export async function deleteSampel(id: string): Promise<void> {
   const { error } = await supabase.from("sampel").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
