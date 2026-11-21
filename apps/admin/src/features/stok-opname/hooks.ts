@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import {
   useBukuPotonganQuery,
   useCheckStokSemuaMutation,
@@ -7,6 +6,7 @@ import {
   useSaveStokOpnameMutation,
   useStokWarnaAllQuery,
 } from "./queries";
+import type { BukuPotonganData } from "./schema";
 import { useStokOpnameSessionStore } from "./store";
 
 export function useStokWarnaAll() {
@@ -21,21 +21,21 @@ export function useJahitDikerjakan() {
 
 export function useSaveStokOpname() {
   const { mutateAsync } = useSaveStokOpnameMutation();
-  return (vars) => mutateAsync(vars);
+  return (vars: Parameters<typeof mutateAsync>[0]) => mutateAsync(vars);
 }
 
 export function usePlanOpnameOverflow() {
   const { mutateAsync } = usePlanOpnameOverflowMutation();
-  return (vars) => mutateAsync(vars);
+  return (vars: Parameters<typeof mutateAsync>[0]) => mutateAsync(vars);
 }
 
 export function useCheckStokSemua() {
   const { mutateAsync } = useCheckStokSemuaMutation();
-  return (vars) => mutateAsync(vars);
+  return (vars: Parameters<typeof mutateAsync>[0]) => mutateAsync(vars);
 }
 
-const EMPTY_BUKU = { rows: {}, sizes: {}, kodes: {} };
-export function useBukuPotonganInfo() {
+const EMPTY_BUKU: BukuPotonganData = { rows: {}, sizes: {}, kodes: {} };
+export function useBukuPotonganInfo(): BukuPotonganData {
   const { data } = useBukuPotonganQuery();
   return data ?? EMPTY_BUKU;
 }

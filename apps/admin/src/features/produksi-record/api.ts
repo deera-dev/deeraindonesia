@@ -3,8 +3,17 @@ import { supabase } from "@deera/shared/lib/supabase";
 import { logHistory } from "../history/api";
 import { deleteProductCascade } from "../produk/api";
 import { createJahitCardsForBatch, renameJahitCardsForBatch } from "../produksi-jahit/api";
+import type {
+  BatchEntry,
+  BatchSize,
+  HppTemplate,
+  KaryawanPotong,
+  ProduksiBatch,
+  SharedBatchFields,
+  UpdateBatchPayload,
+} from "./schema";
 
-export async function fetchBatches() {
+export async function fetchBatches(): Promise<ProduksiBatch[]> {
   const { data } = await supabase
     .from("produksi_batch")
     .select("*")
@@ -12,7 +21,7 @@ export async function fetchBatches() {
   return data ?? [];
 }
 
-export async function fetchKaryawanPotong() {
+export async function fetchKaryawanPotong(): Promise<KaryawanPotong[]> {
   const { data, error } = await supabase
     .from("karyawan")
     .select("id, nama")
@@ -23,7 +32,9 @@ export async function fetchKaryawanPotong() {
   return data ?? [];
 }
 
-export async function fetchHppTemplate(kodeProduk) {
+export async function fetchHppTemplate(
+  kodeProduk: string | null | undefined,
+): Promise<HppTemplate | null> {
   if (!kodeProduk) return null;
   const { data } = await supabase
     .from("hpp_template")
@@ -33,7 +44,9 @@ export async function fetchHppTemplate(kodeProduk) {
   return data ?? null;
 }
 
-export async function resyncBahanDipakai(batch) {
+export async function resyncBahanDipakai(
+  batch: ProduksiBatch,
+): Promise<ProduksiBatch["bahan_dipakai"]> {
   const template = await fetchHppTemplate(batch.kode_produk);
   if (!template?.bahan_items?.length) {
     throw new Error(
@@ -69,21 +82,10 @@ export async function resyncBahanDipakai(batch) {
   return bahanDipakai;
 }
 
-// Dulu 5 panggilan supabase.from() berurutan, duplikat PERSIS cascade
-// delete_product_cascade tanpa cek error sama sekali. Sekarang delegasi
-// ke deleteProductCascade() yang sudah ada (atomik, 1 RPC) — sumber:
-// "produksi" dipertahankan lewat p_sumber supaya history tetap tampil
-// "Dari: produksi" (lihat
-// supabase/migrations/20261120_delete_product_cascade_sumber.sql).
-export async function deleteBatchAndProduct(batch) {
+export async function deleteBatchAndProduct(batch: ProduksiBatch): Promise<void> {
   await deleteProductCascade(batch.kode_produk, "produksi");
 }
 
-// Dulu 3 tulis berurutan (upsert products, insert produksi_batch, upsert
-// expected_stok) tanpa transaction — sekarang 1 RPC atomik
-// (create_produksi_batch). createJahitCardsForBatch TETAP fire-and-
-// forget di luar RPC (perilaku lama yang disengaja — lihat migration
-// supabase/migrations/20261120_produksi_batch_crud.sql).
 async function saveEntry({
   kode,
   nama,
@@ -99,7 +101,7 @@ async function saveEntry({
   upahJahit,
   tukangPotongId,
   tukangPotongNama,
-}) {
+}: BatchEntry): Promise<void> {
   const bahanDipakai =
     template?.bahan_items?.map((b) => ({
       nama_bahan: b.nama_bahan,
@@ -129,23 +131,36 @@ async function saveEntry({
   });
   if (error) throw new Error(error.message);
 
-  createJahitCardsForBatch({ batchId: data?.id, kode, nama, sizes }).catch((err) =>
+  createJahitCardsForBatch({ batchId: data?.id, kode, nama, sizes }).catch((err: unknown) =>
     console.warn("createJahitCardsForBatch error:", err),
   );
 }
 
-export async function createBatches(entries, shared) {
+export async function createBatches(
+  entries: BatchEntry[],
+  shared: SharedBatchFields,
+): Promise<void> {
   for (const entry of entries) {
     await saveEntry({ ...entry, ...shared });
   }
 }
 
-function deriveProductFieldsFromSizes(sizes) {
-  const variants = (sizes ?? []).map((s) => {
-    const preset = SIZE_PRESETS.find((p) => p.size === s.size);
+interface FallbackVariant {
+  size: string;
+  harga: number;
+  ld: number;
+  pb: number;
+}
+
+function deriveProductFieldsFromSizes(sizes: BatchSize[] | null | undefined): {
+  variants: FallbackVariant[];
+  warna: string[];
+} {
+  const variants: FallbackVariant[] = (sizes ?? []).map((s) => {
+    const preset = SIZE_PRESETS.find((p: { size: string }) => p.size === s.size);
     return { size: s.size, harga: 0, ld: preset?.ld ?? 0, pb: preset?.pb ?? 0 };
   });
-  const warnaSet = new Set();
+  const warnaSet = new Set<string>();
   for (const s of sizes ?? []) {
     for (const w of s.warna ?? []) {
       if (w.warna && w.warna !== "_") warnaSet.add(w.warna);
@@ -154,20 +169,11 @@ function deriveProductFieldsFromSizes(sizes) {
   return { variants, warna: [...warnaSet] };
 }
 
-// extraEntries/shared TIDAK dipakai — sudah begitu dari sebelumnya
-// (BatchForm.jsx membangun & mengirim extraEntries utk "Produk
-// tambahan" saat edit, tapi updateBatch lama juga gak pernah
-// memakainya). Pre-existing, bukan regresi dari perubahan ini.
-//
-// Dulu ensureProductForKode (select+update/insert products) + update
-// produksi_batch + delete/upsert expected_stok — 3+ tulis berurutan
-// tanpa transaction. Sekarang 1 RPC atomik (update_produksi_batch).
-// SIZE_PRESETS tetap dihitung di JS (deriveProductFieldsFromSizes) dan
-// dikirim sebagai p_fallback_variants/p_fallback_warna — RPC cuma
-// memakainya kalau produk hilang/perlu dibuat ulang, bukan ikut hitung
-// ulang preset size di SQL. Lihat
-// supabase/migrations/20261120_produksi_batch_crud.sql.
-export async function updateBatch(payload, _extraEntries, _shared) {
+export async function updateBatch(
+  payload: UpdateBatchPayload,
+  _extraEntries?: unknown,
+  _shared?: unknown,
+): Promise<void> {
   const {
     initial,
     kode,
@@ -204,12 +210,12 @@ export async function updateBatch(payload, _extraEntries, _shared) {
   });
   if (error) throw new Error(error.message);
 
-  createJahitCardsForBatch({ batchId: initial.id, kode, nama, sizes }).catch((err) =>
+  createJahitCardsForBatch({ batchId: initial.id, kode, nama, sizes }).catch((err: unknown) =>
     console.warn("createJahitCardsForBatch error:", err),
   );
 
   if (kodeChanged) {
-    renameJahitCardsForBatch({ batchId: initial.id, kode, nama }).catch((err) =>
+    renameJahitCardsForBatch({ batchId: initial.id, kode, nama }).catch((err: unknown) =>
       console.warn("renameJahitCardsForBatch error:", err),
     );
   }

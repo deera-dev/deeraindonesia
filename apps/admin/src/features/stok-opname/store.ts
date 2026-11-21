@@ -1,7 +1,23 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export const useStokOpnameSessionStore = create(
+interface CountedEntry {
+  at: string;
+  selisih: number;
+}
+
+interface StokOpnameSessionState {
+  loc: string | null;
+  counted: Record<string, Record<string, CountedEntry>>;
+  guideDismissed: boolean;
+  setLoc: (loc: string | null) => void;
+  markCounted: (loc: string, kode: string, selisih: number) => void;
+  resetCounted: (loc: string) => void;
+  dismissGuide: () => void;
+  showGuide: () => void;
+}
+
+export const useStokOpnameSessionStore = create<StokOpnameSessionState>()(
   persist(
     (set) => ({
       loc: null,

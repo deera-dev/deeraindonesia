@@ -1,5 +1,6 @@
 export { fetchHppTemplate } from "./api";
 
+import { fetchHppTemplate } from "./api";
 import {
   useBatchesQuery,
   useCreateBatchesMutation,
@@ -8,6 +9,7 @@ import {
   useResyncBahanDipakaiMutation,
   useUpdateBatchMutation,
 } from "./queries";
+import type { BatchEntry, BatchFilter, SharedBatchFields, UpdateBatchPayload } from "./schema";
 import { DEFAULT_BATCH_FILTER, useBatchFilterStore } from "./store";
 
 export function useBatches() {
@@ -22,25 +24,26 @@ export function useKaryawanPotong() {
 
 export function useCreateBatches() {
   const { mutateAsync } = useCreateBatchesMutation();
-  return (entries, shared) => mutateAsync({ entries, shared });
+  return (entries: BatchEntry[], shared: SharedBatchFields) => mutateAsync({ entries, shared });
 }
 
 export function useUpdateBatch() {
   const { mutateAsync } = useUpdateBatchMutation();
-  return (payload, extraEntries, shared) => mutateAsync({ payload, extraEntries, shared });
+  return (payload: UpdateBatchPayload, extraEntries?: unknown, shared?: unknown) =>
+    mutateAsync({ payload, extraEntries, shared });
 }
 
 export function useDeleteBatch() {
   const { mutateAsync } = useDeleteBatchMutation();
-  return (batch) => mutateAsync(batch);
+  return (batch: Parameters<typeof mutateAsync>[0]) => mutateAsync(batch);
 }
 
 export function useResyncBahanDipakai() {
   const { mutateAsync } = useResyncBahanDipakaiMutation();
-  return (batch) => mutateAsync(batch);
+  return (batch: Parameters<typeof mutateAsync>[0]) => mutateAsync(batch);
 }
 
-export async function lookupHppTemplate(kode) {
+export async function lookupHppTemplate(kode: string | null | undefined) {
   return fetchHppTemplate(kode);
 }
 
@@ -54,7 +57,7 @@ export function useBatchFilter() {
   const applyDraft = useBatchFilterStore((s) => s.applyDraft);
   const resetAll = useBatchFilterStore((s) => s.resetAll);
 
-  const hasActiveFilter = Object.keys(DEFAULT_BATCH_FILTER).some(
+  const hasActiveFilter = (Object.keys(DEFAULT_BATCH_FILTER) as Array<keyof BatchFilter>).some(
     (key) => applied[key] !== DEFAULT_BATCH_FILTER[key],
   );
 

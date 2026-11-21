@@ -1,18 +1,31 @@
 import { supabase } from "@deera/shared/lib/supabase";
+import type {
+  BukuPotonganData,
+  CheckStokSemuaParams,
+  CheckStokSemuaResult,
+  JahitDikerjakanRow,
+  OverflowPlan,
+  PlanOpnameOverflowParams,
+  SaveStokOpnameParams,
+  StokWarnaRow,
+} from "./schema";
 import { isSyntheticStokId, parseSyntheticStokId } from "./utils";
 
-export async function fetchAllStokWarna() {
+export async function fetchAllStokWarna(): Promise<StokWarnaRow[]> {
   const { data } = await supabase.from("stok_warna").select("*");
   return data ?? [];
 }
 
-export async function fetchJahitDikerjakan() {
+export async function fetchJahitDikerjakan(): Promise<JahitDikerjakanRow[]> {
   const { data, error } = await supabase.from("v_jahit_dikerjakan").select("*");
   if (error) throw error;
   return data ?? [];
 }
 
-export async function saveStokOpname({ changed, stokRows }) {
+export async function saveStokOpname({
+  changed,
+  stokRows,
+}: SaveStokOpnameParams): Promise<{ count: number }> {
   const changedIds = Object.keys(changed);
   if (changedIds.length === 0) return { count: 0 };
 
@@ -23,7 +36,7 @@ export async function saveStokOpname({ changed, stokRows }) {
     const kode = row?.kode ?? fallback?.kode;
     const size = row?.size ?? fallback?.size;
     const warna = row?.warna ?? fallback?.warna;
-    const vals = changed[id];
+    const vals = changed[id]!;
     const merged = {
       gudang: vals.gudang !== undefined ? vals.gudang : (row?.gudang ?? 0),
       cideng: vals.cideng !== undefined ? vals.cideng : (row?.cideng ?? 0),
@@ -44,10 +57,6 @@ export async function saveStokOpname({ changed, stokRows }) {
     };
   });
 
-  // Upsert stok_warna (konflik di kode+size+warna, bukan id — jadi baris
-  // baru/lama bisa 1 batch, gak perlu dipisah 2 panggilan lagi kayak JS
-  // lama) + audit log per kode, atomik dalam 1 RPC. Lihat
-  // supabase/migrations/20261120_save_stok_opname.sql.
   const { data, error } = await supabase.functions.invoke("stok-opname-crud", {
     body: { action: "save", input: { rows: historyRows } },
   });
@@ -57,7 +66,11 @@ export async function saveStokOpname({ changed, stokRows }) {
   return { count: changedIds.length };
 }
 
-export async function planOpnameOverflow({ kode, loc, changes }) {
+export async function planOpnameOverflow({
+  kode,
+  loc,
+  changes,
+}: PlanOpnameOverflowParams): Promise<OverflowPlan> {
   if (!changes?.length) return { overflow: false, sizes: [] };
   const { data, error } = await supabase.rpc("plan_opname_overflow", {
     p_kode: kode,
@@ -68,14 +81,17 @@ export async function planOpnameOverflow({ kode, loc, changes }) {
   return data ?? { overflow: false, sizes: [] };
 }
 
-export async function checkStokSemua({ kode, rows }) {
+export async function checkStokSemua({
+  kode,
+  rows,
+}: CheckStokSemuaParams): Promise<CheckStokSemuaResult> {
   if (!rows?.length) return { over: [] };
   const { data, error } = await supabase.rpc("check_stok_semua", { p_kode: kode, p_rows: rows });
   if (error) throw error;
   return data ?? { over: [] };
 }
 
-export async function fetchBukuPotongan() {
+export async function fetchBukuPotongan(): Promise<BukuPotonganData> {
   const { data, error } = await supabase.rpc("get_buku_potongan");
   if (error) throw error;
   return data ?? { rows: {}, sizes: {}, kodes: {} };

@@ -7,6 +7,7 @@ import {
   resyncBahanDipakai,
   updateBatch,
 } from "./api";
+import type { BatchEntry, ProduksiBatch, SharedBatchFields, UpdateBatchPayload } from "./schema";
 
 export const produksiRecordKeys = {
   batches: ["produksi-record", "batches"],
@@ -30,7 +31,8 @@ export function useKaryawanPotongQuery() {
 export function useCreateBatchesMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ entries, shared }) => createBatches(entries, shared),
+    mutationFn: ({ entries, shared }: { entries: BatchEntry[]; shared: SharedBatchFields }) =>
+      createBatches(entries, shared),
     onSuccess: () => qc.invalidateQueries({ queryKey: produksiRecordKeys.batches }),
   });
 }
@@ -38,7 +40,15 @@ export function useCreateBatchesMutation() {
 export function useUpdateBatchMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ payload, extraEntries, shared }) => updateBatch(payload, extraEntries, shared),
+    mutationFn: ({
+      payload,
+      extraEntries,
+      shared,
+    }: {
+      payload: UpdateBatchPayload;
+      extraEntries?: unknown;
+      shared?: unknown;
+    }) => updateBatch(payload, extraEntries, shared),
     onSuccess: () => qc.invalidateQueries({ queryKey: produksiRecordKeys.batches }),
   });
 }
@@ -46,7 +56,7 @@ export function useUpdateBatchMutation() {
 export function useDeleteBatchMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (batch) => deleteBatchAndProduct(batch),
+    mutationFn: (batch: ProduksiBatch) => deleteBatchAndProduct(batch),
     onSuccess: () => qc.invalidateQueries({ queryKey: produksiRecordKeys.batches }),
   });
 }
@@ -54,7 +64,7 @@ export function useDeleteBatchMutation() {
 export function useResyncBahanDipakaiMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (batch) => resyncBahanDipakai(batch),
+    mutationFn: (batch: ProduksiBatch) => resyncBahanDipakai(batch),
     onSuccess: () => qc.invalidateQueries({ queryKey: produksiRecordKeys.batches }),
   });
 }

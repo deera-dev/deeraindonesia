@@ -1,6 +1,7 @@
 import { create } from "zustand";
+import type { BatchFilter } from "./schema";
 
-export const DEFAULT_BATCH_FILTER = {
+export const DEFAULT_BATCH_FILTER: BatchFilter = {
   tanggalMin: "",
   tanggalMax: "",
   potongMin: "",
@@ -13,7 +14,18 @@ export const DEFAULT_BATCH_FILTER = {
   sort: "terbaru",
 };
 
-export const useBatchFilterStore = create((set) => ({
+interface BatchFilterState {
+  applied: BatchFilter;
+  draft: BatchFilter;
+  isModalOpen: boolean;
+  openModal: () => void;
+  closeModal: () => void;
+  setDraft: (patch: Partial<BatchFilter>) => void;
+  applyDraft: () => void;
+  resetAll: () => void;
+}
+
+export const useBatchFilterStore = create<BatchFilterState>()((set) => ({
   applied: { ...DEFAULT_BATCH_FILTER },
   draft: { ...DEFAULT_BATCH_FILTER },
   isModalOpen: false,

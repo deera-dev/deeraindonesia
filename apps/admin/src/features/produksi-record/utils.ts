@@ -1,10 +1,11 @@
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
+import type { BatchFilter, BatchSize, ProduksiBatch } from "./schema";
 
-export function fmtRp(n) {
-  return "Rp " + (Number(n) || 0).toLocaleString("id-ID");
+export function fmtRp(n: number | string | null | undefined): string {
+  return `Rp ${(Number(n) || 0).toLocaleString("id-ID")}`;
 }
 
-export function fmtDate(d) {
+export function fmtDate(d: string | null | undefined): string {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("id-ID", {
     day: "2-digit",
@@ -13,12 +14,15 @@ export function fmtDate(d) {
   });
 }
 
-export function genBatchNo() {
+export function genBatchNo(): string {
   const d = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   return `PROD-${d}-${Math.floor(Math.random() * 900 + 100)}`;
 }
 
-export function buildKode(angka, bahan) {
+export function buildKode(
+  angka: string | number | null | undefined,
+  bahan: string | null | undefined,
+): string {
   const a = String(angka ?? "").trim();
   const b = String(bahan ?? "")
     .trim()
@@ -32,18 +36,18 @@ export const inputCls =
 export const labelCls =
   "block text-xs font-editorial tracking-[0.15em] uppercase text-skin-text3 mb-1";
 
-export function parseKode(kode) {
+export function parseKode(kode: string | null | undefined): { angka: string; bahan: string } {
   const m = (kode ?? "").match(/^D-(\w+)-([A-Z]+)$/i);
-  return m ? { angka: m[1], bahan: m[2].toUpperCase() } : { angka: "", bahan: "" };
+  return m ? { angka: m[1]!, bahan: m[2]!.toUpperCase() } : { angka: "", bahan: "" };
 }
 
-export function initVariants(sizes) {
+export function initVariants(sizes: BatchSize[] | null | undefined) {
   const aktifSet = new Set((sizes ?? []).map((s) => s.size));
-  return SIZE_PRESETS.map((p) => ({ ...p, aktif: aktifSet.has(p.size) }));
+  return SIZE_PRESETS.map((p: { size: string }) => ({ ...p, aktif: aktifSet.has(p.size) }));
 }
 
-export function initWarnaList(sizes) {
-  const warnas = new Set();
+export function initWarnaList(sizes: BatchSize[] | null | undefined): string[] {
+  const warnas = new Set<string>();
   for (const sz of sizes ?? []) {
     for (const w of sz.warna ?? []) {
       if (w.warna !== "_") warnas.add(w.warna);
@@ -52,25 +56,47 @@ export function initWarnaList(sizes) {
   return [...warnas];
 }
 
-export function initQtyMap(sizes) {
-  const map = {};
+export function initQtyMap(
+  sizes: BatchSize[] | null | undefined,
+): Record<string, Record<string, number>> {
+  const map: Record<string, Record<string, number>> = {};
   for (const sz of sizes ?? []) {
     map[sz.size] = {};
     for (const w of sz.warna ?? []) {
-      map[sz.size][w.warna] = w.qty;
+      map[sz.size]![w.warna] = w.qty;
     }
   }
   return map;
 }
 
-export function newEntry() {
+export interface DraftEntry {
+  _key: number;
+  kodeAngka: string;
+  kodeBahan: string;
+  nama: string;
+  bahan: string;
+  variants: Array<{ size: string; ld: number; pb: number; aktif: boolean }>;
+  warnaInput: string;
+  warnaList: string[];
+  qtyMap: Record<string, Record<string, number>>;
+  template: unknown;
+  loadingTpl: boolean;
+  templateFetched: string;
+  expanded: boolean;
+  upahJahit: string;
+}
+
+export function newEntry(): DraftEntry {
   return {
     _key: Math.random(),
     kodeAngka: "",
     kodeBahan: "",
     nama: "",
     bahan: "",
-    variants: SIZE_PRESETS.map((s) => ({ ...s, aktif: false })),
+    variants: SIZE_PRESETS.map((s: { size: string; ld: number; pb: number }) => ({
+      ...s,
+      aktif: false,
+    })),
     warnaInput: "",
     warnaList: [],
     qtyMap: {},
@@ -82,14 +108,18 @@ export function newEntry() {
   };
 }
 
-export function entryTotalKain(entry) {
+export function entryTotalKain(entry: DraftEntry): number {
   return Object.values(entry.qtyMap).reduce(
     (s, wMap) => s + Object.values(wMap).reduce((a, v) => a + (Number(v) || 0), 0),
     0,
   );
 }
 
-export function filterAndSortBatches(batches, filter, { search = "" } = {}) {
+export function filterAndSortBatches(
+  batches: ProduksiBatch[] | null | undefined,
+  filter: BatchFilter,
+  { search = "" }: { search?: string } = {},
+): ProduksiBatch[] {
   const q = search.trim().toLowerCase();
   const tanggalMin = filter.tanggalMin || null;
   const tanggalMax = filter.tanggalMax || null;
@@ -135,9 +165,12 @@ export function filterAndSortBatches(batches, filter, { search = "" } = {}) {
     return true;
   });
 
-  const byTanggal = (a, b) => (a.tanggal_produksi ?? "").localeCompare(b.tanggal_produksi ?? "");
-  const byPotong = (a, b) => (Number(a.total_kain) || 0) - (Number(b.total_kain) || 0);
-  const byHpp = (a, b) => (Number(a.hpp_per_item) || 0) - (Number(b.hpp_per_item) || 0);
+  const byTanggal = (a: ProduksiBatch, b: ProduksiBatch) =>
+    (a.tanggal_produksi ?? "").localeCompare(b.tanggal_produksi ?? "");
+  const byPotong = (a: ProduksiBatch, b: ProduksiBatch) =>
+    (Number(a.total_kain) || 0) - (Number(b.total_kain) || 0);
+  const byHpp = (a: ProduksiBatch, b: ProduksiBatch) =>
+    (Number(a.hpp_per_item) || 0) - (Number(b.hpp_per_item) || 0);
 
   switch (filter.sort) {
     case "terlama":
