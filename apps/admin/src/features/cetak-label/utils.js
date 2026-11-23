@@ -7,8 +7,10 @@ export const MAX_COPIES = 999;
 
 // Protokol bahasa printer BLE, sama seperti di POS (useTsplPrinter.js) —
 // TSPL (printer label, bisa "PRINT 1,N" cetak N salinan dari satu bitmap
-// yang dikirim) vs ESC/POS (printer struk/label kombo spt CASHCOW CT-321B
-// yang tidak mengerti TSPL sama sekali).
+// yang dikirim) vs ESC/POS (printer struk). Printer kombo spt CASHCOW
+// CT-321B GANTI BAHASA tergantung mode fisik yang dipilih di tombolnya:
+// mode Receipt (Continuous) pakai ESC/POS, tapi mode Label (Gap Paper
+// atau Black Label) justru TSPL -- lihat CASHCOW_WAKE di buildLabelJob.
 export const PRINTER_PROTOCOLS = {
   tspl: { label: "TSPL (printer label)" },
   escpos: { label: "ESC/POS (printer struk)" },
@@ -79,16 +81,36 @@ export function totalCopies(rows) {
 
 const ascii = (s) => Uint8Array.from(s, (c) => c.charCodeAt(0) & 0xff);
 
+// BUG FIX (November 2026, laporan admin: mode "Label (Gap Paper)" di
+// CASHCOW CT-321B diam total pakai ESC/POS) -- ternyata printer ini
+// GANTI BAHASA PERINTAH tergantung mode fisik yang dipilih di
+// tombolnya: mode Receipt pakai ESC/POS, tapi mode Label (Gap Paper)
+// JUSTRU TSPL, bukan ESC/POS sama sekali (kebalikan dari dugaan
+// sebelumnya bahwa printer ini "tidak mengerti TSPL sama sekali" --
+// ternyata itu cuma berlaku di mode Receipt). Dikonfirmasi lewat
+// Bluetooth HCI snoop log dari app resmi CASHCOW yang berhasil cetak
+// di mode itu (admin kirim langsung via developer options HP) --
+// 8 byte pertama (`CASHCOW_WAKE`) SELALU identik di 2 sesi print
+// terpisah yang direkam, jadi aman diasumsikan command tetap/idempoten
+// (bukan checksum/counter yang berubah), kemungkinan "wake"/status
+// query ke chip jembatan BLE sebelum printer mau terima data TSPL.
+// Perintah SIZE/GAP/CLS/BITMAP/PRINT sendiri sudah sama persis dengan
+// yang sudah kita kirim -- yang kurang cuma DIRECTION (app kirim
+// "0,0", kita cuma "0") + 4 perintah TSPL standar yang sebelumnya
+// tidak pernah kita kirim (REFERENCE/DENSITY/OFFSET/SPEED).
+const CASHCOW_WAKE = Uint8Array.from([0xdd, 0x00, 0x05, 0x04, 0x00, 0x00, 0xe5, 0xdd]);
+
 export function buildLabelJob(bitmap, copies) {
   const { widthBytes, height, bytes } = bitmap;
   const head = ascii(
-    `SIZE ${LABEL.widthMm} mm,${LABEL.heightMm} mm\r\nGAP ${LABEL.gapMm} mm,0 mm\r\nDIRECTION 0\r\nCLS\r\nBITMAP 0,0,${widthBytes},${height},0,`,
+    `SIZE ${LABEL.widthMm} mm,${LABEL.heightMm} mm\r\nGAP ${LABEL.gapMm} mm,0 mm\r\nDIRECTION 0,0\r\nREFERENCE 0,0\r\nDENSITY 8\r\nOFFSET 0 mm\r\nSPEED 2\r\nCLS\r\nBITMAP 0,0,${widthBytes},${height},0,`,
   );
   const tail = ascii(`\r\nPRINT 1,${copies}\r\n`);
-  const out = new Uint8Array(head.length + bytes.length + tail.length);
-  out.set(head, 0);
-  out.set(bytes, head.length);
-  out.set(tail, head.length + bytes.length);
+  const out = new Uint8Array(CASHCOW_WAKE.length + head.length + bytes.length + tail.length);
+  out.set(CASHCOW_WAKE, 0);
+  out.set(head, CASHCOW_WAKE.length);
+  out.set(bytes, CASHCOW_WAKE.length + head.length);
+  out.set(tail, CASHCOW_WAKE.length + head.length + bytes.length);
   return out;
 }
 

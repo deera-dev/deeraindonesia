@@ -50,6 +50,22 @@ describe("cetak-label utils", () => {
     expect(LABEL_H).toBe(240);
     expect(concatJobs([job, job]).length).toBe(job.length * 2);
   });
+  // BUG FIX (November 2026, laporan admin: mode Label/Gap Paper di
+  // CASHCOW diam total pakai ESC/POS -- ternyata mode itu butuh TSPL,
+  // bukan ESC/POS) -- perintah tambahan ini dikonfirmasi lewat rekaman
+  // Bluetooth HCI snoop log app resmi CASHCOW yang berhasil cetak.
+  it("buildLabelJob: sertakan CASHCOW_WAKE prefix + perintah TSPL lengkap (DIRECTION 0,0/REFERENCE/DENSITY/OFFSET/SPEED)", () => {
+    const bitmap = { widthBytes: 40, height: 240, bytes: new Uint8Array(40 * 240).fill(0xff) };
+    const job = buildLabelJob(bitmap, 1);
+    expect(Array.from(job.slice(0, 8))).toEqual([0xdd, 0x00, 0x05, 0x04, 0x00, 0x00, 0xe5, 0xdd]);
+    const text = new TextDecoder("latin1").decode(job);
+    expect(text).toContain("DIRECTION 0,0");
+    expect(text).toContain("REFERENCE 0,0");
+    expect(text).toContain("DENSITY 8");
+    expect(text).toContain("OFFSET 0 mm");
+    expect(text).toContain("SPEED 2");
+    expect(text).toContain("CLS");
+  });
   it("PRINTER_PROTOCOLS: tspl & escpos tersedia, default tspl", () => {
     expect(Object.keys(PRINTER_PROTOCOLS)).toEqual(["tspl", "escpos"]);
     expect(DEFAULT_PROTOCOL).toBe("tspl");
