@@ -41,6 +41,9 @@ import {
   newManualReconciliationRow,
   buildManualRowsFromLog,
   buildKodeReconciliation,
+  resolveSizeOptions,
+  resolveWarnaOptions,
+  isReconciliationRowValid,
   pickPendingCards,
   pickPendingCmtKirim,
   buildPendingUnits,
@@ -401,10 +404,28 @@ describe("buildPerKaryawanMap", () => {
     expect(res[0][0]).toBe("B");
   });
   it("mengelompokkan per tim: Potong, Jahit, Finishing, QC, baru sisanya", () => {
-    const potong = [{ karyawan: { nama: "POTONG1", tim: "potong" }, total_upah: 10000, jumlah_pola: 0, jumlah_sampel: 0, qty_potongan: 0, tarif_potongan: 0 }];
-    const jahit = [{ karyawan: { nama: "JAHIT1", tim: "jahit" }, total_upah: 999999, kartu_items: [], permak_items: [] }];
+    const potong = [
+      {
+        karyawan: { nama: "POTONG1", tim: "potong" },
+        total_upah: 10000,
+        jumlah_pola: 0,
+        jumlah_sampel: 0,
+        qty_potongan: 0,
+        tarif_potongan: 0,
+      },
+    ];
+    const jahit = [
+      {
+        karyawan: { nama: "JAHIT1", tim: "jahit" },
+        total_upah: 999999,
+        kartu_items: [],
+        permak_items: [],
+      },
+    ];
     const qc = [{ karyawan: { nama: "QC1", tim: "qc" }, total_upah: 5000, jumlah_pcs: 10 }];
-    const finishing = [{ karyawan: { nama: "FIN1", tim: "finishing" }, total_upah: 1000, items: [] }];
+    const finishing = [
+      { karyawan: { nama: "FIN1", tim: "finishing" }, total_upah: 1000, items: [] },
+    ];
     const res = buildPerKaryawanMap({ potong, jahit, qc, kreatif: [], finishing, cfg });
     expect(res.map(([nama]) => nama)).toEqual(["POTONG1", "JAHIT1", "FIN1", "QC1"]);
   });
@@ -415,7 +436,9 @@ describe("attachGasAtkToPerKaryawan", () => {
     const perKaryawan = [["OM RUDI", { total: 1000000, tim: "finishing", rincian: [] }]];
     const res = attachGasAtkToPerKaryawan(perKaryawan, { beliGas: 100000 });
     expect(res[0][1].total).toBe(1100000);
-    expect(res[0][1].rincian.some((r) => r.label === BELI_GAS_LABEL && r.sub === 100000)).toBe(true);
+    expect(res[0][1].rincian.some((r) => r.label === BELI_GAS_LABEL && r.sub === 100000)).toBe(
+      true,
+    );
   });
   it("menambahkan Persiapan ATK ke karyawan QC dengan total terbesar", () => {
     const perKaryawan = [
@@ -718,6 +741,60 @@ describe("buildManualRowsFromLog", () => {
 
   it("logRows kosong -> tidak ada baris", () => {
     expect(buildManualRowsFromLog("D-01", [])).toEqual([]);
+  });
+});
+
+describe("resolveSizeOptions", () => {
+  it("pakai sizes dari variants produk kalau ada", () => {
+    const produk = { variants: [{ size: "Midi" }, { size: "Gamis" }] };
+    expect(resolveSizeOptions(produk)).toEqual(["Midi", "Gamis"]);
+  });
+  it("fallback ke semua SIZE_PRESETS kalau produk tidak ada variants (legacy)", () => {
+    expect(resolveSizeOptions(null)).toEqual([
+      "Midi",
+      "Midi Jumbo",
+      "Gamis",
+      "Gamis Jumbo",
+      "Super Jumbo",
+    ]);
+    expect(resolveSizeOptions({ variants: [] })).toEqual([
+      "Midi",
+      "Midi Jumbo",
+      "Gamis",
+      "Gamis Jumbo",
+      "Super Jumbo",
+    ]);
+  });
+});
+
+describe("resolveWarnaOptions", () => {
+  it("pakai warna produk kalau ada", () => {
+    expect(resolveWarnaOptions({ warna: ["MERAH", "HITAM"] })).toEqual(["MERAH", "HITAM"]);
+  });
+  it("fallback ke ['_'] kalau produk tanpa warna", () => {
+    expect(resolveWarnaOptions(null)).toEqual(["_"]);
+    expect(resolveWarnaOptions({ warna: [] })).toEqual(["_"]);
+  });
+});
+
+describe("isReconciliationRowValid", () => {
+  const produk = { variants: [{ size: "Midi" }, { size: "Gamis" }], warna: ["MERAH", "HITAM"] };
+
+  it("true kalau size & warna baris ada di daftar produk sekarang", () => {
+    expect(isReconciliationRowValid({ size: "Midi", warna: "MERAH" }, produk)).toBe(true);
+  });
+
+  it("false kalau warna baris sudah tidak ada di daftar produk (dihapus/direname)", () => {
+    expect(isReconciliationRowValid({ size: "Midi", warna: "BIRU" }, produk)).toBe(false);
+  });
+
+  it("false kalau size baris sudah tidak ada di daftar produk", () => {
+    expect(isReconciliationRowValid({ size: "Gamis Jumbo", warna: "MERAH" }, produk)).toBe(false);
+  });
+
+  it("baris kosong (belum diisi admin) dianggap valid -- bukan masalah, cuma belum lengkap", () => {
+    expect(isReconciliationRowValid({ size: "", warna: "" }, produk)).toBe(true);
+    expect(isReconciliationRowValid({ size: "Midi", warna: "" }, produk)).toBe(true);
   });
 });
 

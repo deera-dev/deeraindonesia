@@ -1,3 +1,4 @@
+import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { fmtRp as fmtRpLocal, fmtTanggal } from "../../shared/lib/format";
 
 export const TABS = [
@@ -636,6 +637,31 @@ export function groupPendingCmtByVendor(jahitRows = [], fullRows = []) {
   }
 
   return Object.values(byKey).map((g) => ({ ...g, totalUpah: g.jumlahTerima * g.hargaUpah }));
+}
+
+export function resolveSizeOptions(produk) {
+  const own = (produk?.variants ?? []).map((v) => v.size).filter(Boolean);
+  return own.length ? own : SIZE_PRESETS.map((s) => s.size);
+}
+
+export function resolveWarnaOptions(produk) {
+  return produk?.warna?.length ? produk.warna : ["_"];
+}
+
+// BUG FIX (November 2026, laporan admin: "kalau produk warnanya diedit,
+// warna di rekonsiliasi jadi banyak") -- kartu Jahit (jahit_cards) & setoran
+// CMT (cmt_jahit_kirim) menyimpan size/warna sbg "foto" saat kartu dibuat
+// (saat potong kain); kalau warna produk diedit SETELAHNYA (rename atau
+// dihapus/diganti total), kartu lama tidak ikut terupdate. Baris yang
+// size/warna-nya sudah tidak ada di daftar produk SEKARANG wajib ditandai
+// & dikoreksi admin dulu -- jangan sampai dikirim apa adanya ke
+// increment_stok_gudang(), krn itu bikin baris stok_warna BARU (bukan
+// nambah ke yang sudah ada) alih-alih mengenali warnanya sudah berubah.
+export function isReconciliationRowValid(row, produk) {
+  if (!row.size || !row.warna) return true;
+  return (
+    resolveSizeOptions(produk).includes(row.size) && resolveWarnaOptions(produk).includes(row.warna)
+  );
 }
 
 export function buildKodeReconciliation({ item, cards, soldRows, stokRows, logRows = [] }) {
