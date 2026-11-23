@@ -96,8 +96,23 @@ export function buildLabelJob(bitmap, copies) {
 // "PRINT 1,N" -- satu-satunya cara cetak N salinan adalah kirim ulang
 // raster yang sama persis N kali (bitmap-nya sendiri dibangun sekali saja
 // di sini, bukan di-render ulang, supaya tidak mahal).
+//
+// BUG FIX (November 2026, laporan admin: di mode "Label (gap paper)" QR
+// & teks malah kepisah ke label fisik yang beda-beda, banyak label kosong
+// di antaranya) -- `trim` (default true di buildImageEscPos, dipakai utk
+// struk di POS yg GEDE & banyak baris kosong) memotong baris kosong di
+// TENGAH satu label (antara QR di atas & teks di bawah) lalu menggantinya
+// dgn feed kertas (ESC J n) hitungan sendiri. Di printer continuous paper
+// ini aman krn tidak ada batas fisik per-label. Tapi di mode gap paper,
+// sensor gap printer menentukan sendiri kapan pindah ke label fisik
+// berikutnya -- feed hasil hitungan trim kita gampang tidak sinkron dgn
+// panjang gap fisik, jadi QR & teks (yg menurut KITA masih satu label yg
+// sama) bisa jatuh di 2 label fisik berbeda. Label kita sudah kecil
+// (320x240 dot, ~9.6KB mentah) jadi tidak ada untungnya trim di sini --
+// kirim utuh satu bitmap polos (trim: false) spy satu label = satu
+// bitmap, tidak ada feed buatan yg bisa geser dari gap fisiknya.
 export function buildLabelJobEscPos(bitmap, copies) {
-  const one = buildImageEscPos(bitmap);
+  const one = buildImageEscPos(bitmap, { trim: false });
   return concatJobs(new Array(Math.max(0, copies)).fill(one));
 }
 
