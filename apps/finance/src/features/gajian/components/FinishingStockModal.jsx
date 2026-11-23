@@ -1,14 +1,24 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@deera/shared/features/auth/hooks";
-import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { toast } from "@deera/shared/features/toast/hooks";
 import { inputCls, labelCls } from "../../../shared/lib/format";
-import { useApplyFinishingStockIntake, useLoadFinishingReconciliation, useProdukList } from "../hooks";
-import { autoSelectIfSingle, newManualReconciliationRow, recalcReconciliationRow } from "../utils";
+import {
+  useApplyFinishingStockIntake,
+  useLoadFinishingReconciliation,
+  useProdukList,
+} from "../hooks";
+import {
+  autoSelectIfSingle,
+  isReconciliationRowValid,
+  newManualReconciliationRow,
+  recalcReconciliationRow,
+  resolveSizeOptions,
+  resolveWarnaOptions,
+} from "../utils";
 import { AutoKodeSummary } from "./AutoKodeSummary";
 import { Modal } from "./Modal";
 
-function RowEditor({ row, sizeOptions, warnaOptions, editable, onChange, onRemove }) {
+function RowEditor({ row, sizeOptions, warnaOptions, editable, invalid, onChange, onRemove }) {
   const [qtyDraft, setQtyDraft] = useState(row.cardId ? String(row.qtyKartu) : "");
 
   function handleQtyChange(raw) {
@@ -17,15 +27,27 @@ function RowEditor({ row, sizeOptions, warnaOptions, editable, onChange, onRemov
   }
 
   return (
-    <div className="bg-skin-raised p-2.5 space-y-2">
+    <div className={`bg-skin-raised p-2.5 space-y-2 ${invalid ? "border border-red-500/50" : ""}`}>
+      {invalid && (
+        <p className="text-[11px] text-red-500 leading-snug">
+          ⚠ Ukuran/warna kartu ini sudah tidak ada di daftar produk sekarang (kemungkinan sudah
+          diedit). Pilih yang benar sebelum konfirmasi.
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <label className={labelCls}>Ukuran</label>
           {editable ? (
-            <select value={row.size} onChange={(e) => onChange({ ...row, size: e.target.value })} className={inputCls}>
+            <select
+              value={row.size}
+              onChange={(e) => onChange({ ...row, size: e.target.value })}
+              className={inputCls}
+            >
               <option value="">— Pilih —</option>
               {sizeOptions.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>
+                  {s}
+                </option>
               ))}
             </select>
           ) : (
@@ -35,14 +57,22 @@ function RowEditor({ row, sizeOptions, warnaOptions, editable, onChange, onRemov
         <div className="space-y-1">
           <label className={labelCls}>Warna</label>
           {editable ? (
-            <select value={row.warna} onChange={(e) => onChange({ ...row, warna: e.target.value })} className={inputCls}>
+            <select
+              value={row.warna}
+              onChange={(e) => onChange({ ...row, warna: e.target.value })}
+              className={inputCls}
+            >
               <option value="">— Pilih —</option>
               {warnaOptions.map((w) => (
-                <option key={w} value={w}>{w === "_" ? "(tanpa warna)" : w}</option>
+                <option key={w} value={w}>
+                  {w === "_" ? "(tanpa warna)" : w}
+                </option>
               ))}
             </select>
           ) : (
-            <p className="text-sm text-skin-text py-2">{row.warna === "_" ? "(tanpa warna)" : row.warna}</p>
+            <p className="text-sm text-skin-text py-2">
+              {row.warna === "_" ? "(tanpa warna)" : row.warna}
+            </p>
           )}
         </div>
       </div>
@@ -58,12 +88,22 @@ function RowEditor({ row, sizeOptions, warnaOptions, editable, onChange, onRemov
         />
       </div>
       <div className="grid grid-cols-3 gap-1 text-[11px] text-skin-text3 border-t border-skin-bdr-lt pt-1.5">
-        <span>Stok saat ini: <b className="text-skin-text2">{row.stokSaatIni}</b></span>
-        <span>Sudah terjual: <b className="text-skin-text2">{row.terjualSaatIni}</b></span>
-        <span>→ Tambah Gudang: <b className="text-skin-accent-text">{row.qtyDitambahkan}</b></span>
+        <span>
+          Stok saat ini: <b className="text-skin-text2">{row.stokSaatIni}</b>
+        </span>
+        <span>
+          Sudah terjual: <b className="text-skin-text2">{row.terjualSaatIni}</b>
+        </span>
+        <span>
+          → Tambah Gudang: <b className="text-skin-accent-text">{row.qtyDitambahkan}</b>
+        </span>
       </div>
       {onRemove && (
-        <button type="button" onClick={onRemove} className="text-[11px] font-editorial text-red-400 hover:text-red-500 transition">
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-[11px] font-editorial text-red-400 hover:text-red-500 transition"
+        >
           − Hapus baris
         </button>
       )}
@@ -110,14 +150,13 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
 
   function addManualRow(kode) {
     const produk = produkList.find((p) => p.kode === kode);
-    const sizeOptions = (produk?.variants ?? []).map((v) => v.size).filter(Boolean);
-    const effectiveSizeOptions = sizeOptions.length ? sizeOptions : SIZE_PRESETS.map((s) => s.size);
-    const warnaOptions = produk?.warna?.length ? produk.warna : ["_"];
+    const sizeOptions = resolveSizeOptions(produk);
+    const warnaOptions = resolveWarnaOptions(produk);
 
     setKodeStates((prev) => {
       const state = prev[kode];
       let row = newManualReconciliationRow(kode, {
-        size: autoSelectIfSingle(effectiveSizeOptions),
+        size: autoSelectIfSingle(sizeOptions),
         warna: autoSelectIfSingle(warnaOptions),
       });
       if (row.size && row.warna) {
@@ -135,6 +174,20 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
   }
 
   async function handleConfirm() {
+    if (produkList.length > 0) {
+      const kodeBermasalah = Object.values(kodeStates)
+        .filter((s) => {
+          const produk = produkList.find((p) => p.kode === s.kode);
+          return s.rows.some((r) => r.size && r.warna && !isReconciliationRowValid(r, produk));
+        })
+        .map((s) => s.kode);
+      if (kodeBermasalah.length > 0) {
+        toast.error(
+          `Perbaiki dulu ukuran/warna yang sudah tidak ada di produk: ${kodeBermasalah.join(", ")}`,
+        );
+        return;
+      }
+    }
     const rows = Object.values(kodeStates).flatMap((s) => s.rows.filter((r) => r.size && r.warna));
     try {
       await apply({
@@ -155,16 +208,24 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
     0,
   );
 
-  const sortedStates = Object.values(kodeStates).sort((a, b) => Number(b.mismatch) - Number(a.mismatch));
-  const perluCekCount = sortedStates.filter((st) => st.mismatch).length;
+  function hasInvalidRow(state) {
+    if (produkList.length === 0) return false;
+    const produk = produkList.find((p) => p.kode === state.kode);
+    return state.rows.some((r) => r.size && r.warna && !isReconciliationRowValid(r, produk));
+  }
+
+  const sortedStates = Object.values(kodeStates).sort(
+    (a, b) => Number(b.mismatch) - Number(a.mismatch),
+  );
+  const perluCekCount = sortedStates.filter((st) => st.mismatch || hasInvalidRow(st)).length;
   const cocokCount = sortedStates.length - perluCekCount;
 
   return (
     <Modal title="Rekonsiliasi Stok Finishing" onClose={onClose} maxWidth="md:max-w-2xl">
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
         <p className="text-xs text-skin-text3">
-          Breakdown size/warna diambil otomatis dari kartu Jahit. Kode yang totalnya cocok dengan Finance langsung
-          siap; cukup cek kode yang ditandai ⚠.
+          Breakdown size/warna diambil otomatis dari kartu Jahit. Kode yang totalnya cocok dengan
+          Finance langsung siap; cukup cek kode yang ditandai ⚠.
         </p>
 
         {loading ? (
@@ -183,9 +244,12 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
             </div>
             {sortedStates.map((state) => {
               const produk = produkList.find((p) => p.kode === state.kode);
-              const sizeOptions = (produk?.variants ?? []).map((v) => v.size).filter(Boolean);
-              const warnaOptions = produk?.warna?.length ? produk.warna : ["_"];
-              if (!state.mismatch && !expanded[state.kode]) {
+              const sizeOptions = resolveSizeOptions(produk);
+              const warnaOptions = resolveWarnaOptions(produk);
+              const invalidRow = (r) =>
+                produkList.length > 0 && !isReconciliationRowValid(r, produk);
+              const kodeInvalid = hasInvalidRow(state);
+              if (!state.mismatch && !kodeInvalid && !expanded[state.kode]) {
                 return (
                   <AutoKodeSummary
                     key={state.kode}
@@ -197,7 +261,9 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
               return (
                 <div key={state.kode} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="font-semibold text-sm text-skin-text">{state.kode} — {state.nama}</p>
+                    <p className="font-semibold text-sm text-skin-text">
+                      {state.kode} — {state.nama}
+                    </p>
                     <p className="text-xs text-skin-text3">Finance: {state.jumlahFinance} pcs</p>
                   </div>
                   {state.mismatch && (
@@ -209,14 +275,24 @@ export default function FinishingStockModal({ items, gajianFinishingId, onClose 
                       </p>
                     </div>
                   )}
+                  {kodeInvalid && (
+                    <div className="bg-red-500/10 border border-red-500/30 px-2.5 py-2">
+                      <p className="text-[11px] text-red-500 leading-snug">
+                        ⚠ Ada baris yang ukuran/warnanya sudah tidak ada di daftar produk kode ini
+                        (kemungkinan produknya sudah diedit sejak kartu dibuat). Koreksi dulu di
+                        baris yang ditandai sebelum bisa konfirmasi.
+                      </p>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     {state.rows.map((row, i) => (
                       <RowEditor
                         key={i}
                         row={row}
-                        sizeOptions={sizeOptions.length ? sizeOptions : SIZE_PRESETS.map((s) => s.size)}
+                        sizeOptions={sizeOptions}
                         warnaOptions={warnaOptions}
-                        editable={!row.cardId}
+                        editable={!row.cardId || invalidRow(row)}
+                        invalid={invalidRow(row)}
                         onChange={(next) => updateRow(state.kode, i, next)}
                         onRemove={!row.cardId ? () => removeRow(state.kode, i) : null}
                       />
