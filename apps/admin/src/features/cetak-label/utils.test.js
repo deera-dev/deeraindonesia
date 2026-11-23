@@ -1,5 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { labelText, labelUrl, buildLabelRows, clampCopies, totalCopies, buildLabelJob, concatJobs, LABEL_W, LABEL_H } from "./utils";
+import {
+  labelText,
+  labelUrl,
+  buildLabelRows,
+  clampCopies,
+  totalCopies,
+  buildLabelJob,
+  buildLabelJobEscPos,
+  concatJobs,
+  LABEL_W,
+  LABEL_H,
+  PRINTER_PROTOCOLS,
+  DEFAULT_PROTOCOL,
+} from "./utils";
 
 describe("cetak-label utils", () => {
   it("labelText: strip dash, huruf besar, tambah ukuran", () => {
@@ -33,5 +46,16 @@ describe("cetak-label utils", () => {
     expect(LABEL_W / 8).toBe(40);
     expect(LABEL_H).toBe(240);
     expect(concatJobs([job, job]).length).toBe(job.length * 2);
+  });
+  it("PRINTER_PROTOCOLS: tspl & escpos tersedia, default tspl", () => {
+    expect(Object.keys(PRINTER_PROTOCOLS)).toEqual(["tspl", "escpos"]);
+    expect(DEFAULT_PROTOCOL).toBe("tspl");
+  });
+  it("buildLabelJobEscPos: kirim ulang raster yang sama N kali (tanpa PRINT 1,N spt TSPL)", () => {
+    const bitmap = { widthBytes: 40, height: 240, bytes: new Uint8Array(40 * 240).fill(0xff) };
+    const job3 = buildLabelJobEscPos(bitmap, 3);
+    const job1 = buildLabelJobEscPos(bitmap, 1);
+    expect(job3.length).toBe(job1.length * 3);
+    expect(buildLabelJobEscPos(bitmap, 0).length).toBe(0);
   });
 });

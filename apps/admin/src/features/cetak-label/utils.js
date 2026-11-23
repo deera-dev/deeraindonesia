@@ -1,8 +1,19 @@
+import { buildImageEscPos } from "@deera/shared/lib/escposImage";
 
 export const LABEL = { widthMm: 40, heightMm: 30, gapMm: 2, dotsPerMm: 8 };
 export const LABEL_W = LABEL.widthMm * LABEL.dotsPerMm;
 export const LABEL_H = LABEL.heightMm * LABEL.dotsPerMm;
 export const MAX_COPIES = 999;
+
+// Protokol bahasa printer BLE, sama seperti di POS (useTsplPrinter.js) —
+// TSPL (printer label, bisa "PRINT 1,N" cetak N salinan dari satu bitmap
+// yang dikirim) vs ESC/POS (printer struk/label kombo spt CASHCOW CT-321B
+// yang tidak mengerti TSPL sama sekali).
+export const PRINTER_PROTOCOLS = {
+  tspl: { label: "TSPL (printer label)" },
+  escpos: { label: "ESC/POS (printer struk)" },
+};
+export const DEFAULT_PROTOCOL = "tspl";
 
 const SITE = "https://deera.id";
 
@@ -43,6 +54,15 @@ export function buildLabelJob(bitmap, copies) {
   out.set(bytes, head.length);
   out.set(tail, head.length + bytes.length);
   return out;
+}
+
+// ESC/POS "GS v 0" tidak punya parameter jumlah salinan spt TSPL
+// "PRINT 1,N" -- satu-satunya cara cetak N salinan adalah kirim ulang
+// raster yang sama persis N kali (bitmap-nya sendiri dibangun sekali saja
+// di sini, bukan di-render ulang, supaya tidak mahal).
+export function buildLabelJobEscPos(bitmap, copies) {
+  const one = buildImageEscPos(bitmap);
+  return concatJobs(new Array(Math.max(0, copies)).fill(one));
 }
 
 export function concatJobs(jobs) {
