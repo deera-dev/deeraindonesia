@@ -1,9 +1,28 @@
 import { useEffect, useState } from "react";
-import { useLabelPrint, labelDataUrl, labelText, labelUrl, PRINTER_PROTOCOLS } from "../hooks";
+import {
+  useLabelPrint,
+  labelDataUrl,
+  labelText,
+  labelUrl,
+  PRINTER_PROTOCOLS,
+  ESCPOS_PAPER_WIDTHS,
+} from "../hooks";
 
 export default function CetakLabelModal({ kode, onClose }) {
-  const { rows, isLoading, setQty, total, print, busy, progress, error, protocol, setProtocol } =
-    useLabelPrint(kode);
+  const {
+    rows,
+    isLoading,
+    setQty,
+    total,
+    print,
+    busy,
+    progress,
+    error,
+    protocol,
+    setProtocol,
+    escposPaperWidthMm,
+    setEscposPaperWidthMm,
+  } = useLabelPrint(kode);
   const [preview, setPreview] = useState(null);
   const firstSize = rows[0]?.size;
   useEffect(() => {
@@ -67,6 +86,34 @@ export default function CetakLabelModal({ kode, onClose }) {
               </button>
             ))}
           </div>
+          {protocol === "escpos" && (
+            <div>
+              <div
+                className="flex gap-1 bg-skin-page p-1 rounded-full"
+                role="group"
+                aria-label="Lebar kertas ESC/POS"
+              >
+                {Object.entries(ESCPOS_PAPER_WIDTHS).map(([key, cfg]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setEscposPaperWidthMm(key)}
+                    className={`flex-1 py-2 text-[11px] uppercase tracking-[0.06em] font-semibold rounded-full transition ${
+                      escposPaperWidthMm === key
+                        ? "bg-skin-accent text-skin-on-accent shadow-sm"
+                        : "text-skin-text2 hover:text-skin-text"
+                    }`}
+                  >
+                    {cfg.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-skin-text4 mt-1 px-1">
+                Pilih lebar kertas fisik yang terpasang supaya label tercetak di tengah, bukan
+                nempel ke kiri.
+              </p>
+            </div>
+          )}
           {isLoading && (
             <p className="text-sm text-skin-text3 text-center">Memuat data produksi…</p>
           )}

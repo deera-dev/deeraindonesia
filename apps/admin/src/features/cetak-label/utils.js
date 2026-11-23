@@ -15,6 +15,42 @@ export const PRINTER_PROTOCOLS = {
 };
 export const DEFAULT_PROTOCOL = "tspl";
 
+// BUG FIX (November 2026, laporan admin: "hasil cetak labelnya miring
+// tidak ditengah" pakai ESC/POS di printer kombo spt CASHCOW CT-321B) --
+// label kita selalu 40mm (320 dot) lebarnya, tapi printer struk/label
+// kombo ESC/POS bisa dipakai di beberapa lebar kertas fisik berbeda
+// (admin: 40mm mode Label, 80mm mode Struk/Receipt). GS v 0 (ESC/POS
+// raster) SELALU cetak mulai dari margin kiri kepala cetak -- kalau
+// kertas fisiknya lebih lebar dari 320 dot (mis. 80mm/576 dot), gambar
+// label-nya nempel di kiri, bukan di tengah kertas. Lebar dot 576 utk
+// 80mm sama persis dengan yang sudah terbukti di POS (useTsplPrinter.js
+// ESCPOS_PAPER_WIDTHS) -- printer fisiknya sama (CASHCOW CT-321B dkk).
+export const ESCPOS_PAPER_WIDTHS = {
+  40: { label: "40mm (mode Label)", dots: LABEL_W },
+  80: { label: "80mm (mode Struk/Receipt)", dots: 576 },
+};
+export const DEFAULT_ESCPOS_PAPER_WIDTH = "40";
+
+// Tengahin bitmap label (320 dot) di dalam kertas fisik yang lebih lebar
+// dgn nambah kolom kosong (whiteByte) kiri-kanan secara merata -- kalau
+// kertas fisiknya SAMA/lebih sempit dari label (mis. mode Label 40mm),
+// tidak ada yang perlu ditambah. Granularity per-byte (8 dot) cukup utk
+// mata, tidak perlu presisi per-pixel.
+export function centerBitmapInWidth(bitmap, targetWidthDots) {
+  const targetWidthBytes = Math.ceil(targetWidthDots / 8);
+  const { widthBytes, height, bytes, whiteByte = 0x00 } = bitmap;
+  if (targetWidthBytes <= widthBytes) return bitmap;
+  const padLeftBytes = Math.floor((targetWidthBytes - widthBytes) / 2);
+  const out = new Uint8Array(targetWidthBytes * height).fill(whiteByte);
+  for (let r = 0; r < height; r++) {
+    out.set(
+      bytes.subarray(r * widthBytes, (r + 1) * widthBytes),
+      r * targetWidthBytes + padLeftBytes,
+    );
+  }
+  return { widthBytes: targetWidthBytes, height, bytes: out, whiteByte };
+}
+
 const SITE = "https://deera.id";
 
 export function labelText(kode, size) {

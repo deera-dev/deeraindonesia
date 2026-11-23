@@ -12,6 +12,9 @@ import {
   LABEL_H,
   PRINTER_PROTOCOLS,
   DEFAULT_PROTOCOL,
+  ESCPOS_PAPER_WIDTHS,
+  DEFAULT_ESCPOS_PAPER_WIDTH,
+  centerBitmapInWidth,
 } from "./utils";
 
 describe("cetak-label utils", () => {
@@ -57,5 +60,29 @@ describe("cetak-label utils", () => {
     const job1 = buildLabelJobEscPos(bitmap, 1);
     expect(job3.length).toBe(job1.length * 3);
     expect(buildLabelJobEscPos(bitmap, 0).length).toBe(0);
+  });
+  it("ESCPOS_PAPER_WIDTHS: 40mm = lebar label (320 dot), 80mm = 576 dot, default 40mm", () => {
+    expect(ESCPOS_PAPER_WIDTHS["40"].dots).toBe(LABEL_W);
+    expect(ESCPOS_PAPER_WIDTHS["80"].dots).toBe(576);
+    expect(DEFAULT_ESCPOS_PAPER_WIDTH).toBe("40");
+  });
+  describe("centerBitmapInWidth", () => {
+    it("kertas sama/lebih sempit dari bitmap -> dikembalikan apa adanya (tidak di-pad)", () => {
+      const bitmap = { widthBytes: 40, height: 4, bytes: new Uint8Array(40 * 4).fill(0xff) };
+      expect(centerBitmapInWidth(bitmap, 320)).toBe(bitmap);
+      expect(centerBitmapInWidth(bitmap, 100)).toBe(bitmap);
+    });
+    it("kertas lebih lebar -> tambah kolom kosong (0x00) rata kiri-kanan, konten asli di tengah", () => {
+      const bitmap = { widthBytes: 2, height: 1, bytes: new Uint8Array([0xff, 0xff]) };
+      const padded = centerBitmapInWidth(bitmap, 32); // target 4 byte (32/8)
+      expect(padded.widthBytes).toBe(4);
+      expect(padded.height).toBe(1);
+      expect(Array.from(padded.bytes)).toEqual([0x00, 0xff, 0xff, 0x00]);
+    });
+    it("multi-baris: tiap baris dipad dgn margin yang sama", () => {
+      const bitmap = { widthBytes: 1, height: 2, bytes: new Uint8Array([0xaa, 0xbb]) };
+      const padded = centerBitmapInWidth(bitmap, 24); // target 3 byte
+      expect(Array.from(padded.bytes)).toEqual([0x00, 0xaa, 0x00, 0x00, 0xbb, 0x00]);
+    });
   });
 });

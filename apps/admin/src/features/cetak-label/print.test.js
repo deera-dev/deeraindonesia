@@ -9,8 +9,13 @@ vi.mock("@deera/shared/lib/blePrinter", () => ({
   scheduleIdleDisconnect: (...a) => scheduleIdleDisconnect(...a),
   disconnectPrinter: (...a) => disconnectPrinter(...a),
 }));
+function opaqueBlackImage(w, h) {
+  const data = new Uint8ClampedArray(w * h * 4);
+  for (let i = 0; i < w * h; i++) data[i * 4 + 3] = 255; // alpha opaque, RGB tetap 0 (hitam)
+  return data;
+}
 vi.mock("./render", () => ({
-  labelGray: async () => ({ data: new Uint8ClampedArray(320 * 240 * 4).fill(255), w: 320, h: 240 }),
+  labelGray: async () => ({ data: opaqueBlackImage(320, 240), w: 320, h: 240 }),
 }));
 import { printLabels } from "./print";
 
@@ -48,5 +53,30 @@ describe("printLabels", () => {
     expect(text).not.toContain("PRINT 1,");
     expect(disconnectPrinter).toHaveBeenCalledTimes(1);
     expect(scheduleIdleDisconnect).not.toHaveBeenCalled();
+  });
+  it("escposPaperWidthMm='80' nambah margin kiri-kanan (konten di tengah kertas lebih lebar) -- job lebih besar dari mode 40mm", async () => {
+    await printLabels([{ kode: "D-1", size: "Midi", qty: 1 }], {
+      protocol: "escpos",
+      escposPaperWidthMm: "40",
+    });
+    const job40 = writeBleFast.mock.calls[0][1];
+    writeBleFast.mockClear();
+    await printLabels([{ kode: "D-1", size: "Midi", qty: 1 }], {
+      protocol: "escpos",
+      escposPaperWidthMm: "80",
+    });
+    const job80 = writeBleFast.mock.calls[0][1];
+    expect(job80.length).toBeGreaterThan(job40.length);
+  });
+  it("default escposPaperWidthMm (tanpa opsi) = 40mm, sama persis dgn eksplisit 40mm", async () => {
+    await printLabels([{ kode: "D-1", size: "Midi", qty: 1 }], { protocol: "escpos" });
+    const jobDefault = writeBleFast.mock.calls[0][1];
+    writeBleFast.mockClear();
+    await printLabels([{ kode: "D-1", size: "Midi", qty: 1 }], {
+      protocol: "escpos",
+      escposPaperWidthMm: "40",
+    });
+    const job40 = writeBleFast.mock.calls[0][1];
+    expect(jobDefault.length).toBe(job40.length);
   });
 });
