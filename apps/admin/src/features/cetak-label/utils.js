@@ -92,6 +92,16 @@ export function buildLabelJob(bitmap, copies) {
   return out;
 }
 
+const ESC = 0x1b;
+
+// `ESC J n` -- "print and feed paper" n DOT persis (bukan n baris teks),
+// sama persis dgn feedForBlankRows di escposImage.js (shared, tidak
+// diekspor) -- satu-satunya cara maju kertas presisi per-dot di ESC/POS,
+// lihat pemakaiannya di buildLabelJobEscPos di bawah.
+function feedDots(n) {
+  return Uint8Array.from([ESC, 0x4a, Math.max(0, Math.min(255, Math.round(n)))]);
+}
+
 // ESC/POS "GS v 0" tidak punya parameter jumlah salinan spt TSPL
 // "PRINT 1,N" -- satu-satunya cara cetak N salinan adalah kirim ulang
 // raster yang sama persis N kali (bitmap-nya sendiri dibangun sekali saja
@@ -111,9 +121,25 @@ export function buildLabelJob(bitmap, copies) {
 // (320x240 dot, ~9.6KB mentah) jadi tidak ada untungnya trim di sini --
 // kirim utuh satu bitmap polos (trim: false) spy satu label = satu
 // bitmap, tidak ada feed buatan yg bisa geser dari gap fisiknya.
+//
+// BUG FIX LANJUTAN (November 2026, laporan admin: masih kepisah walau
+// trim sudah dimatikan, pas cetak BANYAK salinan sekaligus) -- root
+// cause KEDUA: `feedLines` bawaan buildImageEscPos (default 4) itu 4
+// KARAKTER LINE FEED (\n) BUKAN feed per-dot -- tinggi 1 line feed
+// tergantung setting font/line-height printer (tidak presisi, beda2 per
+// printer/firmware), jadi jarak antar salinan jadi meleset dikit demi
+// sedikit tiap kopi -- mesin tidak py sensor gap aktif di mode continuous
+// utk "koreksi" kemelesetan itu, jadi error-nya MENUMPUK tiap kopi
+// (drift), makin banyak salinan makin parah. Fix: feedLines:0 (TANPA LF
+// sama sekali di akhir raster), feed presisi sendiri pakai ESC J per-dot
+// SEBESAR gap fisik antar label (LABEL.gapMm) -- jaraknya SAMA PERSIS
+// tiap kopi, tidak ada komponen yang bisa meleset/menumpuk.
 export function buildLabelJobEscPos(bitmap, copies) {
-  const one = buildImageEscPos(bitmap, { trim: false });
-  return concatJobs(new Array(Math.max(0, copies)).fill(one));
+  const one = buildImageEscPos(bitmap, { trim: false, feedLines: 0 });
+  const gap = feedDots(LABEL.gapMm * LABEL.dotsPerMm);
+  const jobs = [];
+  for (let i = 0; i < Math.max(0, copies); i++) jobs.push(one, gap);
+  return concatJobs(jobs);
 }
 
 export function concatJobs(jobs) {

@@ -82,6 +82,20 @@ describe("cetak-label utils", () => {
     }
     expect(count).toBe(1);
   });
+  // BUG FIX LANJUTAN (November 2026, laporan admin: masih kepisah walau
+  // trim sudah dimatikan, pas cetak banyak salinan) -- feed antar kopi
+  // WAJIB presisi per-dot (ESC J n), bukan line-feed (\n) yang tingginya
+  // tergantung setting font printer & bisa meleset/menumpuk tiap kopi.
+  it("buildLabelJobEscPos: feed antar kopi pakai ESC J presisi (gap fisik), bukan line feed", () => {
+    const bitmap = { widthBytes: 1, height: 1, bytes: new Uint8Array([0xff]) };
+    const job = buildLabelJobEscPos(bitmap, 2);
+    let escJCount = 0;
+    for (let i = 0; i + 2 < job.length; i++) {
+      if (job[i] === 0x1b && job[i + 1] === 0x4a && job[i + 2] === 16) escJCount++;
+    }
+    expect(escJCount).toBe(2); // 1x per kopi, gap 2mm * 8 dot/mm = 16 dot
+    expect(Array.from(job)).not.toContain(0x0a); // tidak ada line feed sama sekali
+  });
   it("ESCPOS_PAPER_WIDTHS: 40mm = lebar label (320 dot), 80mm = 576 dot, default 40mm", () => {
     expect(ESCPOS_PAPER_WIDTHS["40"].dots).toBe(LABEL_W);
     expect(ESCPOS_PAPER_WIDTHS["80"].dots).toBe(576);
