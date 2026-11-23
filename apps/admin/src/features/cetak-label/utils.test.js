@@ -61,6 +61,27 @@ describe("cetak-label utils", () => {
     expect(job3.length).toBe(job1.length * 3);
     expect(buildLabelJobEscPos(bitmap, 0).length).toBe(0);
   });
+  // BUG FIX (November 2026, laporan admin: QR & teks kepisah ke label
+  // fisik berbeda di mode "Label (gap paper)") -- satu bitmap label HARUS
+  // dikirim sbg SATU blok raster "GS v 0" utuh (trim:false), bukan
+  // dipecah jadi beberapa blok dgn feed buatan di tengahnya (bisa geser
+  // dari gap fisik printer). Deteksi lewat hitung berapa kali header
+  // "GS v 0" (0x1d,0x76,0x30,0x00) muncul di output.
+  it("buildLabelJobEscPos: bitmap dgn baris kosong di tengah tetap dikirim SATU blok raster (trim dimatikan)", () => {
+    const widthBytes = 1;
+    const bytes = new Uint8Array(widthBytes * 20);
+    bytes.fill(0xff, 0, 5); // 5 baris ber-"ink"
+    bytes.fill(0x00, 5, 15); // 10 baris kosong di tengah (> minGapRows findBands)
+    bytes.fill(0xff, 15, 20); // 5 baris ber-"ink" lagi
+    const bitmap = { widthBytes, height: 20, bytes };
+    const job = buildLabelJobEscPos(bitmap, 1);
+    let count = 0;
+    for (let i = 0; i + 3 < job.length; i++) {
+      if (job[i] === 0x1d && job[i + 1] === 0x76 && job[i + 2] === 0x30 && job[i + 3] === 0x00)
+        count++;
+    }
+    expect(count).toBe(1);
+  });
   it("ESCPOS_PAPER_WIDTHS: 40mm = lebar label (320 dot), 80mm = 576 dot, default 40mm", () => {
     expect(ESCPOS_PAPER_WIDTHS["40"].dots).toBe(LABEL_W);
     expect(ESCPOS_PAPER_WIDTHS["80"].dots).toBe(576);
