@@ -12,12 +12,15 @@ vi.mock("./print", () => ({
 import { useProducedByKode } from "../produk/hooks";
 import { useLabelPrint } from "./hooks";
 import { usePrinterProtocolStore } from "./store";
-import { DEFAULT_PROTOCOL } from "./utils";
+import { DEFAULT_ESCPOS_PAPER_WIDTH, DEFAULT_PROTOCOL } from "./utils";
 
 beforeEach(() => {
   printLabelsMock.mockReset().mockResolvedValue(undefined);
   useProducedByKode.mockReturnValue({ producedBySize: { Midi: 10 }, isLoading: false });
-  usePrinterProtocolStore.setState({ protocol: DEFAULT_PROTOCOL });
+  usePrinterProtocolStore.setState({
+    protocol: DEFAULT_PROTOCOL,
+    escposPaperWidthMm: DEFAULT_ESCPOS_PAPER_WIDTH,
+  });
 });
 
 describe("useLabelPrint", () => {
@@ -45,6 +48,33 @@ describe("useLabelPrint", () => {
     expect(printLabelsMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ protocol: "escpos" }),
+    );
+  });
+
+  it("default escposPaperWidthMm 40mm, diteruskan ke printLabels()", async () => {
+    const { result } = renderHook(() => useLabelPrint("D-1"));
+    expect(result.current.escposPaperWidthMm).toBe("40");
+    await act(async () => {
+      await result.current.print();
+    });
+    expect(printLabelsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ escposPaperWidthMm: "40" }),
+    );
+  });
+
+  it("setEscposPaperWidthMm('80') -> print() meneruskan escposPaperWidthMm 80", async () => {
+    const { result } = renderHook(() => useLabelPrint("D-1"));
+    act(() => {
+      result.current.setEscposPaperWidthMm("80");
+    });
+    const { result: result2 } = renderHook(() => useLabelPrint("D-1"));
+    await act(async () => {
+      await result2.current.print();
+    });
+    expect(printLabelsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ escposPaperWidthMm: "80" }),
     );
   });
 });

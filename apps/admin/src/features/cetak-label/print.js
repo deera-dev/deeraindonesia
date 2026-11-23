@@ -6,15 +6,29 @@ import {
   disconnectPrinter,
 } from "@deera/shared/lib/blePrinter";
 import { labelGray } from "./render";
-import { buildLabelJob, buildLabelJobEscPos, concatJobs, DEFAULT_PROTOCOL } from "./utils";
+import {
+  buildLabelJob,
+  buildLabelJobEscPos,
+  centerBitmapInWidth,
+  concatJobs,
+  DEFAULT_ESCPOS_PAPER_WIDTH,
+  DEFAULT_PROTOCOL,
+  ESCPOS_PAPER_WIDTHS,
+} from "./utils";
 
-export async function printLabels(items, { onProgress, protocol = DEFAULT_PROTOCOL } = {}) {
+export async function printLabels(
+  items,
+  { onProgress, protocol = DEFAULT_PROTOCOL, escposPaperWidthMm = DEFAULT_ESCPOS_PAPER_WIDTH } = {},
+) {
   if (!navigator.bluetooth) {
     throw new Error(
       "Web Bluetooth tidak tersedia. Pakai Chrome/Edge di HP/PC dengan Bluetooth aktif (HTTPS).",
     );
   }
   const isEscPos = protocol === "escpos";
+  const escposDots =
+    ESCPOS_PAPER_WIDTHS[escposPaperWidthMm]?.dots ??
+    ESCPOS_PAPER_WIDTHS[DEFAULT_ESCPOS_PAPER_WIDTH].dots;
   const jobs = await Promise.all(
     items
       .filter((it) => it.qty > 0)
@@ -22,10 +36,11 @@ export async function printLabels(items, { onProgress, protocol = DEFAULT_PROTOC
         const { data, w, h } = await labelGray(it);
         // ESC/POS "GS v 0": bit=1 = hitam -- kebalikan konvensi TSPL
         // (bit=0 = hitam), sama seperti di POS (useTsplPrinter.js).
-        const bitmap = grayToBitmap(rgbaToGray(data, w, h), w, h, {
+        let bitmap = grayToBitmap(rgbaToGray(data, w, h), w, h, {
           algorithm: "binary",
           invert: isEscPos,
         });
+        if (isEscPos) bitmap = centerBitmapInWidth(bitmap, escposDots);
         return isEscPos ? buildLabelJobEscPos(bitmap, it.qty) : buildLabelJob(bitmap, it.qty);
       }),
   );

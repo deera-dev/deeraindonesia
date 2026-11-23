@@ -14,6 +14,8 @@ export function useLabelPrint(kode) {
   const [error, setError] = useState("");
   const protocol = usePrinterProtocolStore((s) => s.protocol);
   const setProtocol = usePrinterProtocolStore((s) => s.setProtocol);
+  const escposPaperWidthMm = usePrinterProtocolStore((s) => s.escposPaperWidthMm);
+  const setEscposPaperWidthMm = usePrinterProtocolStore((s) => s.setEscposPaperWidthMm);
 
   const rows = base.map((r) => ({ ...r, qty: edited[r.size] ?? r.qty }));
 
@@ -27,7 +29,7 @@ export function useLabelPrint(kode) {
     try {
       await printLabels(
         rows.map((r) => ({ kode, size: r.size, qty: r.qty })),
-        { onProgress: setProgress, protocol },
+        { onProgress: setProgress, protocol, escposPaperWidthMm },
       );
       return true;
     } catch (err) {
@@ -51,8 +53,10 @@ export function useLabelPrint(kode) {
     error,
     protocol,
     setProtocol,
+    escposPaperWidthMm,
+    setEscposPaperWidthMm,
   };
 }
 
 export { labelDataUrl };
-export { labelText, labelUrl, PRINTER_PROTOCOLS } from "./utils";
+export { labelText, labelUrl, PRINTER_PROTOCOLS, ESCPOS_PAPER_WIDTHS } from "./utils";
