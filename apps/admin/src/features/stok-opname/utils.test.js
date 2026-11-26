@@ -27,6 +27,9 @@ import {
   fillMissingStokRows,
   bukuSeharusnyaForLoc,
   ALL_LOC,
+  daysSince,
+  computeDueList,
+  CYCLE_COUNT_FREQUENCY_DAYS,
 } from "./utils";
 
 describe("LOCS", () => {
@@ -367,5 +370,72 @@ describe("buku potongan (data dari backend get_buku_potongan)", () => {
       expect(bukuSeharusnyaForLoc(null, "gudang")).toBe(0);
       expect(bukuSeharusnyaForLoc(undefined, "gudang")).toBe(0);
     });
+  });
+});
+
+describe("Cycle Counting berbasis risiko", () => {
+  it("daysSince: Infinity kalau belum pernah dihitung, 0 kalau baru saja", () => {
+    expect(daysSince(null)).toBe(Infinity);
+    expect(daysSince(undefined)).toBe(Infinity);
+    expect(daysSince(new Date().toISOString())).toBe(0);
+    const tenDaysAgo = new Date(Date.now() - 10 * 86400000).toISOString();
+    expect(daysSince(tenDaysAgo)).toBe(10);
+  });
+
+  it("computeDueList: kode kategori A jatuh tempo lebih cepat dari C", () => {
+    const eightDaysAgo = new Date(Date.now() - 8 * 86400000).toISOString();
+    const products = [
+      { kode: "D-A", nama: "Fast Mover" },
+      { kode: "D-C", nama: "Slow Mover" },
+    ];
+    const kategoriMap = { "D-A": "A", "D-C": "C" };
+    const checkedRows = [
+      { kode: "D-A", location: "gudang", checked_at: eightDaysAgo },
+      { kode: "D-C", location: "gudang", checked_at: eightDaysAgo },
+    ];
+
+    const due = computeDueList({ products, kategoriMap, checkedRows, loc: "gudang" });
+
+    expect(due.map((d) => d.kode)).toEqual(["D-A"]);
+    expect(due[0].kategori).toBe("A");
+    expect(due[0].overdueBy).toBe(8 - CYCLE_COUNT_FREQUENCY_DAYS.A);
+  });
+
+  it("computeDueList: kode tanpa kategori default ke C, kode belum pernah dihitung paling atas", () => {
+    const products = [{ kode: "D-X", nama: "Belum Pernah" }];
+    const due = computeDueList({ products, kategoriMap: {}, checkedRows: [], loc: "gudang" });
+    expect(due[0]).toMatchObject({ kode: "D-X", kategori: "C", lastCheckedAt: null, overdueBy: Infinity });
+  });
+
+  it("computeDueList: mengabaikan checked_at di lokasi lain", () => {
+    const products = [{ kode: "D-01", nama: "Produk" }];
+    const checkedRows = [{ kode: "D-01", location: "cideng", checked_at: new Date().toISOString() }];
+    const due = computeDueList({ products, kategoriMap: { "D-01": "A" }, checkedRows, loc: "gudang" });
+    expect(due[0].lastCheckedAt).toBeNull();
+    expect(due[0].overdueBy).toBe(Infinity);
+  });
+
+  it("computeDueList: tidak due kalau belum lewat batas kategorinya", () => {
+    const recent = new Date(Date.now() - 1 * 86400000).toISOString();
+    const products = [{ kode: "D-01", nama: "Produk" }];
+    const checkedRows = [{ kode: "D-01", location: "gudang", checked_at: recent }];
+    const due = computeDueList({ products, kategoriMap: { "D-01": "A" }, checkedRows, loc: "gudang" });
+    expect(due).toEqual([]);
+  });
+
+  it("computeDueList: urut dari yang paling telat (belum pernah dulu, lalu overdueBy terbesar)", () => {
+    const products = [
+      { kode: "D-NEVER", nama: "Belum pernah" },
+      { kode: "D-LESS", nama: "Telat sedikit" },
+      { kode: "D-MORE", nama: "Telat banyak" },
+    ];
+    const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();
+    const checkedRows = [
+      { kode: "D-LESS", location: "gudang", checked_at: daysAgo(8) },
+      { kode: "D-MORE", location: "gudang", checked_at: daysAgo(20) },
+    ];
+    const kategoriMap = { "D-LESS": "A", "D-MORE": "A" };
+    const due = computeDueList({ products, kategoriMap, checkedRows, loc: "gudang" });
+    expect(due.map((d) => d.kode)).toEqual(["D-NEVER", "D-MORE", "D-LESS"]);
   });
 });

@@ -36,6 +36,8 @@ import GuideCard from "./GuideCard";
 import ProductCountSheet from "./ProductCountSheet";
 import OverflowConfirm from "./OverflowConfirm";
 import AllLocCountSheet from "./AllLocCountSheet";
+import JadwalTab from "./JadwalTab";
+import RiwayatSelisihModal from "./RiwayatSelisihModal";
 import { PindahStokLokasiModal } from "../../pindah-stok-lokasi";
 
 const FILTERS = [
@@ -67,6 +69,8 @@ export default function StokOpnamePage() {
   const [openKode, setOpenKode] = useState(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [showPindahStok, setShowPindahStok] = useState(false);
+  const [view, setView] = useState("hitung");
+  const [riwayatSelisih, setRiwayatSelisih] = useState(null);
 
   const locTotals = useMemo(() => {
     const t = { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 };
@@ -100,6 +104,7 @@ export default function StokOpnamePage() {
   });
   const doneCount = sorted.filter((p) => locCounted[p.kode]).length;
   const loading = prodLoading || stokLoading;
+  const showHitung = view === "hitung" || loc === "semua";
 
   const openProduct = openKode ? sorted.find((p) => p.kode === openKode) : null;
   const nextKode = openKode
@@ -169,6 +174,9 @@ export default function StokOpnamePage() {
       }
       markCounted(loc, openKode, selisih);
       toast.success(`${openKode} tersimpan${selisih ? ` (stok ${selisih > 0 ? "+" : ""}${selisih})` : ""}`);
+      if (selisih) {
+        setRiwayatSelisih({ kode: openKode, nama: openProduct?.nama ?? openKode, selisih });
+      }
       setOpenKode(next && nextKode ? nextKode : null);
     } catch (err) {
       toast.error("Gagal simpan: " + err.message);
@@ -199,6 +207,14 @@ export default function StokOpnamePage() {
             >
               Pindahkan Stok Lokasi
             </button>
+            {loc && loc !== "semua" && (
+              <button
+                onClick={() => setView(view === "hitung" ? "jadwal" : "hitung")}
+                className="text-xs underline text-skin-text3 whitespace-nowrap"
+              >
+                {view === "hitung" ? "Jadwal Cycle Count" : "← Kembali hitung"}
+              </button>
+            )}
             {guideDismissed && (
               <button onClick={showGuide} className="text-xs underline text-skin-text3">
                 Cara pakai
@@ -295,14 +311,19 @@ export default function StokOpnamePage() {
             kolom.
           </p>
         )}
-        {loc && loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
-        {loc && !loading && visible.length === 0 && (
+
+        {loc && loc !== "semua" && view === "jadwal" && (
+          <JadwalTab products={sorted} loc={loc} onPilihKode={(kode) => { setOpenKode(kode); setView("hitung"); }} />
+        )}
+
+        {loc && showHitung && loading && <p className="text-center text-sm text-skin-text3 py-12">Memuat data...</p>}
+        {loc && showHitung && !loading && visible.length === 0 && (
           <p className="text-center text-sm text-skin-text4 py-12">
             {q ? `Tidak ada produk "${search}"` : "Tidak ada produk di filter ini"}
           </p>
         )}
 
-        {loc && !loading && (
+        {loc && showHitung && !loading && (
           <ul className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 lg:gap-3">
             {visible.map((p) => {
               const rows = stokByKode[p.kode] ?? [];
@@ -403,6 +424,14 @@ export default function StokOpnamePage() {
           take={confirmAsk.take}
           onConfirm={() => confirmAsk.resolve(true)}
           onCancel={() => confirmAsk.resolve(false)}
+        />
+      )}
+      {riwayatSelisih && (
+        <RiwayatSelisihModal
+          kode={riwayatSelisih.kode}
+          nama={riwayatSelisih.nama}
+          selisih={riwayatSelisih.selisih}
+          onClose={() => setRiwayatSelisih(null)}
         />
       )}
 

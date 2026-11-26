@@ -1,11 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchAllStokWarna, fetchJahitDikerjakan, saveStokOpname, planOpnameOverflow, checkStokSemua, fetchBukuPotongan } from "./api";
+import {
+  fetchAllStokWarna,
+  fetchJahitDikerjakan,
+  saveStokOpname,
+  planOpnameOverflow,
+  checkStokSemua,
+  fetchBukuPotongan,
+  fetchCycleCountChecked,
+  fetchCycleCountKategori,
+} from "./api";
 import { produkKeys } from "../produk/queries";
 
 export const stokOpnameKeys = {
   all: ["stok-opname", "stok-warna"],
   jahitDikerjakan: ["stok-opname", "jahit-dikerjakan"],
   bukuPotongan: ["stok-opname", "buku-potongan"],
+  cycleCountChecked: ["stok-opname", "cycle-count-checked"],
+  cycleCountKategori: (days) => ["stok-opname", "cycle-count-kategori", days],
 };
 
 export function useStokWarnaAllQuery() {
@@ -46,7 +57,19 @@ export function useSaveStokOpnameMutation() {
       // kedua fitur perlu di-invalidate bareng.
       queryClient.invalidateQueries({ queryKey: produkKeys.stokMap });
       queryClient.invalidateQueries({ queryKey: ["produk", "stok-warna"] });
+      queryClient.invalidateQueries({ queryKey: stokOpnameKeys.cycleCountChecked });
     },
+  });
+}
+
+export function useCycleCountCheckedQuery() {
+  return useQuery({ queryKey: stokOpnameKeys.cycleCountChecked, queryFn: fetchCycleCountChecked });
+}
+
+export function useCycleCountKategoriQuery(days = 90) {
+  return useQuery({
+    queryKey: stokOpnameKeys.cycleCountKategori(days),
+    queryFn: () => fetchCycleCountKategori(days),
   });
 }
 

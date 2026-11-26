@@ -9,7 +9,14 @@ vi.mock("../history/api", () => ({
   logHistory: (...a) => logHistoryMock(...a),
 }));
 
-const { fetchAllStokWarna, saveStokOpname, fetchJahitDikerjakan, planOpnameOverflow } = await import("./api");
+const {
+  fetchAllStokWarna,
+  saveStokOpname,
+  fetchJahitDikerjakan,
+  planOpnameOverflow,
+  fetchCycleCountChecked,
+  fetchCycleCountKategori,
+} = await import("./api");
 const { syntheticStokId } = await import("./utils");
 
 beforeEach(() => {
@@ -110,6 +117,49 @@ describe("saveStokOpname", () => {
       expect.arrayContaining([expect.objectContaining({ id: "r2", gudang: 6, ngorder: 0 })]),
       { onConflict: "kode,size,warna" },
     );
+  });
+
+  it("mencatat cycle_count_checked per kode+lokasi yang disentuh sesi ini", async () => {
+    const upsertBuilder = makeBuilder({ data: null, error: null });
+    supabaseMock.from.mockReturnValue(upsertBuilder);
+
+    await saveStokOpname({
+      changed: {
+        r1: { gudang: 10 },
+        r3: { cideng: 8, tegalgubug: 3 },
+      },
+      stokRows,
+      products,
+    });
+
+    const cycleCountCall = upsertBuilder.upsert.mock.calls.find(([rows]) =>
+      rows.some((r) => "location" in r),
+    );
+    expect(cycleCountCall).toBeDefined();
+    const [rows, opts] = cycleCountCall;
+    expect(opts).toEqual({ onConflict: "kode,location" });
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kode: "D-01-OSK", location: "gudang" }),
+        expect.objectContaining({ kode: "D-02-OSK", location: "cideng" }),
+        expect.objectContaining({ kode: "D-02-OSK", location: "tegalgubug" }),
+      ]),
+    );
+  });
+
+  it("gagal catat cycle_count_checked TIDAK membatalkan simpan stok opname", async () => {
+    const upsertBuilder = makeBuilder({ data: null, error: null });
+    upsertBuilder.upsert = vi
+      .fn()
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "cycle count fail" } });
+    supabaseMock.from.mockReturnValue(upsertBuilder);
+    const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = await saveStokOpname({ changed: { r1: { gudang: 10 } }, stokRows, products });
+
+    expect(result).toEqual({ count: 1 });
+    spy.mockRestore();
   });
 
   it("logHistory dipanggil per kode unik yang berubah (fire-and-forget, tidak tunggu)", async () => {
@@ -222,7 +272,10 @@ describe("saveStokOpname", () => {
     });
 
     expect(result).toEqual({ count: 2 });
-    expect(upsertBuilder.upsert).toHaveBeenCalledTimes(2);
+    // 3 panggilan upsert: batch stok_warna lama, batch stok_warna baru, lalu
+    // batch cycle_count_checked (tanda kode+lokasi baru saja dihitung --
+    // lihat utils.js computeDueList).
+    expect(upsertBuilder.upsert).toHaveBeenCalledTimes(3);
 
     const [existingBatch] = upsertBuilder.upsert.mock.calls[0];
     const [newBatch] = upsertBuilder.upsert.mock.calls[1];
@@ -273,6 +326,53 @@ describe("fetchJahitDikerjakan", () => {
   it("melempar error saat query gagal", async () => {
     supabaseMock.from.mockReturnValue(makeBuilder({ data: null, error: new Error("view error") }));
     await expect(fetchJahitDikerjakan()).rejects.toThrow("view error");
+  });
+});
+
+describe("fetchCycleCountChecked", () => {
+  it("mengembalikan semua baris cycle_count_checked", async () => {
+    const rows = [{ kode: "D-01", location: "gudang", checked_at: "2026-01-01T00:00:00Z" }];
+    supabaseMock.from.mockReturnValue(makeBuilder({ data: rows, error: null }));
+
+    expect(await fetchCycleCountChecked()).toBe(rows);
+    expect(supabaseMock.from).toHaveBeenCalledWith("cycle_count_checked");
+  });
+
+  it("mengembalikan [] saat data null", async () => {
+    supabaseMock.from.mockReturnValue(makeBuilder({ data: null, error: null }));
+    expect(await fetchCycleCountChecked()).toEqual([]);
+  });
+
+  it("melempar error saat query gagal", async () => {
+    supabaseMock.from.mockReturnValue(makeBuilder({ data: null, error: new Error("checked error") }));
+    await expect(fetchCycleCountChecked()).rejects.toThrow("checked error");
+  });
+});
+
+describe("fetchCycleCountKategori", () => {
+  it("memanggil RPC get_cycle_count_kategori dengan p_days", async () => {
+    supabaseMock.rpc.mockResolvedValue({ data: { "D-01": "A" }, error: null });
+
+    const result = await fetchCycleCountKategori(60);
+
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_cycle_count_kategori", { p_days: 60 });
+    expect(result).toEqual({ "D-01": "A" });
+  });
+
+  it("default 90 hari kalau tidak diisi", async () => {
+    supabaseMock.rpc.mockResolvedValue({ data: {}, error: null });
+    await fetchCycleCountKategori();
+    expect(supabaseMock.rpc).toHaveBeenCalledWith("get_cycle_count_kategori", { p_days: 90 });
+  });
+
+  it("mengembalikan {} saat data null", async () => {
+    supabaseMock.rpc.mockResolvedValue({ data: null, error: null });
+    expect(await fetchCycleCountKategori()).toEqual({});
+  });
+
+  it("melempar error saat RPC gagal", async () => {
+    supabaseMock.rpc.mockResolvedValue({ data: null, error: new Error("rpc error") });
+    await expect(fetchCycleCountKategori()).rejects.toThrow("rpc error");
   });
 });
 

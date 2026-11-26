@@ -6,10 +6,14 @@ import { createTestQueryClient } from "../../../../../test/helpers/queryClient";
 const fetchAllStokWarnaMock = vi.fn();
 const saveStokOpnameMock = vi.fn();
 const fetchJahitDikerjakanMock = vi.fn();
+const fetchCycleCountCheckedMock = vi.fn();
+const fetchCycleCountKategoriMock = vi.fn();
 vi.mock("./api", () => ({
   fetchAllStokWarna: (...a) => fetchAllStokWarnaMock(...a),
   saveStokOpname: (...a) => saveStokOpnameMock(...a),
   fetchJahitDikerjakan: (...a) => fetchJahitDikerjakanMock(...a),
+  fetchCycleCountChecked: (...a) => fetchCycleCountCheckedMock(...a),
+  fetchCycleCountKategori: (...a) => fetchCycleCountKategoriMock(...a),
 }));
 
 // produkKeys cuma object konstanta polos (query key), aman di-mock minimal
@@ -18,12 +22,21 @@ vi.mock("../produk/queries", () => ({
   produkKeys: { stokMap: ["produk", "stok-map"] },
 }));
 
-const { stokOpnameKeys, useStokWarnaAllQuery, useSaveStokOpnameMutation, useJahitDikerjakanQuery } = await import("./queries");
+const {
+  stokOpnameKeys,
+  useStokWarnaAllQuery,
+  useSaveStokOpnameMutation,
+  useJahitDikerjakanQuery,
+  useCycleCountCheckedQuery,
+  useCycleCountKategoriQuery,
+} = await import("./queries");
 
 beforeEach(() => {
   fetchAllStokWarnaMock.mockReset();
   saveStokOpnameMock.mockReset();
   fetchJahitDikerjakanMock.mockReset();
+  fetchCycleCountCheckedMock.mockReset();
+  fetchCycleCountKategoriMock.mockReset();
 });
 
 describe("useStokWarnaAllQuery", () => {
@@ -50,6 +63,35 @@ describe("useSaveStokOpnameMutation", () => {
 
     expect(saveStokOpnameMock).toHaveBeenCalled();
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: stokOpnameKeys.all });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: stokOpnameKeys.cycleCountChecked });
+  });
+});
+
+describe("useCycleCountCheckedQuery", () => {
+  it("memanggil fetchCycleCountChecked dan mengembalikan data", async () => {
+    const rows = [{ kode: "D-01", location: "gudang", checked_at: "2026-01-01T00:00:00Z" }];
+    fetchCycleCountCheckedMock.mockResolvedValue(rows);
+
+    const { result } = renderHook(() => useCycleCountCheckedQuery(), { wrapper: createQueryWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toBe(rows);
+  });
+});
+
+describe("useCycleCountKategoriQuery", () => {
+  it("memanggil fetchCycleCountKategori dengan default 90 hari", async () => {
+    fetchCycleCountKategoriMock.mockResolvedValue({ "D-01": "A" });
+
+    const { result } = renderHook(() => useCycleCountKategoriQuery(), { wrapper: createQueryWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(fetchCycleCountKategoriMock).toHaveBeenCalledWith(90);
+    expect(result.current.data).toEqual({ "D-01": "A" });
+  });
+
+  it("query key berbeda per jumlah hari", () => {
+    expect(stokOpnameKeys.cycleCountKategori(90)).not.toEqual(stokOpnameKeys.cycleCountKategori(30));
   });
 
   // BUG FIX (November 2026) — laporan admin: angka ringkasan "Stok &

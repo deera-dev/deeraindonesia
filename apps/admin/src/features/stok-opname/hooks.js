@@ -1,6 +1,16 @@
-import { useJahitDikerjakanQuery, useStokWarnaAllQuery, useSaveStokOpnameMutation, usePlanOpnameOverflowMutation, useCheckStokSemuaMutation, useBukuPotonganQuery } from "./queries";
+import {
+  useJahitDikerjakanQuery,
+  useStokWarnaAllQuery,
+  useSaveStokOpnameMutation,
+  usePlanOpnameOverflowMutation,
+  useCheckStokSemuaMutation,
+  useBukuPotonganQuery,
+  useCycleCountCheckedQuery,
+  useCycleCountKategoriQuery,
+} from "./queries";
 import { useMemo } from "react";
 import { useStokOpnameSessionStore } from "./store";
+import { computeDueList } from "./utils";
 
 export function useStokWarnaAll() {
   const { data, isLoading } = useStokWarnaAllQuery();
@@ -31,6 +41,16 @@ const EMPTY_BUKU = { rows: {}, sizes: {}, kodes: {} };
 export function useBukuPotonganInfo() {
   const { data } = useBukuPotonganQuery();
   return data ?? EMPTY_BUKU;
+}
+
+export function useCycleCountDueList({ products, loc }) {
+  const { data: checkedRows, isLoading: loadingChecked } = useCycleCountCheckedQuery();
+  const { data: kategoriMap, isLoading: loadingKategori } = useCycleCountKategoriQuery();
+  const dueList = useMemo(
+    () => computeDueList({ products, kategoriMap: kategoriMap ?? {}, checkedRows: checkedRows ?? [], loc }),
+    [products, kategoriMap, checkedRows, loc],
+  );
+  return { dueList, loading: loadingChecked || loadingKategori };
 }
 
 export function useStokOpnameSession() {

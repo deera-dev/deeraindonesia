@@ -33,7 +33,10 @@ vi.mock("../hooks", () => ({
   useCheckStokSemua: () => checkSemuaFn,
   useStokOpnameSession: () => session,
   useBukuPotonganInfo: () => bukuState.map,
+  useCycleCountDueList: () => ({ dueList: [], loading: false }),
 }));
+vi.mock("../../history/hooks", () => ({ useHistoryByKode: () => ({ history: [], loading: false }) }));
+vi.mock("../../produk/hooks", () => ({ useSalesDetailByKode: () => ({ data: [], isLoading: false }) }));
 
 const { default: StokOpnamePage } = await import("./StokOpnamePage");
 
