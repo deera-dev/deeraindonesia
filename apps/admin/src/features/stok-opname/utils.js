@@ -254,6 +254,48 @@ export function changedToFullRows(changed, rows) {
   });
 }
 
+// Cycle Counting berbasis risiko — kategori A/B/C (dari
+// get_cycle_count_kategori, lihat hooks.js) menentukan seberapa sering
+// suatu kode "jatuh tempo" dihitung ulang. Kode tanpa kategori
+// (tidak pernah/jarang terjual N hari terakhir) default ke "C" --
+// paling jarang dihitung.
+export const CYCLE_COUNT_FREQUENCY_DAYS = { A: 7, B: 30, C: 90 };
+
+export function daysSince(dateStr) {
+  if (!dateStr) return Infinity;
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
+export function computeDueList({ products, kategoriMap, checkedRows, loc }) {
+  const lastCheckedByKode = {};
+  for (const r of checkedRows ?? []) {
+    if (r.location !== loc) continue;
+    lastCheckedByKode[r.kode] = r.checked_at;
+  }
+  return (products ?? [])
+    .map((p) => {
+      const kategori = kategoriMap?.[p.kode] ?? "C";
+      const lastCheckedAt = lastCheckedByKode[p.kode] ?? null;
+      const umur = daysSince(lastCheckedAt);
+      const batas = CYCLE_COUNT_FREQUENCY_DAYS[kategori] ?? CYCLE_COUNT_FREQUENCY_DAYS.C;
+      return {
+        kode: p.kode,
+        nama: p.nama,
+        kategori,
+        lastCheckedAt,
+        umur,
+        overdueBy: umur === Infinity ? Infinity : umur - batas,
+      };
+    })
+    .filter((x) => x.overdueBy > 0)
+    .sort((a, b) => {
+      if (a.overdueBy === Infinity) return b.overdueBy === Infinity ? 0 : -1;
+      if (b.overdueBy === Infinity) return 1;
+      return b.overdueBy - a.overdueBy;
+    });
+}
+
 export function blockingOver(over, changed, rows) {
   const delta = {};
   for (const [id, vals] of Object.entries(changed ?? {})) {

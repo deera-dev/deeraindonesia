@@ -6,15 +6,26 @@ const useStokWarnaAllQueryMock = vi.fn();
 const useSaveStokOpnameMutationMock = vi.fn();
 const useJahitDikerjakanQueryMock = vi.fn();
 const useBukuQueryMock = vi.fn();
+const useCycleCountCheckedQueryMock = vi.fn();
+const useCycleCountKategoriQueryMock = vi.fn();
 vi.mock("./queries", () => ({
   useBukuPotonganQuery: (...a) => useBukuQueryMock(...a),
   useStokWarnaAllQuery: (...a) => useStokWarnaAllQueryMock(...a),
   useSaveStokOpnameMutation: (...a) => useSaveStokOpnameMutationMock(...a),
   useJahitDikerjakanQuery: (...a) => useJahitDikerjakanQueryMock(...a),
+  useCycleCountCheckedQuery: (...a) => useCycleCountCheckedQueryMock(...a),
+  useCycleCountKategoriQuery: (...a) => useCycleCountKategoriQueryMock(...a),
 }));
 
 
-const { useBukuPotonganInfo, useStokWarnaAll, useSaveStokOpname, useJahitDikerjakan, useStokOpnameSession } = await import("./hooks");
+const {
+  useBukuPotonganInfo,
+  useStokWarnaAll,
+  useSaveStokOpname,
+  useJahitDikerjakan,
+  useStokOpnameSession,
+  useCycleCountDueList,
+} = await import("./hooks");
 
 beforeEach(() => {
   useStokWarnaAllQueryMock.mockReset();
@@ -85,6 +96,31 @@ describe("useBukuPotonganInfo", () => {
     useBukuQueryMock.mockReturnValue({ data: undefined });
     const { result } = renderHook(() => useBukuPotonganInfo());
     expect(result.current).toEqual({ rows: {}, sizes: {}, kodes: {} });
+  });
+});
+
+describe("useCycleCountDueList", () => {
+  it("menggabungkan checked rows + kategori jadi daftar jatuh tempo per lokasi", () => {
+    useCycleCountCheckedQueryMock.mockReturnValue({
+      data: [{ kode: "D-01", location: "gudang", checked_at: "2000-01-01T00:00:00.000Z" }],
+      isLoading: false,
+    });
+    useCycleCountKategoriQueryMock.mockReturnValue({ data: { "D-01": "A" }, isLoading: false });
+
+    const products = [{ kode: "D-01", nama: "Gamis A" }];
+    const { result } = renderHook(() => useCycleCountDueList({ products, loc: "gudang" }));
+
+    expect(result.current.loading).toBe(false);
+    expect(result.current.dueList).toHaveLength(1);
+    expect(result.current.dueList[0]).toMatchObject({ kode: "D-01", kategori: "A" });
+  });
+
+  it("loading true selama salah satu query masih jalan", () => {
+    useCycleCountCheckedQueryMock.mockReturnValue({ data: [], isLoading: true });
+    useCycleCountKategoriQueryMock.mockReturnValue({ data: {}, isLoading: false });
+
+    const { result } = renderHook(() => useCycleCountDueList({ products: [], loc: "gudang" }));
+    expect(result.current.loading).toBe(true);
   });
 });
 

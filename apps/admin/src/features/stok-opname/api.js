@@ -13,6 +13,18 @@ export async function fetchJahitDikerjakan() {
   return data ?? [];
 }
 
+export async function fetchCycleCountChecked() {
+  const { data, error } = await supabase.from("cycle_count_checked").select("*");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function fetchCycleCountKategori(days = 90) {
+  const { data, error } = await supabase.rpc("get_cycle_count_kategori", { p_days: days });
+  if (error) throw error;
+  return data ?? {};
+}
+
 export async function saveStokOpname({ changed, stokRows, products }) {
   const changedIds = Object.keys(changed);
   if (changedIds.length === 0) return { count: 0 };
@@ -69,6 +81,32 @@ export async function saveStokOpname({ changed, stokRows, products }) {
       .from("stok_warna")
       .upsert(newRows, { onConflict: "kode,size,warna" });
     if (error) throw error;
+  }
+
+  // Cycle Counting berbasis risiko (lihat utils.js computeDueList): catat
+  // kode+lokasi yang baru saja dihitung FISIK di sesi ini, supaya kode itu
+  // tidak "jatuh tempo" lagi sampai batas hari kategorinya lewat. Lokasi
+  // diambil dari kunci object `changed[id]` yang betulan disentuh sesi ini
+  // (bisa 1 lokasi atau "semua"), bukan parameter terpisah -- best-effort,
+  // gagal catat TIDAK membatalkan simpan stok opname-nya sendiri.
+  const checkedPairs = new Set();
+  changedIds.forEach((id, i) => {
+    const kode = historyRows[i]?.kode;
+    if (!kode) return;
+    for (const loc of Object.keys(changed[id] ?? {})) {
+      checkedPairs.add(`${kode}__${loc}`);
+    }
+  });
+  if (checkedPairs.size > 0) {
+    const now = new Date().toISOString();
+    const rows = [...checkedPairs].map((pair) => {
+      const idx = pair.lastIndexOf("__");
+      return { kode: pair.slice(0, idx), location: pair.slice(idx + 2), checked_at: now };
+    });
+    const { error } = await supabase
+      .from("cycle_count_checked")
+      .upsert(rows, { onConflict: "kode,location" });
+    if (error) console.warn("[saveStokOpname] gagal catat cycle_count_checked:", error.message);
   }
 
   const kodeSet = [...new Set(historyRows.map((r) => r.kode))];
