@@ -14,6 +14,7 @@ vi.mock("@deera/shared/lib/supabase", () => {
   };
   const supabase = {
     from: vi.fn(() => chain),
+    rpc: vi.fn().mockResolvedValue({ data: { success: true }, error: null }),
     channel: vi.fn(() => ({ on: vi.fn().mockReturnThis(), subscribe: vi.fn().mockReturnThis() })),
     removeChannel: vi.fn(),
     _chain: chain,
@@ -140,34 +141,21 @@ describe("syncStok", () => {
 });
 
 describe("applyStokToSupabase", () => {
-  it("reads current and updates with delta", async () => {
-    supabase.from
-      .mockReturnValueOnce(makeChain("single", { data: { gudang: 5 }, error: null }))
-      .mockReturnValueOnce(makeChain("eq", { data: null, error: null }));
-    await applyStokToSupabase([{ kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: -2 }]);
-    expect(supabase.from).toHaveBeenCalledTimes(2);
+  it("calls apply_stok_adjustments RPC with the full batch", async () => {
+    const adjs = [{ kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: -2 }];
+    await applyStokToSupabase(adjs);
+    expect(supabase.rpc).toHaveBeenCalledWith("apply_stok_adjustments", { p_adjustments: adjs });
   });
 
-  it("clamps to 0 when delta goes negative", async () => {
-    const updateChain = makeChain("eq", { data: null, error: null });
-    updateChain.update = vi.fn().mockReturnThis();
-    supabase.from
-      .mockReturnValueOnce(makeChain("single", { data: { cideng: 1 }, error: null }))
-      .mockReturnValueOnce(updateChain);
-    await expect(applyStokToSupabase([{ kode: "D-01", size: "Midi", warna: "HITAM", location: "cideng", delta: -5 }])).resolves.toBeUndefined();
+  it("warns but does not throw when RPC returns an error", async () => {
+    supabase.rpc.mockResolvedValueOnce({ data: null, error: { message: "db fail" } });
+    const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await expect(applyStokToSupabase([{ kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: 1 }])).resolves.toBeUndefined();
+    spy.mockRestore();
   });
 
-  it("handles null data (treats as 0)", async () => {
-    supabase.from
-      .mockReturnValueOnce(makeChain("single", { data: null, error: null }))
-      .mockReturnValueOnce(makeChain("eq", { data: null, error: null }));
-    await expect(applyStokToSupabase([{ kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: 3 }])).resolves.toBeUndefined();
-  });
-
-  it("warns but does not throw on error", async () => {
-    const c = makeChain("single", { data: null, error: null });
-    c.single = vi.fn().mockRejectedValue(new Error("net error"));
-    supabase.from.mockReturnValue(c);
+  it("warns but does not throw on network/exception", async () => {
+    supabase.rpc.mockRejectedValueOnce(new Error("net error"));
     const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
     await expect(applyStokToSupabase([{ kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: 1 }])).resolves.toBeUndefined();
     spy.mockRestore();
@@ -175,7 +163,7 @@ describe("applyStokToSupabase", () => {
 
   it("does nothing for empty array", async () => {
     await expect(applyStokToSupabase([])).resolves.toBeUndefined();
-    expect(supabase.from).not.toHaveBeenCalled();
+    expect(supabase.rpc).not.toHaveBeenCalled();
   });
 });
 
@@ -239,13 +227,12 @@ describe("flushPendingSales", () => {
   });
 
   it("applies stok adjustments when present", async () => {
-    await db.sales.add({ status: "pending", date: "2026-07-01", created_at: new Date().toISOString(), stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: -1 }] });
+    const adjs = [{ kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: -1 }];
+    await db.sales.add({ status: "pending", date: "2026-07-01", created_at: new Date().toISOString(), stok_adjustments: adjs });
     const insertChain = { insert: vi.fn().mockReturnThis(), select: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: { id: "sup-2" }, error: null }) };
-    supabase.from
-      .mockReturnValueOnce(insertChain)
-      .mockReturnValueOnce(makeChain("single", { data: { gudang: 5 }, error: null }))
-      .mockReturnValueOnce(makeChain("eq", { data: null, error: null }));
+    supabase.from.mockReturnValueOnce(insertChain);
     expect((await flushPendingSales()).synced).toBe(1);
+    expect(supabase.rpc).toHaveBeenCalledWith("apply_stok_adjustments", { p_adjustments: adjs });
   });
 
   it("records error status on insert failure", async () => {
@@ -359,12 +346,11 @@ describe("deleteSaleFromSupabase", () => {
   it("reverses stok after delete", async () => {
     const c = makeChain("select", { data: [{ id: "sup-2" }], error: null });
     c.delete = vi.fn().mockReturnThis();
-    supabase.from
-      .mockReturnValueOnce(c)
-      .mockReturnValueOnce(makeChain("single", { data: { gudang: 5 }, error: null }))
-      .mockReturnValueOnce(makeChain("eq", { data: null, error: null }));
+    supabase.from.mockReturnValueOnce(c);
     await deleteSaleFromSupabase({ supabase_id: "sup-2", stok_adjustments: [{ kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: -2 }] });
-    expect(supabase.from).toHaveBeenCalledTimes(3);
+    expect(supabase.rpc).toHaveBeenCalledWith("apply_stok_adjustments", {
+      p_adjustments: [{ kode: "D-01", size: "Midi", warna: "HITAM", location: "gudang", delta: 2 }],
+    });
   });
 });
 

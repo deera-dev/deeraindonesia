@@ -62,28 +62,14 @@ export function syncStok() {
 }
 
 export async function applyStokToSupabase(adjustments) {
-  for (const adj of adjustments) {
-    try {
-      const { data } = await supabase
-        .from("stok_warna")
-        .select(adj.location)
-        .eq("kode", adj.kode)
-        .eq("size", adj.size)
-        .eq("warna", adj.warna)
-        .single();
-
-      const current = data?.[adj.location] ?? 0;
-      const newVal = Math.max(0, current + adj.delta);
-
-      await supabase
-        .from("stok_warna")
-        .update({ [adj.location]: newVal, updated_at: new Date().toISOString() })
-        .eq("kode", adj.kode)
-        .eq("size", adj.size)
-        .eq("warna", adj.warna);
-    } catch (err) {
-      console.warn("[sync] applyStok failed for", adj, err.message);
-    }
+  if (!adjustments?.length) return;
+  try {
+    const { error } = await supabase.rpc("apply_stok_adjustments", {
+      p_adjustments: adjustments,
+    });
+    if (error) throw error;
+  } catch (err) {
+    console.warn("[sync] applyStok failed for", adjustments, err.message);
   }
 }
 
