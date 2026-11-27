@@ -46,9 +46,9 @@ describe("fetchKolasePilihanByKode", () => {
     });
     const gensChain = makeChain({
       data: [
-        { generation_set_id: "set-1", output_image_url: "https://x/d01-baru.png", created_at: "2026-11-10" },
-        { generation_set_id: "set-1", output_image_url: "https://x/d01-lama.png", created_at: "2026-11-01" },
-        { generation_set_id: "set-2", output_image_url: "https://x/d02.png", created_at: "2026-11-05" },
+        { generation_set_id: "set-1", output_image_url: "https://x/d01-baru.png", output_thumb_url: "https://x/d01-baru-thumb.jpg", created_at: "2026-11-10" },
+        { generation_set_id: "set-1", output_image_url: "https://x/d01-lama.png", output_thumb_url: "https://x/d01-lama-thumb.jpg", created_at: "2026-11-01" },
+        { generation_set_id: "set-2", output_image_url: "https://x/d02.png", output_thumb_url: "https://x/d02-thumb.jpg", created_at: "2026-11-05" },
       ],
       error: null,
     });
@@ -57,12 +57,25 @@ describe("fetchKolasePilihanByKode", () => {
     const result = await fetchKolasePilihanByKode(["D-01", "D-02", "D-03"]);
 
     expect(result).toEqual({
-      "D-01": "https://x/d01-baru.png",
-      "D-02": "https://x/d02.png",
+      "D-01": "https://x/d01-baru-thumb.jpg",
+      "D-02": "https://x/d02-thumb.jpg",
     });
     expect(gensChain.eq).toHaveBeenCalledWith("image_role", "kolase_pilihan");
     expect(gensChain.eq).toHaveBeenCalledWith("status", "completed");
     expect(gensChain.order).toHaveBeenCalledWith("created_at", { ascending: false });
+  });
+
+  it("output_thumb_url null (data lama): fallback ke output_image_url", async () => {
+    const setsChain = makeChain({ data: [{ id: "set-1", product_kode: "D-01" }], error: null });
+    const gensChain = makeChain({
+      data: [{ generation_set_id: "set-1", output_image_url: "https://x/d01.png", output_thumb_url: null, created_at: "2026-11-10" }],
+      error: null,
+    });
+    fromMock.mockReturnValueOnce(setsChain).mockReturnValueOnce(gensChain);
+
+    const result = await fetchKolasePilihanByKode(["D-01"]);
+
+    expect(result).toEqual({ "D-01": "https://x/d01.png" });
   });
 
   it("error di query sets: melempar error", async () => {
