@@ -2,16 +2,28 @@ import { useState, useMemo } from "react";
 import { formatHarga } from "@deera/shared/lib/constants";
 import BuyerInput from "../../kasir/components/BuyerInput";
 import { useProducts } from "../../../hooks/useProducts";
-import {
-  getStokWarna,
-  getStokAllLocations,
-  getCombinedStok,
-  allocateAcrossLocations,
-} from "../../../shared/lib/salesUtils";
+import { getStokWarna, getStokAllLocations } from "../../../shared/lib/salesUtils";
+import { LOCATIONS } from "@deera/shared/lib/marketDay";
 import EditAddItemWarnaPicker from "./EditAddItemWarnaPicker";
+import LocationQtyRow from "./LocationQtyRow";
 
 function effectiveQty(item) {
   return Array.isArray(item.warna) ? item.warna.reduce((s, w) => s + (w.qty ?? 0), 0) : (item.qty ?? 0);
+}
+
+// Kalau baris belum punya breakdown (item lama/baru ditambah), anggap
+// semuanya ada di lokasi sale sendiri -- titik awal yang aman sebelum admin
+// pilih sendiri mau nambah/kurangi dari lokasi mana (lihat LocationQtyRow).
+function breakdownOf(breakdown, qty, saleLocation) {
+  return Array.isArray(breakdown) && breakdown.length > 0 ? breakdown : [{ location: saleLocation, qty: qty ?? 0 }];
+}
+
+function setBreakdownLocQty(breakdown, loc, newQty) {
+  const map = {};
+  for (const b of breakdown) map[b.location] = b.qty;
+  if (newQty > 0) map[loc] = newQty;
+  else delete map[loc];
+  return Object.entries(map).map(([location, qty]) => ({ location, qty }));
 }
 
 export default function EditSaleModal({ sale, onClose, onSave }) {
@@ -57,33 +69,87 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     setAddWarnaQty({});
   }
 
-  function findOriginalQty(kode, size, warnaName) {
+  // BUG FIX (laporan: "edit struk tambah produk, harusnya ambil dari lokasi
+  // yang sama, sekarang malah ambil dr gudang dan jadi gabungan") — batas
+  // maksimal SEMPAT pakai stok gabungan 3 lokasi, jadi allocateAcrossLocations
+  // bisa diam-diam ambil dari lokasi lain tanpa admin sadar. Sekarang per
+  // lokasi punya batas & tombol +/- sendiri (sama gayanya dengan mode
+  // gabungan di kasir/WarnaPanel.jsx) -- admin yang pilih sendiri lokasi
+  // mana yang mau ditambah/dikurangi, bukan otomatis.
+  // Batas per lokasi HARUS dihitung dari breakdown ASLI (sebelum sesi edit
+  // ini mulai, dari prop `sale`), bukan breakdown yang sedang di-edit --
+  // kalau pakai yang sedang di-edit, batasnya ikut naik tiap kali qty
+  // ditambah (jumlah yang baru saja ditambahkan dihitung lagi seolah
+  // "sudah ada dari awal"), jadi tombol + tidak pernah benar2 nonaktif.
+  function findOriginalBreakdown(kode, size, warnaName) {
     const orig = (sale.items ?? []).find((i) => {
       if (i.kode !== kode || i.size !== size) return false;
       return warnaName === "_" ? !Array.isArray(i.warna) : Array.isArray(i.warna);
     });
-    if (!orig) return 0;
-    if (warnaName === "_") return orig.qty ?? 0;
-    return (orig.warna ?? []).find((w) => w.nama === warnaName)?.qty ?? 0;
+    if (!orig) return [];
+    if (warnaName === "_") return breakdownOf(orig.breakdown, orig.qty, saleLocation);
+    const w = (orig.warna ?? []).find((x) => x.nama === warnaName);
+    return w ? breakdownOf(w.breakdown, w.qty, saleLocation) : [];
   }
 
-  function maxQtyFor(kode, size, warnaName) {
+  function maxByLocFor(kode, size, warnaName) {
     const p = allProducts.find((x) => x.kode === kode);
-    if (!p) return Infinity;
-    const originalQty = findOriginalQty(kode, size, warnaName);
-    return originalQty + getCombinedStok(p, size, warnaName);
-  }
-
-  function recomputeBreakdown(currentBreakdown, kode, size, warnaName, newQty) {
-    const p = allProducts.find((x) => x.kode === kode);
-    if (!p) return [{ location: saleLocation, qty: newQty }];
+    if (!p) {
+      // Produk belum ketemu di data (mis. masih loading) -- jangan blokir
+      // edit, sama seperti fallback Infinity di versi lama.
+      const max = {};
+      for (const loc of LOCATIONS) max[loc] = Infinity;
+      return max;
+    }
     const stokByLoc = getStokAllLocations(p, size, warnaName);
-    return allocateAcrossLocations({
-      stokByLoc,
-      primaryLocation: saleLocation,
-      currentBreakdown: currentBreakdown ?? [],
-      want: newQty,
-    });
+    const originalBreakdown = findOriginalBreakdown(kode, size, warnaName);
+    const max = {};
+    for (const loc of LOCATIONS) {
+      const already = originalBreakdown.find((b) => b.location === loc)?.qty ?? 0;
+      max[loc] = already + (stokByLoc[loc] ?? 0);
+    }
+    return max;
+  }
+
+  function updateSimpleLocQty(idx, loc, newLocQty) {
+    const item = items[idx];
+    if (!item || item.warna) return;
+    const breakdown = breakdownOf(item.breakdown, item.qty, saleLocation);
+    const nextBreakdown = setBreakdownLocQty(breakdown, loc, newLocQty);
+    const totalQty = nextBreakdown.reduce((s, b) => s + b.qty, 0);
+    if (totalQty <= 0) {
+      requestRemoveItem(idx);
+      return;
+    }
+    setItems((prev) =>
+      prev.map((it, i) => (i === idx ? { ...it, qty: totalQty, breakdown: nextBreakdown } : it)),
+    );
+  }
+
+  function updateWarnaLocQty(itemIdx, warnaName, loc, newLocQty) {
+    const item = items[itemIdx];
+    if (!item || !item.warna) return;
+    const w = item.warna.find((x) => x.nama === warnaName);
+    if (!w) return;
+    const breakdown = breakdownOf(w.breakdown, w.qty, saleLocation);
+    const nextBreakdown = setBreakdownLocQty(breakdown, loc, newLocQty);
+    const totalQty = nextBreakdown.reduce((s, b) => s + b.qty, 0);
+    if (totalQty <= 0) {
+      requestRemoveWarna(itemIdx, warnaName);
+      return;
+    }
+    setItems((prev) =>
+      prev.map((it, i) =>
+        i === itemIdx
+          ? {
+              ...it,
+              warna: it.warna.map((x) =>
+                x.nama === warnaName ? { ...x, qty: totalQty, breakdown: nextBreakdown } : x,
+              ),
+            }
+          : it,
+      ),
+    );
   }
 
   function setAddWarnaQtyFor(warnaName, qty) {
@@ -113,6 +179,19 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     setAddWarnaQty({});
   }
 
+  function resetAddProductForm() {
+    setAddKode(null);
+    setAddSize(null);
+    setAddSearch("");
+    setAddQty(1);
+    setAddHarga("");
+    setAddWarnaQty({});
+    setShowAddProduct(false);
+  }
+
+  // "Tambah Produk" (produk BARU di keranjang) selalu masuk ke lokasi sale
+  // sendiri -- EditAddItemWarnaPicker sudah membatasi pilihan warna ke stok
+  // lokasi itu saja, jadi aman tanpa perlu allocateAcrossLocations.
   function confirmAddItem() {
     const p = allProducts.find((x) => x.kode === addKode);
     if (!p || !addSize) return;
@@ -132,14 +211,15 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
           for (const [nama, qty] of chosen) {
             const wIdx = nextWarna.findIndex((w) => w.nama === nama);
             if (wIdx >= 0) {
-              const newQty = nextWarna[wIdx].qty + qty;
+              const prevBreakdown = breakdownOf(nextWarna[wIdx].breakdown, nextWarna[wIdx].qty, saleLocation);
+              const prevSaleQty = prevBreakdown.find((b) => b.location === saleLocation)?.qty ?? 0;
               nextWarna[wIdx] = {
                 ...nextWarna[wIdx],
-                qty: newQty,
-                breakdown: recomputeBreakdown(nextWarna[wIdx].breakdown, existing.kode, existing.size, nama, newQty),
+                qty: nextWarna[wIdx].qty + qty,
+                breakdown: setBreakdownLocQty(prevBreakdown, saleLocation, prevSaleQty + qty),
               };
             } else {
-              nextWarna.push({ nama, qty });
+              nextWarna.push({ nama, qty, breakdown: [{ location: saleLocation, qty }] });
             }
           }
           return prev.map((i, ii) => (ii === idx ? { ...i, warna: nextWarna } : i));
@@ -151,7 +231,7 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
             nama: p.nama,
             size: addSize,
             harga,
-            warna: chosen.map(([nama, qty]) => ({ nama, qty })),
+            warna: chosen.map(([nama, qty]) => ({ nama, qty, breakdown: [{ location: saleLocation, qty }] })),
             hpp: p.hpp ?? 0,
           },
         ];
@@ -160,24 +240,30 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
       setItems((prev) => {
         const idx = prev.findIndex((i) => i.kode === p.kode && i.size === addSize && !Array.isArray(i.warna));
         if (idx >= 0) {
-          const newQty = (prev[idx].qty ?? 1) + addQty;
+          const existing = prev[idx];
+          const prevBreakdown = breakdownOf(existing.breakdown, existing.qty, saleLocation);
+          const prevSaleQty = prevBreakdown.find((b) => b.location === saleLocation)?.qty ?? 0;
           return prev.map((i, ii) =>
             ii === idx
-              ? { ...i, qty: newQty, breakdown: recomputeBreakdown(i.breakdown, i.kode, i.size, "_", newQty) }
+              ? {
+                  ...i,
+                  qty: existing.qty + addQty,
+                  breakdown: setBreakdownLocQty(prevBreakdown, saleLocation, prevSaleQty + addQty),
+                }
               : i,
           );
         }
-        return [...prev, { kode: p.kode, nama: p.nama, size: addSize, harga, qty: addQty, hpp: p.hpp ?? 0 }];
+        return [
+          ...prev,
+          {
+            kode: p.kode, nama: p.nama, size: addSize, harga, qty: addQty, hpp: p.hpp ?? 0,
+            breakdown: [{ location: saleLocation, qty: addQty }],
+          },
+        ];
       });
     }
 
-    setAddKode(null);
-    setAddSize(null);
-    setAddSearch("");
-    setAddQty(1);
-    setAddHarga("");
-    setAddWarnaQty({});
-    setShowAddProduct(false);
+    resetAddProductForm();
   }
 
   const discountNum = parseInt(discount.replace(/\D/g, ""), 10) || 0;
@@ -233,59 +319,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
       });
     }
     setPendingRemove(null);
-  }
-
-  function updateSimpleQty(idx, delta) {
-    const item = items[idx];
-    if (!item || item.warna) return;
-    const current = item.qty ?? 1;
-    if (delta < 0 && current + delta <= 0) {
-      requestRemoveItem(idx);
-      return;
-    }
-    const newQty =
-      delta > 0
-        ? Math.min(maxQtyFor(item.kode, item.size, "_"), current + delta)
-        : current + delta;
-    setItems((prev) =>
-      prev.map((it, i) =>
-        i === idx
-          ? { ...it, qty: newQty, breakdown: recomputeBreakdown(it.breakdown, it.kode, it.size, "_", newQty) }
-          : it,
-      ),
-    );
-  }
-
-  function updateWarnaQty(itemIdx, warnaName, delta) {
-    const item = items[itemIdx];
-    if (!item || !item.warna) return;
-    const current = item.warna.find((w) => w.nama === warnaName)?.qty ?? 0;
-    if (delta < 0 && current + delta <= 0) {
-      requestRemoveWarna(itemIdx, warnaName);
-      return;
-    }
-    const newQty =
-      delta > 0
-        ? Math.min(maxQtyFor(item.kode, item.size, warnaName), current + delta)
-        : current + delta;
-    setItems((prev) =>
-      prev.map((it, i) =>
-        i === itemIdx
-          ? {
-              ...it,
-              warna: it.warna.map((w) =>
-                w.nama === warnaName
-                  ? {
-                      ...w,
-                      qty: newQty,
-                      breakdown: recomputeBreakdown(w.breakdown, it.kode, it.size, warnaName, newQty),
-                    }
-                  : w,
-              ),
-            }
-          : it,
-      ),
-    );
   }
 
   function removeWarnaLine(itemIdx, warnaName) {
@@ -372,59 +405,48 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                     </div>
 
                     {isWarna ? (
-                      <div className="mt-2 space-y-1.5">
-                        {item.warna.map((w) => (
-                          <div key={w.nama} className="flex items-center justify-between gap-2">
-                            <span className="text-sm text-skin-text2 min-w-0 truncate">{w.nama}</span>
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                              <button
-                                onClick={() => updateWarnaQty(idx, w.nama, -1)}
-                                className="w-8 h-8 border border-skin-bdr text-skin-text3 text-lg flex items-center justify-center hover:border-red-300 hover:text-red-500 transition"
-                              >
-                                −
-                              </button>
-                              <span className="text-base font-bold text-skin-text w-7 text-center">{w.qty}</span>
-                              <button
-                                onClick={() => updateWarnaQty(idx, w.nama, +1)}
-                                disabled={w.qty >= maxQtyFor(item.kode, item.size, w.nama)}
-                                className="w-8 h-8 border border-skin-bdr text-skin-text3 text-lg flex items-center justify-center hover:border-skin-accent hover:text-skin-accent-text transition disabled:opacity-30 disabled:cursor-not-allowed"
-                              >
-                                +
-                              </button>
-                              <button
-                                onClick={() => removeWarnaLine(idx, w.nama)}
-                                className="w-8 h-8 flex items-center justify-center text-skin-text4 hover:text-red-500 transition"
-                                title="Hapus warna ini"
-                              >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M3 6h18" />
-                                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                                  <line x1="10" y1="11" x2="10" y2="17" />
-                                  <line x1="14" y1="11" x2="14" y2="17" />
-                                </svg>
-                              </button>
+                      <div className="mt-2 space-y-2.5">
+                        {item.warna.map((w) => {
+                          const breakdown = breakdownOf(w.breakdown, w.qty, saleLocation);
+                          const maxByLoc = maxByLocFor(item.kode, item.size, w.nama);
+                          return (
+                            <div key={w.nama} className="space-y-1.5" data-testid={`warna-row-${w.nama}`}>
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="flex items-baseline gap-1.5 min-w-0">
+                                  <span className="text-sm text-skin-text font-semibold truncate">{w.nama}</span>
+                                  <span className="text-xs text-skin-text3 flex-shrink-0">{w.qty} pcs</span>
+                                </span>
+                                <button
+                                  onClick={() => removeWarnaLine(idx, w.nama)}
+                                  className="w-7 h-7 flex items-center justify-center text-skin-text4 hover:text-red-500 transition flex-shrink-0"
+                                  title="Hapus warna ini"
+                                >
+                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M3 6h18" />
+                                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                    <line x1="10" y1="11" x2="10" y2="17" />
+                                    <line x1="14" y1="11" x2="14" y2="17" />
+                                  </svg>
+                                </button>
+                              </div>
+                              <LocationQtyRow
+                                breakdown={breakdown}
+                                maxByLoc={maxByLoc}
+                                onChange={(loc, newQty) => updateWarnaLocQty(idx, w.nama, loc, newQty)}
+                              />
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          onClick={() => updateSimpleQty(idx, -1)}
-                          className="w-9 h-9 border border-skin-bdr text-skin-text3 text-xl flex items-center justify-center hover:border-red-300 hover:text-red-500 transition"
-                        >
-                          −
-                        </button>
-                        <span className="text-lg font-bold text-skin-text w-8 text-center">{item.qty ?? 0}</span>
-                        <button
-                          onClick={() => updateSimpleQty(idx, +1)}
-                          disabled={(item.qty ?? 0) >= maxQtyFor(item.kode, item.size, "_")}
-                          className="w-9 h-9 border border-skin-bdr text-skin-text3 text-xl flex items-center justify-center hover:border-skin-accent hover:text-skin-accent-text transition disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                          +
-                        </button>
-                        <span className="text-sm text-skin-text3 ml-1">pcs</span>
+                      <div className="mt-2 space-y-1.5">
+                        <p className="text-sm text-skin-text font-semibold">{item.qty ?? 0} pcs</p>
+                        <LocationQtyRow
+                          breakdown={breakdownOf(item.breakdown, item.qty, saleLocation)}
+                          maxByLoc={maxByLocFor(item.kode, item.size, "_")}
+                          onChange={(loc, newQty) => updateSimpleLocQty(idx, loc, newQty)}
+                        />
                       </div>
                     )}
 
@@ -510,10 +532,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                       {!addSize ? (
                         <div className="grid grid-cols-2 gap-1.5">
                           {(p.variants ?? []).map((v) => {
-                            const stok = p.stokByWarna?.[v.size] ?? {};
-                            const totalStok = Object.values(stok).reduce((s, loc) =>
-                              typeof loc === "object" ? s + Object.values(loc).reduce((a, b) => a + (b ?? 0), 0)
-                              : s + (loc?.[saleLocation] ?? 0), 0);
                             return (
                               <button key={v.size} type="button" onClick={() => selectAddSize(p, v)}
                                 className="border border-skin-bdr px-3 py-2 text-sm text-left hover:border-skin-accent transition">
