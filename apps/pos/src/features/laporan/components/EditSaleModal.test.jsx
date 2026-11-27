@@ -682,7 +682,7 @@ describe("EditSaleModal", () => {
   });
 
 
-  it("BUGFIX: allows increasing qty of a combined-stock item even when sale.location itself is out of stock", () => {
+  it("BUGFIX: '+' stays enabled when combined stock allows it, but asks for confirmation before drawing from another location", () => {
     const gabunganSale = {
       ...simpleSale,
       location: "cideng",
@@ -701,7 +701,35 @@ describe("EditSaleModal", () => {
     const plusBtn = screen.getByRole("button", { name: "+" });
     expect(plusBtn).not.toBeDisabled();
     fireEvent.click(plusBtn);
+    // Belum langsung berubah -- nunggu konfirmasi dulu krn butuh ambil dari Gudang.
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText(/Stok Cideng Tidak Cukup/)).toBeInTheDocument();
+    expect(screen.getByText(/1 pcs dari Gudang/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ya, Ambil" }));
     expect(screen.getByText("3")).toBeInTheDocument();
+  });
+
+  it("BUGFIX: cancelling the cross-location confirmation leaves the qty unchanged", () => {
+    const gabunganSale = {
+      ...simpleSale,
+      location: "cideng",
+      items: [
+        { kode: "D-01", size: "Midi", harga: 100000, hpp: 0, qty: 2, warna: null,
+          breakdown: [{ location: "gudang", qty: 2 }] },
+      ],
+    };
+    useProducts.mockReturnValue({
+      products: [
+        { kode: "D-01", nama: "Gamis", hpp: 80000, stokByWarna: { Midi: { _: { gudang: 5, cideng: 0 } } } },
+      ],
+      loading: false,
+    });
+    render(<EditSaleModal sale={gabunganSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "+" }));
+    const batalButtons = screen.getAllByRole("button", { name: "Batal" });
+    fireEvent.click(batalButtons[batalButtons.length - 1]);
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.queryByText(/Stok Cideng Tidak Cukup/)).not.toBeInTheDocument();
   });
 
   it("BUGFIX: recomputes item breakdown to the new qty (from the right location) when qty is edited, instead of keeping the stale original breakdown", async () => {
@@ -722,6 +750,7 @@ describe("EditSaleModal", () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<EditSaleModal sale={gabunganSale} onClose={vi.fn()} onSave={onSave} />);
     fireEvent.click(screen.getByRole("button", { name: "+" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ya, Ambil" }));
     fillNote();
     fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
@@ -755,6 +784,7 @@ describe("EditSaleModal", () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<EditSaleModal sale={gabunganWarnaSale} onClose={vi.fn()} onSave={onSave} />);
     fireEvent.click(screen.getAllByRole("button", { name: "+" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Ya, Ambil" }));
     fillNote();
     fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
@@ -764,4 +794,5 @@ describe("EditSaleModal", () => {
     expect(hitam.breakdown).toEqual([{ location: "gudang", qty: 2 }]);
     expect(merah.breakdown).toEqual([{ location: "gudang", qty: 2 }]);
   });
+
 });

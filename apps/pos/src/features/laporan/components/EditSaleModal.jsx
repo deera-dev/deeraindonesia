@@ -8,6 +8,7 @@ import {
   getCombinedStok,
   allocateAcrossLocations,
 } from "../../../shared/lib/salesUtils";
+import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import EditAddItemWarnaPicker from "./EditAddItemWarnaPicker";
 
 function effectiveQty(item) {
@@ -86,6 +87,29 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     });
   }
 
+  // BUG FIX (laporan: "edit struk tambah produk, harusnya ambil dari lokasi
+  // yang sama, sekarang malah ambil dr gudang dan jadi gabungan") —
+  // allocateAcrossLocations tetap boleh ambil dari lokasi lain kalau lokasi
+  // sale sendiri kurang (supaya admin tidak "macet" saat edit cuma krn
+  // lokasi itu kebetulan kosong), TAPI sekarang itu harus persetujuan
+  // eksplisit admin dulu (lihat pendingCrossLocation), bukan diam-diam.
+  // Fungsi ini membandingkan breakdown LAMA vs breakdown BARU hasil hitung,
+  // cuma utk lokasi SELAIN saleLocation -- kalau ada tambahan qty di situ,
+  // itu artinya kenaikan qty ini butuh ambil dari lokasi lain.
+  function extraFromOtherLocations(oldBreakdown, newBreakdown) {
+    const oldMap = {};
+    for (const b of oldBreakdown ?? []) oldMap[b.location] = b.qty;
+    const newMap = {};
+    for (const b of newBreakdown ?? []) newMap[b.location] = b.qty;
+    const extras = [];
+    for (const loc of Object.keys(newMap)) {
+      if (loc === saleLocation) continue;
+      const diff = (newMap[loc] ?? 0) - (oldMap[loc] ?? 0);
+      if (diff > 0) extras.push({ location: loc, qty: diff });
+    }
+    return extras;
+  }
+
   function setAddWarnaQtyFor(warnaName, qty) {
     setAddWarnaQty((prev) => {
       if (qty <= 0) {
@@ -113,64 +137,13 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     setAddWarnaQty({});
   }
 
-  function confirmAddItem() {
-    const p = allProducts.find((x) => x.kode === addKode);
-    if (!p || !addSize) return;
-    const harga = parseInt(addHarga) || 0;
-    const isWarnaProduct = Array.isArray(p.warna) && p.warna.length > 0;
+  function aggregateExtras(extras) {
+    const map = {};
+    for (const e of extras) map[e.location] = (map[e.location] ?? 0) + e.qty;
+    return Object.entries(map).map(([location, qty]) => ({ location, qty }));
+  }
 
-    if (isWarnaProduct) {
-      const chosen = Object.entries(addWarnaQty).filter(([, q]) => q > 0);
-      if (chosen.length === 0) return;
-      setItems((prev) => {
-        const idx = prev.findIndex(
-          (i) => i.kode === p.kode && i.size === addSize && Array.isArray(i.warna),
-        );
-        if (idx >= 0) {
-          const existing = prev[idx];
-          const nextWarna = [...existing.warna];
-          for (const [nama, qty] of chosen) {
-            const wIdx = nextWarna.findIndex((w) => w.nama === nama);
-            if (wIdx >= 0) {
-              const newQty = nextWarna[wIdx].qty + qty;
-              nextWarna[wIdx] = {
-                ...nextWarna[wIdx],
-                qty: newQty,
-                breakdown: recomputeBreakdown(nextWarna[wIdx].breakdown, existing.kode, existing.size, nama, newQty),
-              };
-            } else {
-              nextWarna.push({ nama, qty });
-            }
-          }
-          return prev.map((i, ii) => (ii === idx ? { ...i, warna: nextWarna } : i));
-        }
-        return [
-          ...prev,
-          {
-            kode: p.kode,
-            nama: p.nama,
-            size: addSize,
-            harga,
-            warna: chosen.map(([nama, qty]) => ({ nama, qty })),
-            hpp: p.hpp ?? 0,
-          },
-        ];
-      });
-    } else {
-      setItems((prev) => {
-        const idx = prev.findIndex((i) => i.kode === p.kode && i.size === addSize && !Array.isArray(i.warna));
-        if (idx >= 0) {
-          const newQty = (prev[idx].qty ?? 1) + addQty;
-          return prev.map((i, ii) =>
-            ii === idx
-              ? { ...i, qty: newQty, breakdown: recomputeBreakdown(i.breakdown, i.kode, i.size, "_", newQty) }
-              : i,
-          );
-        }
-        return [...prev, { kode: p.kode, nama: p.nama, size: addSize, harga, qty: addQty, hpp: p.hpp ?? 0 }];
-      });
-    }
-
+  function resetAddProductForm() {
     setAddKode(null);
     setAddSize(null);
     setAddSearch("");
@@ -180,11 +153,95 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     setShowAddProduct(false);
   }
 
+  // Dipakai confirmAddItem: hitung items BARU tanpa langsung commit ke
+  // state, supaya kita bisa cek dulu apakah "nambah qty ke warna/produk yg
+  // SUDAH ADA di keranjang" ini butuh ambil dari lokasi lain (sama seperti
+  // tombol +/- di updateSimpleQty/updateWarnaQty).
+  function buildAddedItems() {
+    const p = allProducts.find((x) => x.kode === addKode);
+    if (!p || !addSize) return null;
+    const harga = parseInt(addHarga) || 0;
+    const isWarnaProduct = Array.isArray(p.warna) && p.warna.length > 0;
+    const extras = [];
+
+    if (isWarnaProduct) {
+      const chosen = Object.entries(addWarnaQty).filter(([, q]) => q > 0);
+      if (chosen.length === 0) return null;
+      const idx = items.findIndex((i) => i.kode === p.kode && i.size === addSize && Array.isArray(i.warna));
+      if (idx >= 0) {
+        const existing = items[idx];
+        const nextWarna = [...existing.warna];
+        for (const [nama, qty] of chosen) {
+          const wIdx = nextWarna.findIndex((w) => w.nama === nama);
+          if (wIdx >= 0) {
+            const newQty = nextWarna[wIdx].qty + qty;
+            const newBreakdown = recomputeBreakdown(
+              nextWarna[wIdx].breakdown, existing.kode, existing.size, nama, newQty,
+            );
+            extras.push(...extraFromOtherLocations(nextWarna[wIdx].breakdown, newBreakdown));
+            nextWarna[wIdx] = { ...nextWarna[wIdx], qty: newQty, breakdown: newBreakdown };
+          } else {
+            nextWarna.push({ nama, qty });
+          }
+        }
+        return { nextItems: items.map((i, ii) => (ii === idx ? { ...i, warna: nextWarna } : i)), extras };
+      }
+      return {
+        nextItems: [
+          ...items,
+          {
+            kode: p.kode,
+            nama: p.nama,
+            size: addSize,
+            harga,
+            warna: chosen.map(([nama, qty]) => ({ nama, qty })),
+            hpp: p.hpp ?? 0,
+          },
+        ],
+        extras,
+      };
+    }
+
+    const idx = items.findIndex((i) => i.kode === p.kode && i.size === addSize && !Array.isArray(i.warna));
+    if (idx >= 0) {
+      const existing = items[idx];
+      const newQty = (existing.qty ?? 1) + addQty;
+      const newBreakdown = recomputeBreakdown(existing.breakdown, existing.kode, existing.size, "_", newQty);
+      extras.push(...extraFromOtherLocations(existing.breakdown, newBreakdown));
+      return {
+        nextItems: items.map((i, ii) => (ii === idx ? { ...i, qty: newQty, breakdown: newBreakdown } : i)),
+        extras,
+      };
+    }
+    return {
+      nextItems: [...items, { kode: p.kode, nama: p.nama, size: addSize, harga, qty: addQty, hpp: p.hpp ?? 0 }],
+      extras,
+    };
+  }
+
+  function confirmAddItem() {
+    const built = buildAddedItems();
+    if (!built) return;
+    const extras = aggregateExtras(built.extras);
+    if (extras.length > 0) {
+      setPendingCrossLocation({
+        kind: "add",
+        nextItems: built.nextItems,
+        extras,
+        label: `${addKode} — ${addSize}`,
+      });
+      return;
+    }
+    setItems(built.nextItems);
+    resetAddProductForm();
+  }
+
   const discountNum = parseInt(discount.replace(/\D/g, ""), 10) || 0;
   const subtotal = items.reduce((s, item) => s + effectiveQty(item) * item.harga, 0);
   const total = Math.max(0, subtotal - discountNum);
 
   const [pendingRemove, setPendingRemove] = useState(null);
+  const [pendingCrossLocation, setPendingCrossLocation] = useState(null);
 
   function requestRemoveItem(idx) {
     const item = items[idx];
@@ -235,6 +292,27 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
     setPendingRemove(null);
   }
 
+  function applySimpleQty(idx, newQty, newBreakdown) {
+    setItems((prev) =>
+      prev.map((it, i) => (i === idx ? { ...it, qty: newQty, breakdown: newBreakdown } : it)),
+    );
+  }
+
+  function applyWarnaQty(itemIdx, warnaName, newQty, newBreakdown) {
+    setItems((prev) =>
+      prev.map((it, i) =>
+        i === itemIdx
+          ? {
+              ...it,
+              warna: it.warna.map((w) =>
+                w.nama === warnaName ? { ...w, qty: newQty, breakdown: newBreakdown } : w,
+              ),
+            }
+          : it,
+      ),
+    );
+  }
+
   function updateSimpleQty(idx, delta) {
     const item = items[idx];
     if (!item || item.warna) return;
@@ -247,13 +325,22 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
       delta > 0
         ? Math.min(maxQtyFor(item.kode, item.size, "_"), current + delta)
         : current + delta;
-    setItems((prev) =>
-      prev.map((it, i) =>
-        i === idx
-          ? { ...it, qty: newQty, breakdown: recomputeBreakdown(it.breakdown, it.kode, it.size, "_", newQty) }
-          : it,
-      ),
-    );
+    const newBreakdown = recomputeBreakdown(item.breakdown, item.kode, item.size, "_", newQty);
+    if (delta > 0) {
+      const extras = aggregateExtras(extraFromOtherLocations(item.breakdown, newBreakdown));
+      if (extras.length > 0) {
+        setPendingCrossLocation({
+          kind: "simple",
+          idx,
+          newQty,
+          newBreakdown,
+          extras,
+          label: `${item.kode} — ${item.size}`,
+        });
+        return;
+      }
+    }
+    applySimpleQty(idx, newQty, newBreakdown);
   }
 
   function updateWarnaQty(itemIdx, warnaName, delta) {
@@ -268,24 +355,42 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
       delta > 0
         ? Math.min(maxQtyFor(item.kode, item.size, warnaName), current + delta)
         : current + delta;
-    setItems((prev) =>
-      prev.map((it, i) =>
-        i === itemIdx
-          ? {
-              ...it,
-              warna: it.warna.map((w) =>
-                w.nama === warnaName
-                  ? {
-                      ...w,
-                      qty: newQty,
-                      breakdown: recomputeBreakdown(w.breakdown, it.kode, it.size, warnaName, newQty),
-                    }
-                  : w,
-              ),
-            }
-          : it,
-      ),
-    );
+    const oldBreakdown = item.warna.find((w) => w.nama === warnaName)?.breakdown;
+    const newBreakdown = recomputeBreakdown(oldBreakdown, item.kode, item.size, warnaName, newQty);
+    if (delta > 0) {
+      const extras = aggregateExtras(extraFromOtherLocations(oldBreakdown, newBreakdown));
+      if (extras.length > 0) {
+        setPendingCrossLocation({
+          kind: "warna",
+          itemIdx,
+          warnaName,
+          newQty,
+          newBreakdown,
+          extras,
+          label: `${warnaName} (${item.kode} — ${item.size})`,
+        });
+        return;
+      }
+    }
+    applyWarnaQty(itemIdx, warnaName, newQty, newBreakdown);
+  }
+
+  function confirmCrossLocation() {
+    if (!pendingCrossLocation) return;
+    const { kind, idx, itemIdx, warnaName, newQty, newBreakdown, nextItems } = pendingCrossLocation;
+    if (kind === "simple") {
+      applySimpleQty(idx, newQty, newBreakdown);
+    } else if (kind === "warna") {
+      applyWarnaQty(itemIdx, warnaName, newQty, newBreakdown);
+    } else if (kind === "add") {
+      setItems(nextItems);
+      resetAddProductForm();
+    }
+    setPendingCrossLocation(null);
+  }
+
+  function cancelCrossLocation() {
+    setPendingCrossLocation(null);
   }
 
   function removeWarnaLine(itemIdx, warnaName) {
@@ -510,10 +615,6 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                       {!addSize ? (
                         <div className="grid grid-cols-2 gap-1.5">
                           {(p.variants ?? []).map((v) => {
-                            const stok = p.stokByWarna?.[v.size] ?? {};
-                            const totalStok = Object.values(stok).reduce((s, loc) =>
-                              typeof loc === "object" ? s + Object.values(loc).reduce((a, b) => a + (b ?? 0), 0)
-                              : s + (loc?.[saleLocation] ?? 0), 0);
                             return (
                               <button key={v.size} type="button" onClick={() => selectAddSize(p, v)}
                                 className="border border-skin-bdr px-3 py-2 text-sm text-left hover:border-skin-accent transition">
@@ -692,6 +793,38 @@ export default function EditSaleModal({ sale, onClose, onSave }) {
                 className="flex-1 py-3 bg-red-500 text-white text-sm uppercase tracking-[0.1em] font-semibold hover:bg-red-600 transition"
               >
                 Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingCrossLocation && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="absolute inset-0" onClick={cancelCrossLocation} />
+          <div className="relative bg-skin-card border-2 border-skin-accent/40 w-full max-w-sm p-6 space-y-4">
+            <p className="text-sm text-skin-accent-text uppercase tracking-[0.12em] font-semibold">
+              Stok {LOCATION_LABELS[saleLocation] ?? saleLocation} Tidak Cukup
+            </p>
+            <p className="text-base text-skin-text">
+              {pendingCrossLocation.label}: stok {LOCATION_LABELS[saleLocation] ?? saleLocation} sudah habis. Ambil{" "}
+              {pendingCrossLocation.extras
+                .map((e) => `${e.qty} pcs dari ${LOCATION_LABELS[e.location] ?? e.location}`)
+                .join(" + ")}
+              ?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={cancelCrossLocation}
+                className="flex-1 py-3 border-2 border-skin-bdr text-skin-text2 text-sm uppercase tracking-[0.1em] hover:border-skin-text transition"
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmCrossLocation}
+                className="flex-1 py-3 bg-skin-accent text-skin-on-accent text-sm uppercase tracking-[0.1em] font-semibold hover:bg-skin-accent-hover transition"
+              >
+                Ya, Ambil
               </button>
             </div>
           </div>
