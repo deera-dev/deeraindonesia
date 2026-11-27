@@ -32,7 +32,7 @@ export async function fetchKolasePilihanByKode(kodes) {
   const setIdToKode = new Map(sets.map((s) => [s.id, s.product_kode]));
   const { data: gens, error: gensError } = await supabase
     .from("ai_generations")
-    .select("generation_set_id, output_image_url, created_at")
+    .select("generation_set_id, output_image_url, output_thumb_url, created_at")
     .in("generation_set_id", [...setIdToKode.keys()])
     .eq("image_role", "kolase_pilihan")
     .eq("status", "completed")
@@ -42,7 +42,9 @@ export async function fetchKolasePilihanByKode(kodes) {
   const byKode = {};
   for (const g of gens ?? []) {
     const kode = setIdToKode.get(g.generation_set_id);
-    if (kode && !byKode[kode]) byKode[kode] = g.output_image_url;
+    // output_image_url bisa berukuran beberapa MB (PNG resolusi penuh) — pakai
+    // output_thumb_url (jpg kecil) supaya tidak timeout di koneksi lambat.
+    if (kode && !byKode[kode]) byKode[kode] = g.output_thumb_url || g.output_image_url;
   }
   return byKode;
 }
