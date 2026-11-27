@@ -167,48 +167,48 @@ describe("EditSaleModal", () => {
   });
 
 
-  it("increments simple item qty with + button", () => {
+  it("increments simple item qty with the location's Tambah button", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    expect(screen.getByText("2")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "+" }));
-    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByText("2 pcs")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Tambah GD" }));
+    expect(screen.getByText("3 pcs")).toBeInTheDocument();
   });
 
   it("opens a confirm dialog (not immediate alert) when decrementing the last unit of the only item", () => {
     const sale1 = { ...simpleSale, items: [{ ...simpleSale.items[0], qty: 1 }] };
     render(<EditSaleModal sale={sale1} onClose={vi.fn()} onSave={vi.fn()} />);
-    expect(screen.getByText("1")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "−" }));
+    expect(screen.getByText("1 pcs")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Kurangi GD" }));
     expect(screen.getByText("Hapus Produk?")).toBeInTheDocument();
-    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("1 pcs")).toBeInTheDocument();
   });
 
   it("shows alert and keeps qty after confirming removal of the last unit of the only item", () => {
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     const sale1 = { ...simpleSale, items: [{ ...simpleSale.items[0], qty: 1 }] };
     render(<EditSaleModal sale={sale1} onClose={vi.fn()} onSave={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "−" }));
+    fireEvent.click(screen.getByRole("button", { name: "Kurangi GD" }));
     fireEvent.click(screen.getByText("Ya, Hapus"));
     expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining("Minimal 1 produk"));
-    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("1 pcs")).toBeInTheDocument();
     alertSpy.mockRestore();
   });
 
   it("cancels the confirm dialog without removing anything when Batal clicked", () => {
     const sale1 = { ...simpleSale, items: [{ ...simpleSale.items[0], qty: 1 }] };
     render(<EditSaleModal sale={sale1} onClose={vi.fn()} onSave={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "−" }));
+    fireEvent.click(screen.getByRole("button", { name: "Kurangi GD" }));
     expect(screen.getByText("Hapus Produk?")).toBeInTheDocument();
     const batalButtons = screen.getAllByRole("button", { name: "Batal" });
     fireEvent.click(batalButtons[batalButtons.length - 1]);
     expect(screen.queryByText("Hapus Produk?")).not.toBeInTheDocument();
-    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("1 pcs")).toBeInTheDocument();
   });
 
   it("removes simple item entirely when qty decremented to 0 and confirmed (multiple items in sale)", () => {
     render(<EditSaleModal sale={twoItemSale} onClose={vi.fn()} onSave={vi.fn()} />);
     expect(screen.getByText("D-01 — Midi")).toBeInTheDocument();
-    const minusButtons = screen.getAllByRole("button", { name: "−" });
+    const minusButtons = screen.getAllByRole("button", { name: "Kurangi GD" });
     fireEvent.click(minusButtons[0]);
     fireEvent.click(screen.getByText("Ya, Hapus"));
     expect(screen.queryByText("D-01 — Midi")).not.toBeInTheDocument();
@@ -217,8 +217,8 @@ describe("EditSaleModal", () => {
 
   it("decrements simple item qty from 2 to 1", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "−" }));
-    expect(screen.getByText("1")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Kurangi GD" }));
+    expect(screen.getByText("1 pcs")).toBeInTheDocument();
   });
 
 
@@ -303,17 +303,17 @@ describe("EditSaleModal", () => {
     expect(screen.getByText("MERAH")).toBeInTheDocument();
   });
 
-  it("increments warna qty", () => {
+  it("increments warna qty with the location's Tambah button", () => {
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    expect(screen.getByText("1")).toBeInTheDocument();
-    const plusButtons = screen.getAllByRole("button", { name: "+" });
+    expect(screen.getByTestId("warna-row-HITAM")).toHaveTextContent("1 pcs");
+    const plusButtons = screen.getAllByRole("button", { name: "Tambah GD" });
     fireEvent.click(plusButtons[0]);
-    expect(screen.queryByText("1")).not.toBeInTheDocument();
+    expect(screen.getByTestId("warna-row-HITAM")).toHaveTextContent("2 pcs");
   });
 
   it("opens confirm dialog when decrementing a warna qty to 0, without removing yet", () => {
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    const minusButtons = screen.getAllByRole("button", { name: "−" });
+    const minusButtons = screen.getAllByRole("button", { name: "Kurangi GD" });
     fireEvent.click(minusButtons[0]);
     expect(screen.getByText("Hapus Warna?")).toBeInTheDocument();
     expect(screen.getByText("HITAM")).toBeInTheDocument();
@@ -322,7 +322,7 @@ describe("EditSaleModal", () => {
   it("removes a warna line entirely when its qty is decremented to 0 and confirmed (bug fix: batal pilih warna)", () => {
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
     expect(screen.getByText("HITAM")).toBeInTheDocument();
-    const minusButtons = screen.getAllByRole("button", { name: "−" });
+    const minusButtons = screen.getAllByRole("button", { name: "Kurangi GD" });
     fireEvent.click(minusButtons[0]);
     fireEvent.click(screen.getByText("Ya, Hapus"));
     expect(screen.queryByText("HITAM")).not.toBeInTheDocument();
@@ -365,9 +365,9 @@ describe("EditSaleModal", () => {
 
   it("decrements MERAH warna qty from 2 to 1", () => {
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    const minusButtons = screen.getAllByRole("button", { name: "−" });
+    const minusButtons = screen.getAllByRole("button", { name: "Kurangi GD" });
     fireEvent.click(minusButtons[1]);
-    expect(screen.getByText("MERAH")).toBeInTheDocument();
+    expect(screen.getByTestId("warna-row-MERAH")).toHaveTextContent("1 pcs");
   });
 
 
@@ -461,7 +461,7 @@ describe("EditSaleModal", () => {
       loading: false,
     });
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("2 pcs")).toBeInTheDocument();
     fireEvent.click(screen.getByText("+ Tambah Produk"));
     fireEvent.change(
       screen.getByPlaceholderText("Cari kode atau nama produk..."),
@@ -470,7 +470,40 @@ describe("EditSaleModal", () => {
     fireEvent.click(screen.getByText("D-01"));
     fireEvent.click(screen.getByText("Midi"));
     fireEvent.click(screen.getByText("+ Tambahkan"));
-    await waitFor(() => expect(screen.getByText("3")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("3 pcs")).toBeInTheDocument());
+  });
+
+  it("merges qty for an existing product into the sale's own location (no cross-location mixing)", async () => {
+    useProducts.mockReturnValue({
+      products: [
+        {
+          kode: "D-01", nama: "Gamis", hpp: 80000,
+          variants: [{ size: "Midi", harga: 100000 }],
+          stokByWarna: { Midi: { _: { gudang: 5, cideng: 5 } } },
+        },
+      ],
+      loading: false,
+    });
+    const cidengSale = {
+      ...simpleSale,
+      location: "cideng",
+      items: [{ ...simpleSale.items[0], breakdown: [{ location: "cideng", qty: 2 }] }],
+    };
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<EditSaleModal sale={cidengSale} onClose={vi.fn()} onSave={onSave} />);
+    fireEvent.click(screen.getByText("+ Tambah Produk"));
+    fireEvent.change(
+      screen.getByPlaceholderText("Cari kode atau nama produk..."),
+      { target: { value: "D-01" } }
+    );
+    fireEvent.click(screen.getByText("D-01"));
+    fireEvent.click(screen.getByText("Midi"));
+    fireEvent.click(screen.getByText("+ Tambahkan"));
+    fillNote();
+    fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    const savedItems = onSave.mock.calls[0][0].items;
+    expect(savedItems[0].breakdown).toEqual([{ location: "cideng", qty: 3 }]);
   });
 
   it("resets to product list when size-picker Batal clicked", () => {
@@ -635,9 +668,9 @@ describe("EditSaleModal", () => {
       loading: false,
     });
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    const plusBtn = screen.getByRole("button", { name: "+" });
+    const plusBtn = screen.getByRole("button", { name: "Tambah GD" });
     fireEvent.click(plusBtn);
-    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByText("3 pcs")).toBeInTheDocument();
     expect(plusBtn).toBeDisabled();
   });
 
@@ -652,7 +685,7 @@ describe("EditSaleModal", () => {
       loading: false,
     });
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    const plusButtons = screen.getAllByRole("button", { name: "+" });
+    const plusButtons = screen.getAllByRole("button", { name: "Tambah GD" });
     expect(plusButtons[0]).toBeDisabled();
     expect(plusButtons[1]).not.toBeDisabled();
   });
@@ -668,21 +701,21 @@ describe("EditSaleModal", () => {
       loading: false,
     });
     render(<EditSaleModal sale={warnaSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "+" })[1]);
-    expect(screen.getByText("3")).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "+" })[1]);
-    expect(screen.getByText("4")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "+" })[1]).toBeDisabled();
+    fireEvent.click(screen.getAllByRole("button", { name: "Tambah GD" })[1]);
+    expect(screen.getByTestId("warna-row-MERAH")).toHaveTextContent("3 pcs");
+    fireEvent.click(screen.getAllByRole("button", { name: "Tambah GD" })[1]);
+    expect(screen.getByTestId("warna-row-MERAH")).toHaveTextContent("4 pcs");
+    expect(screen.getAllByRole("button", { name: "Tambah GD" })[1]).toBeDisabled();
   });
 
   it("does not cap qty when the product is not found in the products list (Infinity fallback)", () => {
     render(<EditSaleModal sale={simpleSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    const plusBtn = screen.getByRole("button", { name: "+" });
+    const plusBtn = screen.getByRole("button", { name: "Tambah GD" });
     expect(plusBtn).not.toBeDisabled();
   });
 
 
-  it("BUGFIX: '+' stays enabled when combined stock allows it, but asks for confirmation before drawing from another location", () => {
+  it("explicit location choice: Tambah button for the sale's own (empty) location is disabled, other locations stay pickable", () => {
     const gabunganSale = {
       ...simpleSale,
       location: "cideng",
@@ -698,41 +731,14 @@ describe("EditSaleModal", () => {
       loading: false,
     });
     render(<EditSaleModal sale={gabunganSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    const plusBtn = screen.getByRole("button", { name: "+" });
-    expect(plusBtn).not.toBeDisabled();
-    fireEvent.click(plusBtn);
-    // Belum langsung berubah -- nunggu konfirmasi dulu krn butuh ambil dari Gudang.
-    expect(screen.getByText("2")).toBeInTheDocument();
-    expect(screen.getByText(/Stok Cideng Tidak Cukup/)).toBeInTheDocument();
-    expect(screen.getByText(/1 pcs dari Gudang/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Ya, Ambil" }));
-    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tambah CD" })).toBeDisabled();
+    const gudangPlus = screen.getByRole("button", { name: "Tambah GD" });
+    expect(gudangPlus).not.toBeDisabled();
+    fireEvent.click(gudangPlus);
+    expect(screen.getByText("3 pcs")).toBeInTheDocument();
   });
 
-  it("BUGFIX: cancelling the cross-location confirmation leaves the qty unchanged", () => {
-    const gabunganSale = {
-      ...simpleSale,
-      location: "cideng",
-      items: [
-        { kode: "D-01", size: "Midi", harga: 100000, hpp: 0, qty: 2, warna: null,
-          breakdown: [{ location: "gudang", qty: 2 }] },
-      ],
-    };
-    useProducts.mockReturnValue({
-      products: [
-        { kode: "D-01", nama: "Gamis", hpp: 80000, stokByWarna: { Midi: { _: { gudang: 5, cideng: 0 } } } },
-      ],
-      loading: false,
-    });
-    render(<EditSaleModal sale={gabunganSale} onClose={vi.fn()} onSave={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "+" }));
-    const batalButtons = screen.getAllByRole("button", { name: "Batal" });
-    fireEvent.click(batalButtons[batalButtons.length - 1]);
-    expect(screen.getByText("2")).toBeInTheDocument();
-    expect(screen.queryByText(/Stok Cideng Tidak Cukup/)).not.toBeInTheDocument();
-  });
-
-  it("BUGFIX: recomputes item breakdown to the new qty (from the right location) when qty is edited, instead of keeping the stale original breakdown", async () => {
+  it("saves exactly the breakdown the admin picked across locations, no auto-allocation", async () => {
     const gabunganSale = {
       ...simpleSale,
       location: "cideng",
@@ -749,8 +755,7 @@ describe("EditSaleModal", () => {
     });
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<EditSaleModal sale={gabunganSale} onClose={vi.fn()} onSave={onSave} />);
-    fireEvent.click(screen.getByRole("button", { name: "+" }));
-    fireEvent.click(screen.getByRole("button", { name: "Ya, Ambil" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tambah GD" }));
     fillNote();
     fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
@@ -758,7 +763,7 @@ describe("EditSaleModal", () => {
     expect(savedItems[0].breakdown).toEqual([{ location: "gudang", qty: 3 }]);
   });
 
-  it("BUGFIX: recomputes warna breakdown to the new qty when a warna qty is edited", async () => {
+  it("saves warna breakdown per the location actually picked, not auto-allocated", async () => {
     const gabunganWarnaSale = {
       ...warnaSale,
       location: "cideng",
@@ -783,8 +788,7 @@ describe("EditSaleModal", () => {
     });
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(<EditSaleModal sale={gabunganWarnaSale} onClose={vi.fn()} onSave={onSave} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "+" })[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Ya, Ambil" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Tambah GD" })[0]);
     fillNote();
     fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
@@ -793,6 +797,27 @@ describe("EditSaleModal", () => {
     const merah = savedItems[0].warna.find((w) => w.nama === "MERAH");
     expect(hitam.breakdown).toEqual([{ location: "gudang", qty: 2 }]);
     expect(merah.breakdown).toEqual([{ location: "gudang", qty: 2 }]);
+  });
+
+  it("decrementing one location's qty to 0 keeps the item if another location still has qty", () => {
+    const gabunganSale = {
+      ...simpleSale,
+      location: "cideng",
+      items: [
+        { kode: "D-01", size: "Midi", harga: 100000, hpp: 0, qty: 3, warna: null,
+          breakdown: [{ location: "cideng", qty: 1 }, { location: "gudang", qty: 2 }] },
+      ],
+    };
+    useProducts.mockReturnValue({
+      products: [
+        { kode: "D-01", nama: "Gamis", hpp: 80000, stokByWarna: { Midi: { _: { gudang: 5, cideng: 5 } } } },
+      ],
+      loading: false,
+    });
+    render(<EditSaleModal sale={gabunganSale} onClose={vi.fn()} onSave={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Kurangi CD" }));
+    expect(screen.queryByText("Hapus Produk?")).not.toBeInTheDocument();
+    expect(screen.getByText("2 pcs")).toBeInTheDocument();
   });
 
 });
