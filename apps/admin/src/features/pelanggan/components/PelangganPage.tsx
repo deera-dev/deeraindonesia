@@ -5,6 +5,7 @@ import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
 import { CalonCustomerList } from "../../calon-customer";
 import { usePelangganList } from "../hooks";
+import type { Pelanggan } from "../schema";
 import { applyPelangganFilter, matchesSearch, PELANGGAN_FILTERS } from "../utils";
 import PelangganDetailModal from "./PelangganDetailModal";
 
@@ -13,7 +14,7 @@ export default function PelangganPage() {
   const [tab, setTab] = useState(searchParams.get("tab") === "calon" ? "calon" : "pelanggan");
   const { pelanggan, loading, error } = usePelangganList();
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState<Pelanggan | null>(null);
 
   const [filterMode, setFilterMode] = useState("semua");
   const [filterOpen, setFilterOpen] = useState(false);

@@ -3,9 +3,18 @@ import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
 import { useMemo, useState } from "react";
 import { useSalesByPelanggan } from "../hooks";
-import { fmtDate, fmtRp, groupSaleItems } from "../utils";
+import type { Pelanggan } from "../schema";
+import { fmtDate, fmtRp, type GroupedSaleItem, groupSaleItems } from "../utils";
 
-function SaleItemRow({ row, image, onImageClick }) {
+function SaleItemRow({
+  row,
+  image,
+  onImageClick,
+}: {
+  row: GroupedSaleItem;
+  image: string | null | undefined;
+  onImageClick: (image: string) => void;
+}) {
   return (
     <div className="flex items-start gap-3 text-sm">
       {image && (
@@ -41,7 +50,7 @@ function SaleItemRow({ row, image, onImageClick }) {
   );
 }
 
-function ImageLightbox({ image, onClose }) {
+function ImageLightbox({ image, onClose }: { image: string; onClose: () => void }) {
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4"
@@ -63,17 +72,23 @@ function ImageLightbox({ image, onClose }) {
   );
 }
 
-export default function PelangganDetailModal({ pelanggan, onClose }) {
+export default function PelangganDetailModal({
+  pelanggan,
+  onClose,
+}: {
+  pelanggan: Pelanggan;
+  onClose: () => void;
+}) {
   const { sales, loading } = useSalesByPelanggan(pelanggan?.id);
   const { products } = useProducts();
 
   const imageMap = useMemo(() => {
-    const map = {};
+    const map: Record<string, string | null | undefined> = {};
     (products ?? []).forEach((p) => (map[p.kode] = p.image));
     return map;
   }, [products]);
 
-  const [lightboxImage, setLightboxImage] = useState(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   const totalTransaksi = sales.length;
   const totalOmzet = sales.reduce(
@@ -139,7 +154,7 @@ export default function PelangganDetailModal({ pelanggan, onClose }) {
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-skin-text">{fmtDate(s.date)}</p>
                         <p className="text-xs text-skin-text4">
-                          {LOCATION_LABELS[s.location] ?? s.location}
+                          {(LOCATION_LABELS as Record<string, string>)[s.location] ?? s.location}
                           {s.created_by_name ? ` · ${s.created_by_name}` : ""}
                         </p>
                       </div>
