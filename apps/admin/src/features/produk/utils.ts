@@ -209,7 +209,7 @@ export async function processImageFile(
   {
     onNotice,
     onError,
-  }: { onNotice?: (notice: unknown) => void; onError?: (msg: string) => void } = {},
+  }: { onNotice?: (notice: string) => void; onError?: (msg: string) => void } = {},
 ): Promise<ProcessImageResult | null> {
   const preview = URL.createObjectURL(file);
   const originalSizeMB = file.size / (1024 * 1024);

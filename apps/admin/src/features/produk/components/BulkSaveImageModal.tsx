@@ -1,41 +1,54 @@
+import type { Product } from "@deera/shared/features/products/schema";
 import { localDateStr } from "@deera/shared/lib/bepUtils";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { useMemo, useRef, useState } from "react";
 import ProductCodeCard from "./ProductCodeCard";
 
-function firstUkuranBerharga(product) {
+type BulkProduct = Pick<Product, "kode" | "nama" | "image" | "variants">;
+
+function firstUkuranBerharga(product: BulkProduct): string | null {
   const variants = (product.variants ?? []).filter((v) => v.harga > 0);
   return variants[0]?.size ?? null;
 }
 
-function waitForCardImages(el) {
+function waitForCardImages(el: HTMLElement | null): Promise<void[]> {
   const imgs = el ? el.querySelectorAll("img") : [];
   return Promise.all(
     Array.from(imgs).map((img) => {
       if (img.complete) return Promise.resolve();
-      return new Promise((resolve) => {
-        img.addEventListener("load", resolve, { once: true });
-        img.addEventListener("error", resolve, { once: true });
+      return new Promise<void>((resolve) => {
+        img.addEventListener("load", () => resolve(), { once: true });
+        img.addEventListener("error", () => resolve(), { once: true });
       });
     }),
   );
 }
 
-function waitFrame() {
-  return new Promise((resolve) => requestAnimationFrame(resolve));
+function waitFrame(): Promise<void> {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
 
-function base64FromDataUrl(dataUrl) {
+function base64FromDataUrl(dataUrl: string): string {
   return dataUrl.split(",")[1] ?? "";
 }
 
-export default function BulkSaveImageModal({ products, onClose, onSaved }) {
+export interface BulkSaveImageModalProps {
+  products: BulkProduct[];
+  onClose: () => void;
+  onSaved?: (count: number) => void;
+}
+
+export default function BulkSaveImageModal({
+  products,
+  onClose,
+  onSaved,
+}: BulkSaveImageModalProps) {
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState(() => new Set());
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const [exportProduct, setExportProduct] = useState(null);
-  const cardRef = useRef(null);
+  const [exportProduct, setExportProduct] = useState<BulkProduct | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -45,7 +58,7 @@ export default function BulkSaveImageModal({ products, onClose, onSaved }) {
     );
   }, [products, search]);
 
-  function toggle(kode) {
+  function toggle(kode: string) {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(kode)) next.delete(kode);
@@ -78,12 +91,12 @@ export default function BulkSaveImageModal({ products, onClose, onSaved }) {
       ]);
       const zip = new JSZip();
       for (let i = 0; i < list.length; i++) {
-        const p = list[i];
+        const p = list[i]!;
         setExportProduct(p);
         setProgress({ current: i + 1, total: list.length });
         await waitFrame();
         await waitForCardImages(cardRef.current);
-        const dataUrl = await toPng(cardRef.current, { pixelRatio: 3 });
+        const dataUrl = await toPng(cardRef.current!, { pixelRatio: 3 });
         const size = firstUkuranBerharga(p);
         const sizePart = size ? `-${size.replace(/\s+/g, "")}` : "";
         zip.file(`${p.kode}${sizePart}.png`, base64FromDataUrl(dataUrl), { base64: true });

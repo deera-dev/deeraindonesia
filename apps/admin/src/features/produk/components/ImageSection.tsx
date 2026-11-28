@@ -1,9 +1,30 @@
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { MAX_IMAGE_MB } from "@deera/shared/lib/mediaUpload";
+import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
+import type { ProcessImageResult } from "../utils";
 import { processImageFile } from "../utils";
 
-function StatusBadge({ status }) {
+export interface UrlImageState {
+  type: "url";
+  url: string;
+}
+
+export interface CompressingImageState {
+  type: "file";
+  file: File;
+  preview: string;
+  status: "compressing";
+  originalSizeMB: number;
+  _key?: File;
+}
+
+export type ImageState =
+  | UrlImageState
+  | CompressingImageState
+  | (ProcessImageResult & { _key?: File });
+
+function StatusBadge({ status }: { status?: string }) {
   if (status !== "compressing") return null;
   return (
     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
@@ -14,7 +35,15 @@ function StatusBadge({ status }) {
   );
 }
 
-function SizeInfo({ originalSizeMB, compressedSizeMB, compressed }) {
+function SizeInfo({
+  originalSizeMB,
+  compressedSizeMB,
+  compressed,
+}: {
+  originalSizeMB?: number;
+  compressedSizeMB?: number;
+  compressed?: boolean;
+}) {
   if (!originalSizeMB) return null;
   if (!compressed) {
     return <p className="mt-1 text-[10px] text-skin-text4">{originalSizeMB.toFixed(2)} MB</p>;
@@ -22,9 +51,19 @@ function SizeInfo({ originalSizeMB, compressedSizeMB, compressed }) {
   return (
     <p className="mt-1 text-[10px] text-skin-text4">
       {originalSizeMB.toFixed(2)} MB →{" "}
-      <span className="text-emerald-600">{compressedSizeMB.toFixed(2)} MB</span>
+      <span className="text-emerald-600">{compressedSizeMB?.toFixed(2)} MB</span>
     </p>
   );
+}
+
+export interface ImageSectionProps {
+  mainImage: ImageState | null;
+  setMainImage: (v: ImageState | null) => void;
+  seriWarnaImage: ImageState | null;
+  setSeriWarnaImage: (v: ImageState | null) => void;
+  detailImages: ImageState[];
+  setDetailImages: Dispatch<SetStateAction<ImageState[]>>;
+  saving: boolean;
 }
 
 export default function ImageSection({
@@ -35,14 +74,14 @@ export default function ImageSection({
   detailImages,
   setDetailImages,
   saving,
-}) {
+}: ImageSectionProps) {
   const [mainNotice, setMainNotice] = useState("");
   const [mainErr, setMainErr] = useState("");
   const [seriWarnaNotice, setSeriWarnaNotice] = useState("");
   const [seriWarnaErr, setSeriWarnaErr] = useState("");
   const [detailErr, setDetailErr] = useState("");
 
-  async function handleMainChange(e) {
+  async function handleMainChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -68,7 +107,7 @@ export default function ImageSection({
     if (processed) setMainNotice("");
   }
 
-  async function handleSeriWarnaChange(e) {
+  async function handleSeriWarnaChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -94,13 +133,13 @@ export default function ImageSection({
     if (processed) setSeriWarnaNotice("");
   }
 
-  async function handleDetailAdd(e) {
+  async function handleDetailAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
     if (!files.length) return;
     setDetailErr("");
 
-    const placeholders = files.map((file) => {
+    const placeholders: Array<CompressingImageState | null> = files.map((file) => {
       const originalSizeMB = file.size / (1024 * 1024);
       if (originalSizeMB <= MAX_IMAGE_MB) return null;
       return {
@@ -112,7 +151,7 @@ export default function ImageSection({
         _key: file,
       };
     });
-    const activePlaceholders = placeholders.filter(Boolean);
+    const activePlaceholders = placeholders.filter((p): p is CompressingImageState => p !== null);
     if (activePlaceholders.length) {
       setDetailImages((prev) => [...prev, ...activePlaceholders]);
     }
@@ -123,20 +162,25 @@ export default function ImageSection({
 
     setDetailImages((prev) => {
       const placeholderKeys = new Set(activePlaceholders.map((p) => p._key));
-      const withoutPlaceholders = prev.filter((img) => !placeholderKeys.has(img._key));
-      return [...withoutPlaceholders, ...results.filter(Boolean)];
+      const withoutPlaceholders = prev.filter(
+        (img) => !("_key" in img && img._key && placeholderKeys.has(img._key)),
+      );
+      return [
+        ...withoutPlaceholders,
+        ...results.filter((r): r is ProcessImageResult => r !== null),
+      ];
     });
   }
 
-  function removeDetail(idx) {
+  function removeDetail(idx: number) {
     setDetailImages((prev) => prev.filter((_, i) => i !== idx));
   }
-  function moveDetail(idx, dir) {
+  function moveDetail(idx: number, dir: number) {
     setDetailImages((prev) => {
       const arr = [...prev];
       const ni = idx + dir;
       if (ni < 0 || ni >= arr.length) return arr;
-      [arr[idx], arr[ni]] = [arr[ni], arr[idx]];
+      [arr[idx], arr[ni]] = [arr[ni]!, arr[idx]!];
       return arr;
     });
   }
@@ -161,11 +205,11 @@ export default function ImageSection({
               alt="Preview"
               className="object-cover w-full h-full border-2 border-skin-bdr"
             />
-            <StatusBadge status={mainImage.status} />
+            <StatusBadge status={mainImage.type === "file" ? mainImage.status : undefined} />
             <button
               type="button"
               onClick={() => setMainImage(null)}
-              disabled={saving || mainImage.status === "compressing"}
+              disabled={saving || (mainImage.type === "file" && mainImage.status === "compressing")}
               className="absolute w-7 h-7 text-sm text-white bg-red-500 border-none -top-2 -right-2 hover:bg-red-600 transition flex items-center justify-center disabled:opacity-40"
             >
               ×
@@ -181,8 +225,10 @@ export default function ImageSection({
         {mainImage?.type === "file" && (
           <SizeInfo
             originalSizeMB={mainImage.originalSizeMB}
-            compressedSizeMB={mainImage.compressedSizeMB}
-            compressed={mainImage.compressed}
+            compressedSizeMB={
+              "compressedSizeMB" in mainImage ? mainImage.compressedSizeMB : undefined
+            }
+            compressed={"compressed" in mainImage ? mainImage.compressed : undefined}
           />
         )}
         {mainNotice && <p className="mt-1 text-xs text-amber-600 max-w-xs">{mainNotice}</p>}
@@ -207,11 +253,16 @@ export default function ImageSection({
               alt="Preview"
               className="object-cover w-full h-full border-2 border-skin-bdr"
             />
-            <StatusBadge status={seriWarnaImage.status} />
+            <StatusBadge
+              status={seriWarnaImage.type === "file" ? seriWarnaImage.status : undefined}
+            />
             <button
               type="button"
               onClick={() => setSeriWarnaImage(null)}
-              disabled={saving || seriWarnaImage.status === "compressing"}
+              disabled={
+                saving ||
+                (seriWarnaImage.type === "file" && seriWarnaImage.status === "compressing")
+              }
               className="absolute w-7 h-7 text-sm text-white bg-red-500 border-none -top-2 -right-2 hover:bg-red-600 transition flex items-center justify-center disabled:opacity-40"
             >
               ×
@@ -232,8 +283,10 @@ export default function ImageSection({
         {seriWarnaImage?.type === "file" && (
           <SizeInfo
             originalSizeMB={seriWarnaImage.originalSizeMB}
-            compressedSizeMB={seriWarnaImage.compressedSizeMB}
-            compressed={seriWarnaImage.compressed}
+            compressedSizeMB={
+              "compressedSizeMB" in seriWarnaImage ? seriWarnaImage.compressedSizeMB : undefined
+            }
+            compressed={"compressed" in seriWarnaImage ? seriWarnaImage.compressed : undefined}
           />
         )}
         {seriWarnaNotice && (
@@ -255,14 +308,14 @@ export default function ImageSection({
                 alt={`Detail ${idx + 1}`}
                 className="object-cover w-full h-full border-2 border-skin-bdr"
               />
-              <StatusBadge status={img.status} />
+              <StatusBadge status={img.type === "file" ? img.status : undefined} />
               <div className="absolute top-1 left-1 px-1.5 py-0.5 font-editorial text-xs bg-skin-card border border-skin-bdr text-skin-text2">
                 {idx + 1}
               </div>
               <button
                 type="button"
                 onClick={() => removeDetail(idx)}
-                disabled={saving || img.status === "compressing"}
+                disabled={saving || (img.type === "file" && img.status === "compressing")}
                 className="absolute w-7 h-7 text-sm text-white bg-red-500 -top-2 -right-2 hover:bg-red-600 transition flex items-center justify-center disabled:opacity-40"
               >
                 ×

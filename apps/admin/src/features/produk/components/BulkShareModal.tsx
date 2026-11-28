@@ -1,10 +1,17 @@
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { useMemo, useState } from "react";
+import type { ShareableProduct } from "../utils";
 import { shareProductsViaWA } from "../utils";
 
-export default function BulkShareModal({ products, onClose, onShared }) {
+export interface BulkShareModalProps {
+  products: ShareableProduct[];
+  onClose: () => void;
+  onShared?: (count: number) => void;
+}
+
+export default function BulkShareModal({ products, onClose, onShared }: BulkShareModalProps) {
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState(() => new Set());
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
@@ -16,7 +23,7 @@ export default function BulkShareModal({ products, onClose, onShared }) {
     );
   }, [products, search]);
 
-  function toggle(kode) {
+  function toggle(kode: string) {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(kode)) next.delete(kode);

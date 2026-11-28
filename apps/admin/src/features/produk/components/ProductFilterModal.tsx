@@ -1,5 +1,6 @@
 import { SIZE_PRESETS } from "@deera/shared/lib/constants";
 import { LOCATION_LABELS, LOCATIONS } from "@deera/shared/lib/marketDay";
+import type { ProductFilter } from "../store";
 
 const STOK_STATUS_OPTIONS = [
   { value: "semua", label: "Semua" },
@@ -22,6 +23,16 @@ const selectCls =
 const numberCls =
   "w-full px-3 py-3 text-sm font-editorial border-2 border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-skin-accent transition";
 
+export interface ProductFilterModalProps {
+  draft: ProductFilter;
+  onChange: (patch: Partial<ProductFilter>) => void;
+  allWarna: string[];
+  previewCount: number;
+  onApply: () => void;
+  onReset: () => void;
+  onClose: () => void;
+}
+
 export default function ProductFilterModal({
   draft,
   onChange,
@@ -30,7 +41,7 @@ export default function ProductFilterModal({
   onApply,
   onReset,
   onClose,
-}) {
+}: ProductFilterModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} />
@@ -56,7 +67,7 @@ export default function ProductFilterModal({
               className={selectCls}
             >
               <option value="">Semua Ukuran</option>
-              {SIZE_PRESETS.map((preset) => (
+              {SIZE_PRESETS.map((preset: { size: string }) => (
                 <option key={preset.size} value={preset.size}>
                   {preset.size}
                 </option>
@@ -105,9 +116,9 @@ export default function ProductFilterModal({
               className={selectCls}
             >
               <option value="semua">Semua Lokasi</option>
-              {LOCATIONS.map((loc) => (
+              {LOCATIONS.map((loc: string) => (
                 <option key={loc} value={loc}>
-                  Ada di {LOCATION_LABELS[loc] ?? loc}
+                  Ada di {(LOCATION_LABELS as Record<string, string>)[loc] ?? loc}
                 </option>
               ))}
             </select>
