@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
 import { useDeleteHistory, useHistory } from "../hooks";
+import type { HistoryEntry, HistorySnapshot } from "../schema";
 import { formatTime, getMeta, groupByDate, presetToDates, summarizeHistory } from "../utils";
 import HistoryDetailModal from "./HistoryDetailModal";
 
@@ -12,9 +13,9 @@ export default function HistoryPage() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [category, setCategory] = useState("all");
-  const [modalItem, setModalItem] = useState(null);
-  const [deleting, setDeleting] = useState({});
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [modalItem, setModalItem] = useState<HistoryEntry | null>(null);
+  const [deleting, setDeleting] = useState<Record<string, boolean>>({});
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const { dateFrom, dateTo } =
     datePreset === "custom"
@@ -25,7 +26,7 @@ export default function HistoryPage() {
   const deleteHistory = useDeleteHistory();
   const groups = useMemo(() => groupByDate(history), [history]);
 
-  function requestDelete(id, e) {
+  function requestDelete(id: string, e: React.MouseEvent) {
     e.stopPropagation();
     setConfirmDeleteId(id);
   }
@@ -39,8 +40,8 @@ export default function HistoryPage() {
       await deleteHistory(id);
       if (modalItem?.id === id) setModalItem(null);
       reload();
-    } catch (err) {
-      toast.error("Gagal hapus: " + err.message);
+    } catch (err: unknown) {
+      toast.error(`Gagal hapus: ${(err as Error).message}`);
     } finally {
       setDeleting((prev) => ({ ...prev, [id]: false }));
     }
@@ -141,6 +142,7 @@ export default function HistoryPage() {
                   const meta = getMeta(item.action);
                   const hasDiff = !!(item.before_snapshot || item.snapshot);
                   const isDeleting = !!deleting[item.id];
+                  const snapshot = item.snapshot as HistorySnapshot | null;
 
                   return (
                     <div
@@ -160,12 +162,11 @@ export default function HistoryPage() {
                           {item.action?.startsWith("pelanggan-") ? (
                             <>
                               <p className="font-headline text-skin-accent-text text-base leading-tight truncate">
-                                {item.nama || item.snapshot?.nama || "—"}
+                                {item.nama || snapshot?.nama || "—"}
                               </p>
                               <p className="font-editorial text-xs text-skin-text3 truncate mt-0.5">
-                                {[item.snapshot?.no_hp, item.snapshot?.alamat]
-                                  .filter(Boolean)
-                                  .join(" · ") || "—"}
+                                {[snapshot?.no_hp, snapshot?.alamat].filter(Boolean).join(" · ") ||
+                                  "—"}
                               </p>
                             </>
                           ) : (
@@ -174,7 +175,7 @@ export default function HistoryPage() {
                                 {item.kode}
                               </p>
                               <p className="font-editorial text-xs text-skin-text3 truncate mt-0.5">
-                                {item.nama || item.snapshot?.nama || "—"}
+                                {item.nama || snapshot?.nama || "—"}
                               </p>
                             </>
                           )}

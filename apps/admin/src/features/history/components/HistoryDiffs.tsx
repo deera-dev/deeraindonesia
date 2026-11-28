@@ -1,4 +1,7 @@
-export function Section({ title, children }) {
+import type { ReactNode } from "react";
+import type { HistorySnapshot } from "../schema";
+
+export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="mb-4">
       <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-skin-text3 mb-2">
@@ -9,7 +12,7 @@ export function Section({ title, children }) {
   );
 }
 
-export function Pill({ children, className = "" }) {
+export function Pill({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <span
       className={`inline-block px-2.5 py-1 text-xs bg-skin-page border border-skin-bdr text-skin-text2 rounded-sm ${className}`}
@@ -19,7 +22,17 @@ export function Pill({ children, className = "" }) {
   );
 }
 
-export function ChangeRow({ label, before, after, afterRed = false }) {
+export function ChangeRow({
+  label,
+  before,
+  after,
+  afterRed = false,
+}: {
+  label: string;
+  before: ReactNode;
+  after: ReactNode;
+  afterRed?: boolean;
+}) {
   return (
     <div className="flex flex-col gap-0.5">
       <span className="text-[10px] font-semibold tracking-wide uppercase text-skin-text4">
@@ -40,10 +53,20 @@ export function ChangeRow({ label, before, after, afterRed = false }) {
   );
 }
 
-export function ProdukDiff({ before, after }) {
+export function ProdukDiff({
+  before,
+  after,
+}: {
+  before: HistorySnapshot | null | undefined;
+  after: HistorySnapshot | null | undefined;
+}) {
   if (!before && !after) return null;
 
-  const fields = [
+  const fields: Array<{
+    key: "nama" | "bahan" | "hpp";
+    label: string;
+    fmt?: (v: unknown) => string | null;
+  }> = [
     { key: "nama", label: "Nama" },
     { key: "bahan", label: "Bahan" },
     {
@@ -61,7 +84,7 @@ export function ProdukDiff({ before, after }) {
       if (String(bStr) === String(aStr)) return null;
       return { label, bStr, aStr };
     })
-    .filter(Boolean);
+    .filter((v): v is NonNullable<typeof v> => v !== null);
 
   const bV = before?.variants ?? [],
     aV = after?.variants ?? [];
@@ -75,7 +98,7 @@ export function ProdukDiff({ before, after }) {
       if (bH === aH && !!b === !!a) return null;
       return { size, bH, aH, added: !b, removed: !a };
     })
-    .filter(Boolean);
+    .filter((v): v is NonNullable<typeof v> => v !== null);
 
   const bW = (before?.warna ?? []).join(", ") || null;
   const aW = (after?.warna ?? []).join(", ") || null;
@@ -89,14 +112,14 @@ export function ProdukDiff({ before, after }) {
           <Section title="Info Produk">
             <div className="flex flex-wrap gap-2">
               {s.bahan && <Pill>{s.bahan}</Pill>}
-              {s.hpp !== null && <Pill>HPP Rp {Number(s.hpp).toLocaleString("id-ID")}</Pill>}
+              {s.hpp != null && <Pill>HPP Rp {Number(s.hpp).toLocaleString("id-ID")}</Pill>}
             </div>
           </Section>
         )}
         {(s.variants ?? []).length > 0 && (
           <Section title="Ukuran">
             <div className="flex flex-wrap gap-2">
-              {s.variants.map((v) => (
+              {s.variants!.map((v) => (
                 <Pill key={v.size}>
                   {v.size} · Rp {Number(v.harga).toLocaleString("id-ID")}
                 </Pill>
@@ -107,7 +130,7 @@ export function ProdukDiff({ before, after }) {
         {(s.warna ?? []).length > 0 && (
           <Section title="Warna">
             <div className="flex flex-wrap gap-2">
-              {s.warna.map((w) => (
+              {s.warna!.map((w) => (
                 <Pill key={w}>{w}</Pill>
               ))}
             </div>
@@ -129,7 +152,12 @@ export function ProdukDiff({ before, after }) {
         <Section title="Perubahan">
           <div className="space-y-2">
             {changedFields.map(({ label, bStr, aStr }) => (
-              <ChangeRow key={label} label={label} before={bStr} after={aStr} />
+              <ChangeRow
+                key={label}
+                label={label}
+                before={bStr as ReactNode}
+                after={aStr as ReactNode}
+              />
             ))}
           </div>
         </Section>
@@ -158,9 +186,22 @@ export function ProdukDiff({ before, after }) {
   );
 }
 
-export function TransferDiff({ before, after, action }) {
+const TRANSFER_LOC: Record<string, string> = {
+  gudang: "Gudang",
+  cideng: "Cideng",
+  tegalgubug: "Tegalgubug",
+};
+
+export function TransferDiff({
+  before,
+  after,
+  action,
+}: {
+  before: HistorySnapshot | null | undefined;
+  after: HistorySnapshot | null | undefined;
+  action?: string | null;
+}) {
   const snap = after ?? before ?? {};
-  const LOC = { gudang: "Gudang", cideng: "Cideng", tegalgubug: "Tegalgubug" };
   const total = (snap.items ?? []).reduce((s, i) => s + (i.qty ?? 0), 0);
 
   return (
@@ -168,8 +209,8 @@ export function TransferDiff({ before, after, action }) {
       <Section title="Rincian Transfer">
         <div className="flex flex-wrap gap-2">
           <Pill>
-            {LOC[snap.from_location] ?? snap.from_location} →{" "}
-            {LOC[snap.to_location] ?? snap.to_location}
+            {(snap.from_location && TRANSFER_LOC[snap.from_location]) ?? snap.from_location} →{" "}
+            {(snap.to_location && TRANSFER_LOC[snap.to_location]) ?? snap.to_location}
           </Pill>
           <Pill>{total} pcs</Pill>
           {snap.status && <Pill className="capitalize">{snap.status}</Pill>}
@@ -188,9 +229,9 @@ export function TransferDiff({ before, after, action }) {
       </Section>
 
       {(snap.items ?? []).length > 0 && (
-        <Section title={`Item (${snap.items.length})`}>
+        <Section title={`Item (${snap.items!.length})`}>
           <div className="space-y-1.5">
-            {snap.items.map((item, i) => (
+            {snap.items!.map((item, i) => (
               <div
                 key={i}
                 className="flex items-center justify-between bg-skin-page px-3 py-2 rounded-sm"
@@ -214,11 +255,21 @@ export function TransferDiff({ before, after, action }) {
   );
 }
 
-export function StokDiff({ before, after }) {
+export function StokDiff({
+  before,
+  after,
+}: {
+  before: HistorySnapshot | null | undefined;
+  after: HistorySnapshot | null | undefined;
+}) {
   const bRows = before?.rows ?? [];
   const aRows = after?.rows ?? [];
   if (aRows.length === 0) return null;
-  const LOC = { gudang: "Gudang", cideng: "Cideng", tegalgubug: "Tegalgubug" };
+  const LOC: Record<string, string> = {
+    gudang: "Gudang",
+    cideng: "Cideng",
+    tegalgubug: "Tegalgubug",
+  };
 
   return (
     <Section title={`Perubahan Stok (${aRows.length} varian)`}>
@@ -253,7 +304,7 @@ export function StokDiff({ before, after }) {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {["gudang", "cideng", "tegalgubug"].map((loc) => {
+                {(["gudang", "cideng", "tegalgubug"] as const).map((loc) => {
                   const bV = bRow?.[loc] ?? 0;
                   const aV = aRow[loc] ?? 0;
                   const d = aV - bV;

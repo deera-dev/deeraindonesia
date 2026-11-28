@@ -1,7 +1,9 @@
+import type { ReactNode } from "react";
+import type { HistoryEntry, HistorySnapshot } from "../schema";
 import { getMeta } from "../utils";
 import { ProdukDiff, StokDiff, TransferDiff } from "./HistoryDiffs";
 
-function Row({ label, value }) {
+function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex gap-2 text-sm">
       <span className="text-skin-text3 shrink-0 w-32">{label}</span>
@@ -10,7 +12,7 @@ function Row({ label, value }) {
   );
 }
 
-function DiffRow({ label, before, after }) {
+function DiffRow({ label, before, after }: { label: string; before: ReactNode; after: ReactNode }) {
   const changed = before !== after;
   if (!changed && !before && !after) return null;
   return (
@@ -24,11 +26,19 @@ function DiffRow({ label, before, after }) {
   );
 }
 
-function PelangganDetail({ action, data, before }) {
+function PelangganDetail({
+  action,
+  data,
+  before,
+}: {
+  action: string | null | undefined;
+  data: HistorySnapshot | null | undefined;
+  before: HistorySnapshot | null | undefined;
+}) {
   if (!data) return <p className="text-sm text-skin-text3">Tidak ada data.</p>;
 
   if (action === "pelanggan-edit" && before) {
-    const fields = [
+    const fields: Array<{ label: string; k: "nama" | "no_hp" | "alamat" }> = [
       { label: "Nama", k: "nama" },
       { label: "No HP", k: "no_hp" },
       { label: "Alamat", k: "alamat" },
@@ -38,9 +48,14 @@ function PelangganDetail({ action, data, before }) {
       <div className="space-y-3">
         {hasChanges
           ? fields.map((f) => (
-              <DiffRow key={f.k} label={f.label} before={before[f.k]} after={data[f.k]} />
+              <DiffRow
+                key={f.k}
+                label={f.label}
+                before={before[f.k] as ReactNode}
+                after={data[f.k] as ReactNode}
+              />
             ))
-          : fields.map((f) => <Row key={f.k} label={f.label} value={data[f.k]} />)}
+          : fields.map((f) => <Row key={f.k} label={f.label} value={data[f.k] as ReactNode} />)}
       </div>
     );
   }
@@ -54,7 +69,15 @@ function PelangganDetail({ action, data, before }) {
   );
 }
 
-function SampelDetail({ action, data, before }) {
+function SampelDetail({
+  action,
+  data,
+  before,
+}: {
+  action: string | null | undefined;
+  data: HistorySnapshot | null | undefined;
+  before: HistorySnapshot | null | undefined;
+}) {
   if (!data) return <p className="text-sm text-skin-text3">Tidak ada data.</p>;
 
   if (action === "sampel-approve") {
@@ -113,7 +136,15 @@ function SampelDetail({ action, data, before }) {
   );
 }
 
-function ProduksiDetail({ action, data, before }) {
+function ProduksiDetail({
+  action,
+  data,
+  before,
+}: {
+  action: string | null | undefined;
+  data: HistorySnapshot | null | undefined;
+  before: HistorySnapshot | null | undefined;
+}) {
   if (action?.startsWith("sampel-")) {
     return <SampelDetail action={action} data={data} before={before} />;
   }
@@ -125,7 +156,7 @@ function ProduksiDetail({ action, data, before }) {
       <div className="space-y-3">
         <Row label="Batch No" value={data.batch_no} />
         <Row label="Tanggal" value={data.tanggal} />
-        <Row label="Total Kain" value={data.total_kain ? data.total_kain + " pcs" : "—"} />
+        <Row label="Total Kain" value={data.total_kain ? `${data.total_kain} pcs` : "—"} />
         {data.catatan && <Row label="Catatan" value={data.catatan} />}
         {Array.isArray(data.sizes) && data.sizes.length > 0 && (
           <div>
@@ -136,7 +167,7 @@ function ProduksiDetail({ action, data, before }) {
                 {Array.isArray(sz.warna) && sz.warna.length > 0 && (
                   <span className="text-skin-text2">
                     {" · "}
-                    {sz.warna.map((w) => w.warna + " (" + w.qty + ")").join(", ")}
+                    {sz.warna.map((w) => `${w.warna} (${w.qty})`).join(", ")}
                   </span>
                 )}
               </div>
@@ -153,13 +184,13 @@ function ProduksiDetail({ action, data, before }) {
         <Row
           label="Total HPP"
           value={
-            data.total_hpp != null ? "Rp " + Number(data.total_hpp).toLocaleString("id-ID") : "—"
+            data.total_hpp != null ? `Rp ${Number(data.total_hpp).toLocaleString("id-ID")}` : "—"
           }
         />
         {before?.total_hpp != null && (
           <Row
             label="HPP Sebelumnya"
-            value={"Rp " + Number(before.total_hpp).toLocaleString("id-ID")}
+            value={`Rp ${Number(before.total_hpp).toLocaleString("id-ID")}`}
           />
         )}
         {Array.isArray(data.bahan_items) && data.bahan_items.length > 0 && (
@@ -182,7 +213,7 @@ function ProduksiDetail({ action, data, before }) {
         <Row
           label="HPP Dihapus"
           value={
-            data.total_hpp != null ? "Rp " + Number(data.total_hpp).toLocaleString("id-ID") : "—"
+            data.total_hpp != null ? `Rp ${Number(data.total_hpp).toLocaleString("id-ID")}` : "—"
           }
         />
       </div>
@@ -190,14 +221,14 @@ function ProduksiDetail({ action, data, before }) {
   }
 
   if (action === "bahan-beli" || action === "bahan-pinjam") {
-    if (data.bulk != null) return <Row label="Jumlah Item" value={data.bulk + " baris (bulk)"} />;
+    if (data.bulk != null) return <Row label="Jumlah Item" value={`${data.bulk} baris (bulk)`} />;
     return (
       <div className="space-y-3">
         {data.nama_bahan && <Row label="Nama Bahan" value={data.nama_bahan} />}
         {data.kode_bahan && <Row label="Kode Bahan" value={data.kode_bahan} />}
-        {data.qty != null && <Row label="Qty" value={data.qty + " " + (data.satuan ?? "")} />}
+        {data.qty != null && <Row label="Qty" value={`${data.qty} ${data.satuan ?? ""}`} />}
         {data.total_harga != null && (
-          <Row label="Total" value={"Rp " + Number(data.total_harga).toLocaleString("id-ID")} />
+          <Row label="Total" value={`Rp ${Number(data.total_harga).toLocaleString("id-ID")}`} />
         )}
         {data.nama_supplier && <Row label="Supplier" value={data.nama_supplier} />}
         {data.nama_pemberi && <Row label="Pemberi" value={data.nama_pemberi} />}
@@ -211,9 +242,9 @@ function ProduksiDetail({ action, data, before }) {
       <div className="space-y-3">
         {data.nama_bahan && <Row label="Nama Bahan" value={data.nama_bahan} />}
         {data.kode_bahan && <Row label="Kode Bahan" value={data.kode_bahan} />}
-        {data.qty != null && <Row label="Qty" value={data.qty + " " + (data.satuan ?? "")} />}
+        {data.qty != null && <Row label="Qty" value={`${data.qty} ${data.satuan ?? ""}`} />}
         {data.total_harga != null && (
-          <Row label="Total" value={"Rp " + Number(data.total_harga).toLocaleString("id-ID")} />
+          <Row label="Total" value={`Rp ${Number(data.total_harga).toLocaleString("id-ID")}`} />
         )}
         {data.sumber && <Row label="Dari" value={data.sumber} />}
       </div>
@@ -227,10 +258,18 @@ function ProduksiDetail({ action, data, before }) {
   );
 }
 
-export default function HistoryDetailModal({ item, onClose }) {
+export default function HistoryDetailModal({
+  item,
+  onClose,
+}: {
+  item: HistoryEntry | null;
+  onClose: () => void;
+}) {
   if (!item) return null;
   const meta = getMeta(item.action);
   const isPelanggan = item.action?.startsWith("pelanggan-");
+  const snapshot = item.snapshot as HistorySnapshot | null;
+  const beforeSnapshot = item.before_snapshot as HistorySnapshot | null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -248,10 +287,10 @@ export default function HistoryDetailModal({ item, onClose }) {
             {isPelanggan ? (
               <>
                 <p className="mt-2 font-headline text-skin-accent-text text-xl leading-none">
-                  {item.nama || item.snapshot?.nama || "—"}
+                  {item.nama || snapshot?.nama || "—"}
                 </p>
                 <p className="mt-0.5 font-editorial text-sm text-skin-text2">
-                  {[item.snapshot?.no_hp, item.snapshot?.alamat].filter(Boolean).join(" · ") || "—"}
+                  {[snapshot?.no_hp, snapshot?.alamat].filter(Boolean).join(" · ") || "—"}
                 </p>
               </>
             ) : (
@@ -260,7 +299,7 @@ export default function HistoryDetailModal({ item, onClose }) {
                   {item.kode}
                 </p>
                 <p className="mt-0.5 font-editorial text-sm text-skin-text2">
-                  {item.nama || item.snapshot?.nama || "—"}
+                  {item.nama || snapshot?.nama || "—"}
                 </p>
               </>
             )}
@@ -285,31 +324,19 @@ export default function HistoryDetailModal({ item, onClose }) {
 
         <div className="overflow-y-auto flex-1 px-5 py-5">
           {isPelanggan && (
-            <PelangganDetail
-              action={item.action}
-              data={item.snapshot}
-              before={item.before_snapshot}
-            />
+            <PelangganDetail action={item.action} data={snapshot} before={beforeSnapshot} />
           )}
           {!isPelanggan && (item.category === "produk" || !item.category) && (
-            <ProdukDiff before={item.before_snapshot} after={item.snapshot} />
+            <ProdukDiff before={beforeSnapshot} after={snapshot} />
           )}
           {!isPelanggan && item.category === "transfer" && (
-            <TransferDiff
-              before={item.before_snapshot}
-              after={item.snapshot}
-              action={item.action}
-            />
+            <TransferDiff before={beforeSnapshot} after={snapshot} action={item.action} />
           )}
           {!isPelanggan && item.category === "stok" && (
-            <StokDiff before={item.before_snapshot} after={item.snapshot} />
+            <StokDiff before={beforeSnapshot} after={snapshot} />
           )}
           {!isPelanggan && item.category === "produksi" && (
-            <ProduksiDetail
-              action={item.action}
-              data={item.snapshot}
-              before={item.before_snapshot}
-            />
+            <ProduksiDetail action={item.action} data={snapshot} before={beforeSnapshot} />
           )}
         </div>
 
