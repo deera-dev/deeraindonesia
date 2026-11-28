@@ -1,9 +1,15 @@
+import type { Product } from "@deera/shared/features/products/schema";
 import { generateWAText } from "@deera/shared/lib/waFormat";
 import { useRef, useState } from "react";
 import ProductShareCard from "./ProductShareCard";
 
-export default function ProductShareModal({ product, onClose }) {
-  const cardRef = useRef(null);
+export interface ProductShareModalProps {
+  product: Pick<Product, "kode" | "nama" | "bahan" | "image" | "variants" | "warna">;
+  onClose: () => void;
+}
+
+export default function ProductShareModal({ product, onClose }: ProductShareModalProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -11,7 +17,7 @@ export default function ProductShareModal({ product, onClose }) {
 
   async function generateBlob() {
     const { toPng } = await import("html-to-image");
-    const dataUrl = await toPng(cardRef.current, { pixelRatio: 3 });
+    const dataUrl = await toPng(cardRef.current!, { pixelRatio: 3 });
     const res = await fetch(dataUrl);
     return { blob: await res.blob(), dataUrl };
   }
@@ -47,8 +53,8 @@ export default function ProductShareModal({ product, onClose }) {
           window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, "_blank");
         }, 300);
       }
-    } catch (err) {
-      if (err?.name !== "AbortError") {
+    } catch (err: unknown) {
+      if ((err as { name?: string })?.name !== "AbortError") {
         window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, "_blank");
       }
     } finally {

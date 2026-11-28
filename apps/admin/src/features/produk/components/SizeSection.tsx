@@ -1,13 +1,27 @@
 import { formatHarga, SIZE_PRESETS } from "@deera/shared/lib/constants";
 
-export default function SizeSection({ activeSet, hargaMap, onToggle, onHarga, saving }) {
+export interface SizeSectionProps {
+  activeSet: Set<string>;
+  hargaMap: Record<string, string>;
+  onToggle: (size: string) => void;
+  onHarga: (size: string, value: string) => void;
+  saving: boolean;
+}
+
+export default function SizeSection({
+  activeSet,
+  hargaMap,
+  onToggle,
+  onHarga,
+  saving,
+}: SizeSectionProps) {
   return (
     <div className="mb-8">
       <label className="block font-editorial text-sm tracking-[0.2em] text-skin-text2 mb-4 uppercase">
         Ukuran Tersedia &amp; Harga Jual
       </label>
       <div className="space-y-3">
-        {SIZE_PRESETS.map((preset) => {
+        {SIZE_PRESETS.map((preset: { size: string; ld: number; pb: number }) => {
           const isActive = activeSet.has(preset.size);
           return (
             <div
@@ -52,11 +66,13 @@ export default function SizeSection({ activeSet, hargaMap, onToggle, onHarga, sa
           <p className="font-editorial text-xs tracking-[0.2em] text-skin-text3 mb-2 uppercase">
             Preview WA:
           </p>
-          {SIZE_PRESETS.filter((p) => activeSet.has(p.size)).map((p) => (
-            <p key={p.size} className="font-editorial text-sm text-skin-text2">
-              {p.size} (LD {p.ld} | PB {p.pb}) → Rp {formatHarga(hargaMap[p.size]) || "—"}
-            </p>
-          ))}
+          {SIZE_PRESETS.filter((p: { size: string }) => activeSet.has(p.size)).map(
+            (p: { size: string; ld: number; pb: number }) => (
+              <p key={p.size} className="font-editorial text-sm text-skin-text2">
+                {p.size} (LD {p.ld} | PB {p.pb}) → Rp {formatHarga(hargaMap[p.size]) || "—"}
+              </p>
+            ),
+          )}
         </div>
       )}
     </div>

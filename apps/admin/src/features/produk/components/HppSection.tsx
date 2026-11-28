@@ -1,0 +1,49 @@
+import { formatHarga, SIZE_PRESETS } from "@deera/shared/lib/constants";
+
+export interface HppSectionProps {
+  hpp: string;
+  onHpp: (value: string) => void;
+  activeSet: Set<string>;
+  hargaMap: Record<string, string>;
+  saving: boolean;
+}
+
+export default function HppSection({ hpp, onHpp, activeSet, hargaMap, saving }: HppSectionProps) {
+  return (
+    <div className="mb-8">
+      <label className="block text-sm tracking-[0.15em] text-skin-text2 mb-2 uppercase">
+        HPP — Harga Pokok per Produk
+      </label>
+      <div className="flex items-center gap-3">
+        <span className="text-base text-skin-text3">Rp</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={hpp}
+          onChange={(e) => onHpp(e.target.value.replace(/\D/g, ""))}
+          disabled={saving}
+          placeholder="150000"
+          className="flex-1 bg-skin-card border-2 border-skin-bdr px-4 py-3 text-skin-text text-base text-right focus:outline-none focus:border-skin-accent disabled:opacity-40 transition"
+        />
+      </div>
+      {hpp && activeSet.size > 0 && (
+        <div className="mt-3 space-y-1">
+          {SIZE_PRESETS.filter((p: { size: string }) => activeSet.has(p.size)).map(
+            (p: { size: string }) => {
+              const jual = Number.parseInt(hargaMap[p.size] ?? "0", 10) || 0;
+              const hppVal = Number.parseInt(hpp, 10) || 0;
+              if (!jual || !hppVal) return null;
+              const margin = Math.round(((jual - hppVal) / jual) * 100);
+              return (
+                <p key={p.size} className="text-sm text-skin-text3">
+                  {p.size}: margin <span className="text-skin-text2 font-medium">{margin}%</span>{" "}
+                  (untung Rp {formatHarga(jual - hppVal)})
+                </p>
+              );
+            },
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

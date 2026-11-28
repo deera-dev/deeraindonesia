@@ -1,11 +1,12 @@
 import { formatHarga } from "@deera/shared/lib/constants";
 import { useState } from "react";
 import { useProductPriceHistory } from "../hooks";
+import type { ProductPriceChange } from "../schema";
 import { fmtWaktu } from "../utils";
 
-const rp = (v) => (v == null ? "—" : `Rp ${formatHarga(v)}`);
+const rp = (v: number | null | undefined): string => (v == null ? "—" : `Rp ${formatHarga(v)}`);
 
-function PriceLine({ c }) {
+function PriceLine({ c }: { c: ProductPriceChange }) {
   return (
     <div className="flex flex-wrap items-baseline gap-x-2 text-sm">
       <span className="text-[11px] uppercase tracking-wide text-skin-text3">{c.label}</span>
@@ -16,7 +17,12 @@ function PriceLine({ c }) {
   );
 }
 
-export default function ProductChangeHistory({ kode, limit = 6 }) {
+export interface ProductChangeHistoryProps {
+  kode: string;
+  limit?: number;
+}
+
+export default function ProductChangeHistory({ kode, limit = 6 }: ProductChangeHistoryProps) {
   const { history, loading } = useProductPriceHistory(kode);
   const [all, setAll] = useState(false);
   if (loading || history.length === 0) return null;

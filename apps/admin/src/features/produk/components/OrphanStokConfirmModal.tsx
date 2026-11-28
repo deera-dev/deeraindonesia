@@ -1,14 +1,16 @@
-// BUG FIX (November 2026) — ditemukan lewat laporan "stok+terjual melebihi
-// produksi" di BAGHDAD (D-069-BAG/D-070-BAG): saveProduct() MENGHAPUS baris
-// stok_warna utk warna yang dihapus dari daftar, TANPA PEDULI APAKAH WARNA
-// ITU MASIH PUNYA STOK — sebelumnya cuma ada notice amber pasif di form,
-// admin bisa klik Simpan tanpa sadar sedang menghapus stok fisik permanen
-// (16 unit BURGUNDY + 16 unit COKLAT MUDA hilang dari 2 produk sekaligus,
-// lihat product_history "edit" 2026-11-04). Modal ini WAJIB dikonfirmasi
-// eksplisit sebelum simpan jalan kalau ada warna dihapus yang MASIH punya
-// stok > 0 — warna dihapus yang stoknya sudah 0 tetap auto-dibersihkan diam2
-// seperti sebelumnya (itu memang tidak berisiko).
-export default function OrphanStokConfirmModal({ entries, onConfirm, onCancel, loading }) {
+export interface OrphanStokConfirmModalProps {
+  entries: Array<[string, number]> | null | undefined;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading: boolean;
+}
+
+export default function OrphanStokConfirmModal({
+  entries,
+  onConfirm,
+  onCancel,
+  loading,
+}: OrphanStokConfirmModalProps) {
   if (!entries || entries.length === 0) return null;
   const totalQty = entries.reduce((s, [, qty]) => s + qty, 0);
 

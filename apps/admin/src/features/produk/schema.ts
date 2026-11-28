@@ -39,11 +39,22 @@ export type ProducedByKodeMap = Record<string, number>;
 
 export type StokWarnaByKodeMap = Record<string, Record<string, StokByLocation>>;
 
-// Baris achievements/price-history belum dipakai komponen manapun yang
-// sudah dikonversi TS - shape persis ditambahkan pas giliran komponennya
-// (ProductChangeHistory dkk) dikonversi.
+// Baris achievements belum dipakai komponen manapun yang sudah
+// dikonversi TS - shape persis ditambahkan pas giliran komponennya
+// dikonversi.
 export type ProductAchievementRow = Record<string, unknown>;
-export type ProductPriceHistoryRow = Record<string, unknown>;
+
+export interface ProductPriceChange {
+  label: string;
+  from: number | null;
+  to: number | null;
+}
+
+export interface ProductPriceHistoryRow {
+  changed_at: string;
+  user_name: string | null;
+  changes: ProductPriceChange[];
+}
 
 export interface ProductBadgeReasonRow {
   reason: string | null;

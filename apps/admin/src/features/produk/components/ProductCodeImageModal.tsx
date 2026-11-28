@@ -1,19 +1,25 @@
+import type { Product } from "@deera/shared/features/products/schema";
 import { useRef, useState } from "react";
 import ProductCodeCard, { CARD_HEIGHT, CARD_WIDTH } from "./ProductCodeCard";
 
 const PREVIEW_SCALE = 0.4;
 
-export default function ProductCodeImageModal({ product, onClose }) {
-  const cardRef = useRef(null);
+export interface ProductCodeImageModalProps {
+  product: Pick<Product, "kode" | "image" | "variants">;
+  onClose: () => void;
+}
+
+export default function ProductCodeImageModal({ product, onClose }: ProductCodeImageModalProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const variants = (product.variants ?? []).filter((v) => v.harga > 0);
-  const [selectedSize, setSelectedSize] = useState(variants[0]?.size ?? null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(variants[0]?.size ?? null);
 
   async function handleDownload() {
     setBusy(true);
     try {
       const { toPng } = await import("html-to-image");
-      const dataUrl = await toPng(cardRef.current, { pixelRatio: 3 });
+      const dataUrl = await toPng(cardRef.current!, { pixelRatio: 3 });
       const a = document.createElement("a");
       a.href = dataUrl;
       const sizePart = selectedSize ? `-${selectedSize.replace(/\s+/g, "")}` : "";

@@ -1,5 +1,14 @@
 import { useState } from "react";
 
+export interface WarnaSectionProps {
+  warna: string[];
+  onAdd: (warna: string) => void;
+  onRemove: (warna: string) => void;
+  onRename?: (oldWarna: string, newWarna: string) => void;
+  warnaHasStok: (warna: string) => boolean;
+  saving: boolean;
+}
+
 export default function WarnaSection({
   warna,
   onAdd,
@@ -7,9 +16,9 @@ export default function WarnaSection({
   onRename = () => {},
   warnaHasStok,
   saving,
-}) {
+}: WarnaSectionProps) {
   const [warnaInput, setWarnaInput] = useState("");
-  const [editingIdx, setEditingIdx] = useState(null);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [editError, setEditError] = useState("");
 
@@ -19,7 +28,7 @@ export default function WarnaSection({
     setWarnaInput("");
   }
 
-  function startRename(i, w) {
+  function startRename(i: number, w: string) {
     setEditingIdx(i);
     setEditValue(w);
     setEditError("");
@@ -31,8 +40,8 @@ export default function WarnaSection({
     setEditError("");
   }
 
-  function commitRename(i) {
-    const old = warna[i];
+  function commitRename(i: number) {
+    const old = warna[i]!;
     const v = editValue.trim().toUpperCase();
     if (!v) {
       setEditError("Nama warna tidak boleh kosong");

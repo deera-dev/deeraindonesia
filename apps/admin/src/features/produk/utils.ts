@@ -40,7 +40,7 @@ async function fetchWithTimeout(url: string, ms = 1500): Promise<Response> {
   }
 }
 
-interface ShareableProduct {
+export interface ShareableProduct {
   kode: string;
   nama?: string;
   seri_warna?: string | null;

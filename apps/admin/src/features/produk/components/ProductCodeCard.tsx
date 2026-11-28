@@ -1,10 +1,19 @@
+import type { Product } from "@deera/shared/features/products/schema";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { forwardRef } from "react";
 
 export const CARD_WIDTH = 794;
 export const CARD_HEIGHT = 1123;
 
-const ProductCodeCard = forwardRef(function ProductCodeCard({ product: p, size }, ref) {
+export interface ProductCodeCardProps {
+  product: Pick<Product, "kode" | "image">;
+  size?: string | null;
+}
+
+const ProductCodeCard = forwardRef<HTMLDivElement, ProductCodeCardProps>(function ProductCodeCard(
+  { product: p, size },
+  ref,
+) {
   const imgSrc = p.image ? cldUrl(p.image, { width: 1080 }) : null;
   const kodeSpaced = (p.kode ?? "").replace(/-/g, " ");
 
