@@ -1,8 +1,15 @@
 import { useMemo, useState } from "react";
 import { usePelangganList } from "../../pelanggan";
+import type { Pelanggan } from "../../pelanggan/schema";
 import { isPenerimaLengkap } from "../utils";
 
-export default function DaftarPenerimaModal({ onPick, onClose }) {
+export default function DaftarPenerimaModal({
+  onPick,
+  onClose,
+}: {
+  onPick: (pelanggan: Pelanggan) => void;
+  onClose: () => void;
+}) {
   const { pelanggan, loading } = usePelangganList();
   const [query, setQuery] = useState("");
 

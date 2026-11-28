@@ -1,11 +1,12 @@
 import ScaleToFitPreview from "@deera/shared/components/ScaleToFitPreview";
 import { toPng } from "html-to-image";
 import { useRef, useState } from "react";
+import type { Pengiriman } from "../schema";
 import { fmtDate, fmtDateTime, mmToPx, PAPER_WIDTHS_MM } from "../utils";
 
 const DEFAULT_PAPER_WIDTH = "78";
 
-function Row({ label, value }) {
+function Row({ label, value }: { label: string; value: string | number | null | undefined }) {
   return (
     <div style={{ marginBottom: 8 }}>
       <p
@@ -38,7 +39,13 @@ function Divider() {
   return <div style={{ borderTop: "1px dashed #999", margin: "12px 0" }} />;
 }
 
-function SuratJalanPengirimanContent({ pengiriman, widthPx }) {
+function SuratJalanPengirimanContent({
+  pengiriman,
+  widthPx,
+}: {
+  pengiriman: Pengiriman;
+  widthPx: number;
+}) {
   return (
     <div
       style={{
@@ -137,8 +144,14 @@ function SuratJalanPengirimanContent({ pengiriman, widthPx }) {
   );
 }
 
-export default function SuratJalanPengiriman({ pengiriman, onClose }) {
-  const contentRef = useRef(null);
+export default function SuratJalanPengiriman({
+  pengiriman,
+  onClose,
+}: {
+  pengiriman: Pengiriman | null;
+  onClose: () => void;
+}) {
+  const contentRef = useRef<HTMLDivElement>(null);
   const [paperWidth, setPaperWidth] = useState(DEFAULT_PAPER_WIDTH);
   const [busy, setBusy] = useState(false);
 
@@ -147,7 +160,7 @@ export default function SuratJalanPengiriman({ pengiriman, onClose }) {
   const widthPx = mmToPx(paperWidth);
   const fname = `surat-jalan-${pengiriman.pengiriman_no}.png`;
 
-  async function capturePng() {
+  async function capturePng(): Promise<string | null> {
     if (!contentRef.current) return null;
     return toPng(contentRef.current, {
       cacheBust: true,
@@ -161,11 +174,12 @@ export default function SuratJalanPengiriman({ pengiriman, onClose }) {
     setBusy(true);
     try {
       const dataUrl = await capturePng();
+      if (!dataUrl) return;
       const a = document.createElement("a");
       a.href = dataUrl;
       a.download = fname;
       a.click();
-    } catch (e) {
+    } catch (e: unknown) {
       console.error("Download gagal:", e);
     } finally {
       setBusy(false);
@@ -173,9 +187,11 @@ export default function SuratJalanPengiriman({ pengiriman, onClose }) {
   }
 
   async function handleShare() {
+    if (!pengiriman) return;
     setBusy(true);
     try {
       const dataUrl = await capturePng();
+      if (!dataUrl) return;
       const blob = await fetch(dataUrl).then((r) => r.blob());
       const file = new File([blob], fname, { type: "image/png" });
 
@@ -191,8 +207,8 @@ export default function SuratJalanPengiriman({ pengiriman, onClose }) {
         a.download = fname;
         a.click();
       }
-    } catch (err) {
-      if (err.name !== "AbortError") console.error("Share gagal:", err);
+    } catch (err: unknown) {
+      if ((err as Error)?.name !== "AbortError") console.error("Share gagal:", err);
     } finally {
       setBusy(false);
     }

@@ -1,6 +1,17 @@
+import type { Pengiriman } from "../schema";
 import { fmtDate } from "../utils";
 
-export default function PengirimanCard({ pengiriman, onSuratJalan, onEdit, onDelete }) {
+export default function PengirimanCard({
+  pengiriman,
+  onSuratJalan,
+  onEdit,
+  onDelete,
+}: {
+  pengiriman: Pengiriman;
+  onSuratJalan: (pengiriman: Pengiriman) => void;
+  onEdit: (pengiriman: Pengiriman) => void;
+  onDelete: (pengiriman: Pengiriman) => void;
+}) {
   return (
     <div className="bg-skin-card border border-skin-bdr overflow-hidden">
       <div className="px-4 py-3 flex items-start justify-between gap-3 border-b border-skin-bdr-lt">

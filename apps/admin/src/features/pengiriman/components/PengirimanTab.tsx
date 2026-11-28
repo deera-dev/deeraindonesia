@@ -1,24 +1,30 @@
 import { toast } from "@deera/shared/features/toast/hooks";
 import { useState } from "react";
+import type { Pelanggan } from "../../pelanggan/schema";
 import { useDeletePengiriman, usePengiriman } from "../hooks";
+import type { Pengiriman } from "../schema";
 import DaftarPenerimaModal from "./DaftarPenerimaModal";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 import PengirimanCard from "./PengirimanCard";
 import PengirimanForm from "./PengirimanForm";
 import SuratJalanPengiriman from "./SuratJalanPengiriman";
 
-function resolveDateRange(preset, customFrom, customTo) {
+function resolveDateRange(
+  preset: string,
+  customFrom: string,
+  customTo: string,
+): { from: string | null; to: string | null } {
   const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = now.toISOString().split("T")[0]!;
   if (preset === "today") return { from: todayStr, to: todayStr };
   if (preset === "week") {
     const d = new Date(now);
     d.setDate(d.getDate() - 6);
-    return { from: d.toISOString().split("T")[0], to: todayStr };
+    return { from: d.toISOString().split("T")[0]!, to: todayStr };
   }
   if (preset === "month") {
     const d = new Date(now.getFullYear(), now.getMonth(), 1);
-    return { from: d.toISOString().split("T")[0], to: todayStr };
+    return { from: d.toISOString().split("T")[0]!, to: todayStr };
   }
   if (preset === "custom") return { from: customFrom || todayStr, to: customTo || todayStr };
   return { from: null, to: null };
@@ -29,18 +35,18 @@ export default function PengirimanTab() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [editTarget, setEditTarget] = useState(null);
-  const [suratJalan, setSuratJalan] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState<Pengiriman | null>(null);
+  const [suratJalan, setSuratJalan] = useState<Pengiriman | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Pengiriman | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showDaftarPenerima, setShowDaftarPenerima] = useState(false);
-  const [prefillPelanggan, setPrefillPelanggan] = useState(null);
+  const [prefillPelanggan, setPrefillPelanggan] = useState<Pelanggan | null>(null);
 
   const { from: dateFrom, to: dateTo } = resolveDateRange(datePreset, customFrom, customTo);
   const { pengirimanList, loading, reload } = usePengiriman(dateFrom, dateTo);
   const deletePengiriman = useDeletePengiriman();
 
-  function handleFormSaved(pengiriman) {
+  function handleFormSaved(pengiriman: Pengiriman) {
     setShowForm(false);
     setEditTarget(null);
     setPrefillPelanggan(null);
@@ -49,7 +55,7 @@ export default function PengirimanTab() {
     setSuratJalan(pengiriman);
   }
 
-  function handlePickFromDaftarPenerima(p) {
+  function handlePickFromDaftarPenerima(p: Pelanggan) {
     setShowDaftarPenerima(false);
     setPrefillPelanggan(p);
     setShowForm(true);
@@ -63,8 +69,8 @@ export default function PengirimanTab() {
       setDeleteTarget(null);
       toast.success("Pengiriman dihapus.");
       reload();
-    } catch (err) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error((err as Error).message);
     } finally {
       setDeleteLoading(false);
     }

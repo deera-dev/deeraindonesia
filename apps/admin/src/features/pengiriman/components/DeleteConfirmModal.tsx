@@ -1,4 +1,16 @@
-export default function DeleteConfirmModal({ pengiriman, onConfirm, onCancel, loading }) {
+import type { Pengiriman } from "../schema";
+
+export default function DeleteConfirmModal({
+  pengiriman,
+  onConfirm,
+  onCancel,
+  loading,
+}: {
+  pengiriman: Pengiriman | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading: boolean;
+}) {
   if (!pengiriman) return null;
 
   return (

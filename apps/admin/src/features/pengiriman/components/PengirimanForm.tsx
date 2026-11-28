@@ -1,18 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { searchPelanggan } from "../../pelanggan";
+import type { Pelanggan } from "../../pelanggan/schema";
 import { useCreatePengiriman, useUpdatePengiriman } from "../hooks";
+import type { Pengiriman } from "../schema";
 
-function todayStr() {
+function todayStr(): string {
   const now = new Date();
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
   return `${now.getFullYear()}-${m}-${d}`;
 }
 
-const PENGIRIM_MODES = ["DEERA", "MARYAM", "MANUAL"];
-const PENGIRIM_MODE_VALUES = { DEERA: "DEERA", MARYAM: "MARYAM CIDENG" };
+type PengirimMode = "DEERA" | "MARYAM" | "MANUAL";
 
-function resolvePengirimMode(namaPengirim) {
+const PENGIRIM_MODES: PengirimMode[] = ["DEERA", "MARYAM", "MANUAL"];
+const PENGIRIM_MODE_VALUES: Record<"DEERA" | "MARYAM", string> = {
+  DEERA: "DEERA",
+  MARYAM: "MARYAM CIDENG",
+};
+
+function resolvePengirimMode(namaPengirim: string): PengirimMode {
   if (namaPengirim === PENGIRIM_MODE_VALUES.DEERA) return "DEERA";
   if (namaPengirim === PENGIRIM_MODE_VALUES.MARYAM) return "MARYAM";
   return "MANUAL";
@@ -22,7 +29,17 @@ const inputCls =
   "w-full border border-skin-bdr bg-skin-card text-skin-text px-3 py-2.5 text-sm focus:outline-none focus:border-skin-accent";
 const labelCls = "block text-xs font-semibold text-skin-text3 uppercase tracking-wide mb-1.5";
 
-export default function PengirimanForm({ initialData, prefillPelanggan, onClose, onSaved }) {
+export default function PengirimanForm({
+  initialData,
+  prefillPelanggan,
+  onClose,
+  onSaved,
+}: {
+  initialData?: Pengiriman | null;
+  prefillPelanggan?: Pelanggan | null;
+  onClose: () => void;
+  onSaved: (pengiriman: Pengiriman) => void;
+}) {
   const isEdit = !!initialData;
   const createPengiriman = useCreatePengiriman();
   const updatePengiriman = useUpdatePengiriman();
@@ -37,7 +54,7 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
   const [alamat, setAlamat] = useState(
     initialData?.alamat ?? (prefillPelanggan?.alamat ?? "").toUpperCase(),
   );
-  const [pelangganId, setPelangganId] = useState(
+  const [pelangganId, setPelangganId] = useState<string | null>(
     initialData?.pelanggan_id ?? prefillPelanggan?.id ?? null,
   );
   const [jumlahKarung, setJumlahKarung] = useState(
@@ -47,7 +64,7 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
   const [namaEkspedisi, setNamaEkspedisi] = useState(
     initialData?.nama_ekspedisi ?? (prefillPelanggan?.ekspedisi_biasa ?? "").toUpperCase(),
   );
-  const [pengirimMode, setPengirimMode] = useState(() =>
+  const [pengirimMode, setPengirimMode] = useState<PengirimMode>(() =>
     initialData ? resolvePengirimMode(initialData.nama_pengirim ?? "") : "DEERA",
   );
   const [namaPengirimManual, setNamaPengirimManual] = useState(() => {
@@ -59,10 +76,10 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState<Pelanggan[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suppressNextSearchRef = useRef(false);
-  const penerimaWrapperRef = useRef(null);
+  const penerimaWrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (suppressNextSearchRef.current) {
@@ -94,19 +111,19 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
   }, [namaPenerima]);
 
   useEffect(() => {
-    function handleClickOutside(e) {
-      if (!penerimaWrapperRef.current?.contains(e.target)) setShowSuggestions(false);
+    function handleClickOutside(e: MouseEvent) {
+      if (!penerimaWrapperRef.current?.contains(e.target as Node)) setShowSuggestions(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  function handleNamaPenerimaChange(value) {
+  function handleNamaPenerimaChange(value: string) {
     setNamaPenerima(value.toUpperCase());
     setPelangganId(null);
   }
 
-  function handlePickPelanggan(p) {
+  function handlePickPelanggan(p: Pelanggan) {
     suppressNextSearchRef.current = true;
     setNamaPenerima((p.nama ?? "").toUpperCase());
     setNoTelpPenerima((p.no_hp ?? "").toUpperCase());
@@ -119,7 +136,7 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
     setShowSuggestions(false);
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setSaving(true);
@@ -135,8 +152,8 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
         namaEkspedisi,
         namaPengirim,
       };
-      let saved;
-      if (isEdit) {
+      let saved: Pengiriman;
+      if (isEdit && initialData) {
         await updatePengiriman(initialData, payload);
         saved = {
           ...initialData,
@@ -154,8 +171,8 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
         saved = await createPengiriman(payload);
       }
       onSaved(saved);
-    } catch (err) {
-      setError(err.message ?? "Gagal menyimpan pengiriman.");
+    } catch (err: unknown) {
+      setError((err as Error).message ?? "Gagal menyimpan pengiriman.");
     } finally {
       setSaving(false);
     }
@@ -250,7 +267,7 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
               <label className={labelCls}>No. Telp Penerima</label>
               <input
                 type="tel"
-                value={noTelpPenerima}
+                value={noTelpPenerima ?? ""}
                 onChange={(e) => setNoTelpPenerima(e.target.value.toUpperCase())}
                 className={inputCls}
                 placeholder="08xx-xxxx-xxxx"
@@ -261,7 +278,7 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
           <div>
             <label className={labelCls}>Alamat</label>
             <textarea
-              value={alamat}
+              value={alamat ?? ""}
               onChange={(e) => setAlamat(e.target.value.toUpperCase())}
               className={inputCls}
               rows={2}
@@ -298,7 +315,7 @@ export default function PengirimanForm({ initialData, prefillPelanggan, onClose,
           <div>
             <label className={labelCls}>Isi Karung</label>
             <textarea
-              value={isiKarung}
+              value={isiKarung ?? ""}
               onChange={(e) => setIsiKarung(e.target.value.toUpperCase())}
               className={inputCls}
               rows={2}
