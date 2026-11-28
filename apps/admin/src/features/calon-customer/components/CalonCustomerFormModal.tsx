@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useCreateCalonCustomerMutation, useUpdateCalonCustomerMutation } from "../hooks";
+import type { CalonCustomer } from "../schema";
 
-function contactPickerSupported() {
+function contactPickerSupported(): boolean {
   return (
     typeof navigator !== "undefined" &&
     "contacts" in navigator &&
@@ -10,7 +11,26 @@ function contactPickerSupported() {
   );
 }
 
-export default function CalonCustomerFormModal({ initial = null, onClose, onSaved }) {
+interface ContactsNavigator extends Navigator {
+  contacts: {
+    select: (
+      props: string[],
+      options?: { multiple?: boolean },
+    ) => Promise<Array<{ name?: string[]; tel?: string[] }>>;
+  };
+}
+
+export interface CalonCustomerFormModalProps {
+  initial?: CalonCustomer | null;
+  onClose: () => void;
+  onSaved?: (row: CalonCustomer) => void;
+}
+
+export default function CalonCustomerFormModal({
+  initial = null,
+  onClose,
+  onSaved,
+}: CalonCustomerFormModalProps) {
   const [nama, setNama] = useState(initial?.nama ?? "");
   const [noHp, setNoHp] = useState(initial?.no_hp ?? "");
   const [catatan, setCatatan] = useState(initial?.catatan ?? "");
@@ -27,14 +47,16 @@ export default function CalonCustomerFormModal({ initial = null, onClose, onSave
 
   async function handlePickContact() {
     try {
-      const [contact] = await navigator.contacts.select(["name", "tel"], { multiple: false });
+      const [contact] = await (navigator as ContactsNavigator).contacts.select(["name", "tel"], {
+        multiple: false,
+      });
       if (!contact) return;
       if (contact.name?.[0]) setNama(contact.name[0]);
       if (contact.tel?.[0]) setNoHp(contact.tel[0]);
     } catch {}
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!nama.trim()) {
       setError("Nama wajib diisi.");
@@ -48,8 +70,8 @@ export default function CalonCustomerFormModal({ initial = null, onClose, onSave
         : await createMutation.mutateAsync(patch);
       onSaved?.(row);
       onClose();
-    } catch (err) {
-      setError(err.message ?? "Gagal menyimpan.");
+    } catch (err: unknown) {
+      setError((err as Error)?.message ?? "Gagal menyimpan.");
     }
   }
 
@@ -102,7 +124,7 @@ export default function CalonCustomerFormModal({ initial = null, onClose, onSave
             </label>
             <input
               type="text"
-              value={noHp}
+              value={noHp ?? ""}
               onChange={(e) => setNoHp(e.target.value)}
               className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition"
               placeholder="08xxxxxxxxxx"
@@ -113,7 +135,7 @@ export default function CalonCustomerFormModal({ initial = null, onClose, onSave
               Catatan
             </label>
             <textarea
-              value={catatan}
+              value={catatan ?? ""}
               onChange={(e) => setCatatan(e.target.value)}
               rows={3}
               className="w-full bg-skin-page border border-skin-bdr px-3 py-2.5 text-sm text-skin-text focus:outline-none focus:border-skin-accent transition resize-none"

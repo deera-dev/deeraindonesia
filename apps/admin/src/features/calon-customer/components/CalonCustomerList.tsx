@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useCalonCustomerListQuery, useDeleteCalonCustomerMutation } from "../hooks";
+import type { CalonCustomer } from "../schema";
 import CalonCustomerFormModal from "./CalonCustomerFormModal";
 
 export default function CalonCustomerList() {
@@ -7,8 +8,8 @@ export default function CalonCustomerList() {
   const deleteMutation = useDeleteCalonCustomerMutation();
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [editing, setEditing] = useState<CalonCustomer | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<CalonCustomer | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
