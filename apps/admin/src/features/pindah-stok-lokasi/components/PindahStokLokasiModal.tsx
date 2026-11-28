@@ -7,7 +7,12 @@ const inputCls =
   "w-full bg-skin-card border-2 border-skin-bdr px-4 py-3 text-skin-text text-base focus:outline-none focus:border-skin-accent disabled:opacity-40 transition";
 const labelCls = "block text-sm tracking-[0.2em] text-skin-text2 mb-2 uppercase";
 
-export default function PindahStokLokasiModal({ onClose, onDone }) {
+export interface PindahStokLokasiModalProps {
+  onClose: () => void;
+  onDone?: () => void;
+}
+
+export default function PindahStokLokasiModal({ onClose, onDone }: PindahStokLokasiModalProps) {
   const [fromLocation, setFromLocation] = useState("");
   const [toLocation, setToLocation] = useState("");
   const [password, setPassword] = useState("");
@@ -24,7 +29,7 @@ export default function PindahStokLokasiModal({ onClose, onDone }) {
     password &&
     confirmText.trim().toUpperCase() === "PINDAH";
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
     setErrMsg("");
@@ -32,11 +37,11 @@ export default function PindahStokLokasiModal({ onClose, onDone }) {
     try {
       const result = await moveStokLokasi({ fromLocation, toLocation, password });
       toast.success(
-        `Stok dipindah: ${result?.total_pcs ?? 0} pcs dari ${LOCATION_LABELS[fromLocation]} ke ${LOCATION_LABELS[toLocation]}.`,
+        `Stok dipindah: ${result?.total_pcs ?? 0} pcs dari ${(LOCATION_LABELS as Record<string, string>)[fromLocation]} ke ${(LOCATION_LABELS as Record<string, string>)[toLocation]}.`,
       );
       onDone?.();
-    } catch (err) {
-      setErrMsg(err.message ?? String(err));
+    } catch (err: unknown) {
+      setErrMsg((err as Error)?.message ?? String(err));
       setSaving(false);
     }
   }
@@ -81,9 +86,9 @@ export default function PindahStokLokasiModal({ onClose, onDone }) {
               className={inputCls}
             >
               <option value="">Pilih lokasi asal...</option>
-              {LOCATIONS.map((loc) => (
+              {LOCATIONS.map((loc: string) => (
                 <option key={loc} value={loc}>
-                  {LOCATION_LABELS[loc]}
+                  {(LOCATION_LABELS as Record<string, string>)[loc]}
                 </option>
               ))}
             </select>
@@ -101,9 +106,9 @@ export default function PindahStokLokasiModal({ onClose, onDone }) {
               className={inputCls}
             >
               <option value="">Pilih lokasi tujuan...</option>
-              {LOCATIONS.map((loc) => (
+              {LOCATIONS.map((loc: string) => (
                 <option key={loc} value={loc}>
-                  {LOCATION_LABELS[loc]}
+                  {(LOCATION_LABELS as Record<string, string>)[loc]}
                 </option>
               ))}
             </select>

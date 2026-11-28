@@ -1,4 +1,4 @@
-import type { DateRange } from "./schema";
+import type { DateRange, VisitStats } from "./schema";
 
 export const PERIODS = [
   { key: "today", label: "Hari ini" },
@@ -65,8 +65,8 @@ export function pct(part: number, total: number): number {
 }
 
 export function dailyBars(
-  daily: Array<{ sessions: number; [key: string]: unknown }> | null | undefined,
-) {
+  daily: VisitStats["daily"] | null | undefined,
+): Array<VisitStats["daily"][number] & { h: number }> {
   const max = Math.max(1, ...(daily ?? []).map((d) => d.sessions));
   return (daily ?? []).map((d) => ({ ...d, h: Math.max(4, Math.round((d.sessions / max) * 100)) }));
 }
