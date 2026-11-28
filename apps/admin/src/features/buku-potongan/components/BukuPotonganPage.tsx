@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
-import { useProducts } from "@deera/shared/features/products/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
+import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useMemo, useState } from "react";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
-import { sortRows, rowKey, flattenVariantMap } from "../utils";
-import ProductBukuCard from "./ProductBukuCard";
 import { useBukuPotonganData, useSaveExpectedStok } from "../hooks";
+import type { ExpectedStokRow } from "../schema";
+import { flattenVariantMap, rowKey, sortRows } from "../utils";
+import ProductBukuCard, { type BukuRow } from "./ProductBukuCard";
 
 export default function BukuPotonganPage() {
   const { products, loading: prodLoading } = useProducts();
@@ -20,13 +21,13 @@ export default function BukuPotonganPage() {
     reload,
   } = useBukuPotonganData();
   const { saveExpectedStok, saving } = useSaveExpectedStok();
-  const [changed, setChanged] = useState({});
-  const [expanded, setExpanded] = useState({});
+  const [changed, setChanged] = useState<Record<string, number>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState("");
   const [onlySelisih, setOnlySelisih] = useState(false);
 
   const actualMap = useMemo(() => {
-    const m = {};
+    const m: Record<string, number> = {};
     for (const row of stokRows) {
       const w = row.warna ?? "_";
       const k = `${row.kode}__${row.size}__${w}`;
@@ -39,7 +40,7 @@ export default function BukuPotonganPage() {
   const dikirimTotalMap = useMemo(() => flattenVariantMap(dikirimMap), [dikirimMap]);
 
   const expectedMap = useMemo(() => {
-    const m = {};
+    const m: Record<string, number> = {};
     for (const row of expectedRows) {
       m[`${row.kode}__${row.size}__${row.warna ?? "_"}`] = row.expected_qty ?? 0;
     }
@@ -47,29 +48,30 @@ export default function BukuPotonganPage() {
   }, [expectedRows]);
 
   const rowsByKode = useMemo(() => {
-    const map = {};
+    const map: Record<string, Map<string, BukuRow>> = {};
     for (const row of stokRows) {
       const w = row.warna ?? "_";
       const k = `${row.kode}__${row.size}__${w}`;
       if (!map[row.kode]) map[row.kode] = new Map();
-      map[row.kode].set(k, { kode: row.kode, size: row.size, warna: w });
+      map[row.kode]!.set(k, { kode: row.kode, size: row.size, warna: w });
     }
     for (const row of expectedRows) {
       const w = row.warna ?? "_";
       const k = `${row.kode}__${row.size}__${w}`;
       if (!map[row.kode]) map[row.kode] = new Map();
-      if (!map[row.kode].has(k)) map[row.kode].set(k, { kode: row.kode, size: row.size, warna: w });
+      if (!map[row.kode]!.has(k))
+        map[row.kode]!.set(k, { kode: row.kode, size: row.size, warna: w });
     }
-    const result = {};
+    const result: Record<string, BukuRow[]> = {};
     for (const [kode, rowMap] of Object.entries(map)) {
       result[kode] = sortRows([...rowMap.values()]);
     }
     return result;
   }, [stokRows, expectedRows]);
 
-  function handleChangeExpected(kode, size, warna, val) {
+  function handleChangeExpected(kode: string, size: string, warna: string, val: string) {
     const k = rowKey(kode, size, warna);
-    const numVal = Math.max(0, parseInt(val) || 0);
+    const numVal = Math.max(0, Number.parseInt(val, 10) || 0);
     const original = expectedMap[k] ?? 0;
     setChanged((prev) => {
       const n = { ...prev };
@@ -83,28 +85,28 @@ export default function BukuPotonganPage() {
     const keys = Object.keys(changed);
     if (keys.length === 0) return;
     try {
-      const upsertRows = keys.map((k) => {
+      const upsertRows: ExpectedStokRow[] = keys.map((k) => {
         const [kode, size, warna] = k.split("__");
-        return { kode, size, warna: warna || "_", expected_qty: changed[k] };
+        return { kode: kode!, size: size!, warna: warna || "_", expected_qty: changed[k]! };
       });
       await saveExpectedStok(upsertRows);
       toast.success(`${keys.length} baris expected stok berhasil disimpan.`);
       setChanged({});
       reload();
-    } catch (err) {
-      toast.error("Gagal simpan: " + err.message);
+    } catch (err: unknown) {
+      toast.error(`Gagal simpan: ${(err as Error).message}`);
     }
   }
 
   function expandAll() {
-    const m = {};
+    const m: Record<string, boolean> = {};
     for (const p of products ?? []) m[p.kode] = true;
     setExpanded(m);
   }
   function collapseAll() {
     setExpanded({});
   }
-  function toggleProduct(kode) {
+  function toggleProduct(kode: string) {
     setExpanded((prev) => ({ ...prev, [kode]: !prev[kode] }));
   }
 
@@ -128,7 +130,17 @@ export default function BukuPotonganPage() {
       }
       return true;
     });
-  }, [products, q, onlySelisih, changed, expectedMap, actualMap, soldTotalMap, dikirimTotalMap, rowsByKode]);
+  }, [
+    products,
+    q,
+    onlySelisih,
+    changed,
+    expectedMap,
+    actualMap,
+    soldTotalMap,
+    dikirimTotalMap,
+    rowsByKode,
+  ]);
 
   const loading = prodLoading || dataLoading;
 
@@ -137,7 +149,9 @@ export default function BukuPotonganPage() {
       <header className="sticky top-0 z-30 bg-skin-card border-b-2 border-skin-bdr shadow-sm">
         <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-8">
           <div className="min-w-0">
-            <h1 className="font-headline text-skin-accent-text text-xl leading-none">Buku Potongan</h1>
+            <h1 className="font-headline text-skin-accent-text text-xl leading-none">
+              Buku Potongan
+            </h1>
             {changedCount > 0 && (
               <p className="text-xs text-amber-600 mt-1 font-medium">
                 ✏ {changedCount} baris diubah, belum disimpan

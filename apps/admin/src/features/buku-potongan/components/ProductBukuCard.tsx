@@ -1,4 +1,11 @@
+import type { Product } from "@deera/shared/features/products/schema";
 import { rowKey, selisihCls, selisihLabel } from "../utils";
+
+export interface BukuRow {
+  kode: string;
+  size: string;
+  warna: string;
+}
 
 export default function ProductBukuCard({
   product,
@@ -11,21 +18,32 @@ export default function ProductBukuCard({
   soldMap = {},
   dikirimMap = {},
   onChangeExpected,
+}: {
+  product: Pick<Product, "kode" | "nama">;
+  rows: BukuRow[];
+  isOpen: boolean;
+  onToggle: (kode: string) => void;
+  changed: Record<string, number>;
+  expectedMap: Record<string, number>;
+  actualMap: Record<string, number>;
+  soldMap?: Record<string, number>;
+  dikirimMap?: Record<string, number>;
+  onChangeExpected: (kode: string, size: string, warna: string, val: string) => void;
 }) {
-  function getExpected(kode, size, warna) {
+  function getExpected(kode: string, size: string, warna: string) {
     const k = rowKey(kode, size, warna);
     return changed[k] ?? expectedMap[k] ?? 0;
   }
 
-  function getActual(kode, size, warna) {
+  function getActual(kode: string, size: string, warna: string) {
     return actualMap[rowKey(kode, size, warna)] ?? 0;
   }
 
-  function getSold(kode, size, warna) {
+  function getSold(kode: string, size: string, warna: string) {
     return soldMap[rowKey(kode, size, warna)] ?? 0;
   }
 
-  function getDikirim(kode, size, warna) {
+  function getDikirim(kode: string, size: string, warna: string) {
     return dikirimMap[rowKey(kode, size, warna)] ?? 0;
   }
 
