@@ -1,19 +1,26 @@
-import { useState } from "react";
 import BackToTop from "@deera/shared/components/BackToTop";
 import { toast } from "@deera/shared/features/toast/hooks";
+import { useState } from "react";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
-import { usePasarRestock, useTargetSeriQty, useCreateTransfer } from "../hooks";
+import { useCreateTransfer, usePasarRestock, useTargetSeriQty } from "../hooks";
+import type { RestockCard as RestockCardData, RestockDetail } from "../schema";
 import {
   getDefaultTargetMarket,
-  marketLabel,
   MARKETS,
-  TIDAK_BERGERAK_DAYS,
+  marketLabel,
   restockItemKey,
   restockTransferQty,
+  TIDAK_BERGERAK_DAYS,
 } from "../utils";
 
-function MarketPicker({ market, onChange }) {
+function MarketPicker({
+  market,
+  onChange,
+}: {
+  market: string;
+  onChange: (market: string) => void;
+}) {
   return (
     <div className="flex gap-2 mb-4">
       {MARKETS.map((m) => (
@@ -33,11 +40,28 @@ function MarketPicker({ market, onChange }) {
   );
 }
 
-function detailLabel(d) {
+function detailLabel(d: RestockDetail): string {
   return d.warna ? `${d.size} · ${d.warna}` : d.size;
 }
 
-function RestockCard({ card, market, selected, onToggle }) {
+interface SelectedItem {
+  kode: string;
+  size: string;
+  warna: string;
+  qty: number;
+}
+
+function RestockCard({
+  card,
+  market,
+  selected,
+  onToggle,
+}: {
+  card: RestockCardData;
+  market: string;
+  selected: Map<string, SelectedItem>;
+  onToggle: (key: string, item: SelectedItem) => void;
+}) {
   return (
     <div className="bg-skin-card border border-skin-bdr p-3 space-y-2 h-full">
       <p className="font-semibold text-sm text-skin-text">{card.kode}</p>
@@ -127,7 +151,7 @@ function RestockCard({ card, market, selected, onToggle }) {
   );
 }
 
-function TidakBergerakCard({ card }) {
+function TidakBergerakCard({ card }: { card: RestockCardData }) {
   return (
     <div className="bg-skin-card border border-skin-bdr p-3 space-y-2 h-full">
       <p className="font-semibold text-sm text-skin-text">{card.kode}</p>
@@ -153,16 +177,16 @@ export default function PasarRestockPage() {
   const { target, setTarget } = useTargetSeriQty(market);
   const { restockList, tidakBergerakList, loading } = usePasarRestock(market, target);
   const createTransfer = useCreateTransfer();
-  const [selected, setSelected] = useState(new Map());
+  const [selected, setSelected] = useState<Map<string, SelectedItem>>(new Map());
   const [submitting, setSubmitting] = useState(false);
 
   // Ganti pasar -> selection item lama (pasar sebelumnya) tidak relevan lagi.
-  function handleMarketChange(m) {
+  function handleMarketChange(m: string) {
     setMarket(m);
     setSelected(new Map());
   }
 
-  function toggleItem(key, item) {
+  function toggleItem(key: string, item: SelectedItem) {
     setSelected((prev) => {
       const next = new Map(prev);
       if (next.has(key)) next.delete(key);
@@ -172,7 +196,7 @@ export default function PasarRestockPage() {
   }
 
   function selectAll() {
-    const next = new Map();
+    const next = new Map<string, SelectedItem>();
     for (const card of restockList) {
       for (const d of card.details) {
         const qty = restockTransferQty(d);
@@ -206,8 +230,8 @@ export default function PasarRestockPage() {
         `Transfer dibuat — ${selected.size} item ke ${marketLabel(market)}, tinggal di-approve di halaman Transfer.`,
       );
       setSelected(new Map());
-    } catch (err) {
-      toast.error("Gagal membuat transfer: " + err.message);
+    } catch (err: unknown) {
+      toast.error(`Gagal membuat transfer: ${(err as Error)?.message}`);
     } finally {
       setSubmitting(false);
     }
@@ -238,7 +262,7 @@ export default function PasarRestockPage() {
             type="number"
             min="1"
             value={target}
-            onChange={(e) => setTarget(Math.max(1, parseInt(e.target.value, 10) || 1))}
+            onChange={(e) => setTarget(Math.max(1, Number.parseInt(e.target.value, 10) || 1))}
             className="w-16 text-center py-1 px-1 text-sm border border-skin-bdr bg-skin-card text-skin-text focus:outline-none focus:border-skin-accent"
             aria-label={`Target minimal seri ${marketLabel(market)}`}
           />
