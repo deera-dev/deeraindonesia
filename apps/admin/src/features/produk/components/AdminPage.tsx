@@ -1,33 +1,44 @@
-import { useState, useEffect, useMemo } from "react";
-import { NotifBell } from "../../notifikasi";
-import { Link, useNavigate } from "react-router-dom";
-import { useInvalidateProducts, useProducts } from "@deera/shared/features/products/hooks";
-import { supabase } from "@deera/shared/lib/supabase";
-import { signOut, useAuth } from "@deera/shared/features/auth/hooks";
-import { useKeepQtyByKode } from "@deera/shared/features/keep/hooks";
 import BackToTop from "@deera/shared/components/BackToTop";
 import LogoutConfirmModal from "@deera/shared/components/LogoutConfirmModal";
-import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
-import { shareProductViaWA, filterAndSortProducts, BADGE_META, BADGE_ORDER } from "../utils";
-import ToastContainer from "@deera/shared/components/ToastContainer";
+import { signOut, useAuth } from "@deera/shared/features/auth/hooks";
+import { useKeepQtyByKode } from "@deera/shared/features/keep/hooks";
+import { useInvalidateProducts, useProducts } from "@deera/shared/features/products/hooks";
+import type { Product } from "@deera/shared/features/products/schema";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { logHistory } from "../../history/hooks";
-import {
-  useStokMap,
-  useSoldQtyMap,
-  useProductBadges,
-  useDeleteProductCascade,
-  usePushNotification,
-  useProductFilter,
-} from "../hooks";
+import { LOCATION_LABELS } from "@deera/shared/lib/marketDay";
+import { supabase } from "@deera/shared/lib/supabase";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
+import { logHistory } from "../../history/hooks";
+import { NotifBell } from "../../notifikasi";
+import {
+  useDeleteProductCascade,
+  useProductBadges,
+  useProductFilter,
+  usePushNotification,
+  useSoldQtyMap,
+  useStokMap,
+} from "../hooks";
+import { BADGE_META, BADGE_ORDER, filterAndSortProducts, shareProductViaWA } from "../utils";
+import BulkSaveImageModal from "./BulkSaveImageModal";
+import BulkShareModal from "./BulkShareModal";
 import ProductCard from "./ProductCard";
 import ProductDetailModal from "./ProductDetailModal";
-import ProductForm from "./ProductForm";
 import ProductFilterModal from "./ProductFilterModal";
-import BulkShareModal from "./BulkShareModal";
-import BulkSaveImageModal from "./BulkSaveImageModal";
+import ProductForm from "./ProductForm";
+
+interface TransferNotif {
+  created_by: string;
+  created_by_name: string;
+  status: string;
+  from_location: string;
+  to_location: string;
+  items: Array<{ qty: number }>;
+}
+
+const EMPTY_STOK = { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 };
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -37,7 +48,7 @@ export default function AdminPage() {
   usePushNotification();
 
   const { stokMap, reload: reloadStok } = useStokMap();
-  const keepQtyMap = useKeepQtyByKode();
+  const keepQtyMap = useKeepQtyByKode() as Record<string, number>;
   const soldQtyMap = useSoldQtyMap();
   const badges = useProductBadges();
   const deleteProductCascade = useDeleteProductCascade();
@@ -53,13 +64,13 @@ export default function AdminPage() {
     hasActiveFilter,
   } = useProductFilter();
 
-  const [editing, setEditing] = useState(null);
-  const [detailProduct, setDetailProduct] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [editing, setEditing] = useState<Product | "new" | null>(null);
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [copied, setCopied] = useState(null);
+  const [copied, setCopied] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [transferNotif, setTransferNotif] = useState(null);
+  const [transferNotif, setTransferNotif] = useState<TransferNotif | null>(null);
   const [bulkShareOpen, setBulkShareOpen] = useState(false);
   const [bulkSaveImageOpen, setBulkSaveImageOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -71,7 +82,7 @@ export default function AdminPage() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "transfers" },
-        (payload) => {
+        (payload: { new: TransferNotif }) => {
           const t = payload.new;
           if (t.status === "pending" && t.created_by !== user?.email) {
             setTransferNotif(t);
@@ -109,55 +120,55 @@ export default function AdminPage() {
       setDeleteTarget(null);
       reloadStok();
       toast.success(`${kode} berhasil dihapus.`);
-    } catch (e) {
-      toast.error("Gagal hapus produk: " + e.message);
+    } catch (e: unknown) {
+      toast.error(`Gagal hapus produk: ${(e as Error)?.message}`);
     } finally {
       setDeleting(false);
     }
   }
 
-  async function handleShareWA(product) {
+  async function handleShareWA(product: Product) {
     try {
       const { method } = await shareProductViaWA(product);
       if (method === "share-file" || method === "share-text") {
         setCopied(product.kode);
         setTimeout(() => setCopied(null), 3000);
       }
-    } catch {
-    }
+    } catch {}
   }
 
-  function handleBulkShared(count) {
+  function handleBulkShared(count: number) {
     toast.success(`${count} produk berhasil dibagikan.`);
   }
 
-  function handleBulkImagesSaved(count) {
+  function handleBulkImagesSaved(count: number) {
     toast.success(`${count} gambar berhasil diunduh.`);
   }
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Admin";
 
   const allWarna = useMemo(() => {
-    const set = new Set();
+    const set = new Set<string>();
     (products ?? []).forEach((p) => (p.warna ?? []).forEach((w) => set.add(w)));
     return [...set].sort();
   }, [products]);
 
-  const [badgeFilter, setBadgeFilter] = useState(null);
+  const [badgeFilter, setBadgeFilter] = useState<string | null>(null);
   const sortedAll = useMemo(
-    () =>
-      filterAndSortProducts(products, appliedFilter, { stokMap, soldQtyMap, search }),
+    () => filterAndSortProducts(products ?? [], appliedFilter, { stokMap, soldQtyMap, search }),
     [products, appliedFilter, stokMap, soldQtyMap, search],
   );
   const sorted = useMemo(() => {
     if (!badgeFilter) return sortedAll;
-    return sortedAll.filter((p) => (badgeFilter === "any" ? !!badges[p.kode] : badges[p.kode] === badgeFilter));
+    return sortedAll.filter((p) =>
+      badgeFilter === "any" ? !!badges[p.kode] : badges[p.kode] === badgeFilter,
+    );
   }, [sortedAll, badgeFilter, badges]);
 
   const previewCount = useMemo(
     () =>
       isModalOpen
-        ? filterAndSortProducts(products, draftFilter, { stokMap, soldQtyMap, search }).length
+        ? filterAndSortProducts(products ?? [], draftFilter, { stokMap, soldQtyMap, search }).length
         : 0,
     [isModalOpen, products, draftFilter, stokMap, soldQtyMap, search],
   );
@@ -196,7 +207,6 @@ export default function AdminPage() {
           <>
             {(products?.length ?? 0) > 0 && (
               <div className="mb-4">
-
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2">
                     <button
@@ -210,7 +220,16 @@ export default function AdminPage() {
                           : "bg-skin-card border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text"
                       }`}
                     >
-                      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <path d="M3 5h18l-7 8v5l-4 2v-7L3 5z" />
                       </svg>
                       {hasActiveFilter && (
@@ -245,7 +264,16 @@ export default function AdminPage() {
                       title="Bagikan"
                       className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-skin-card border-2 border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
                     >
-                      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <circle cx="18" cy="5" r="3" />
                         <circle cx="6" cy="12" r="3" />
                         <circle cx="18" cy="19" r="3" />
@@ -259,7 +287,16 @@ export default function AdminPage() {
                       title="Unduh"
                       className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-skin-card border-2 border-skin-bdr text-skin-text3 hover:border-skin-accent hover:text-skin-accent-text transition"
                     >
-                      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <path d="M12 3v12M7 10l5 5 5-5M4 21h16" />
                       </svg>
                     </button>
@@ -270,7 +307,10 @@ export default function AdminPage() {
                     {sorted.length} produk &middot; &ldquo;{search}&rdquo;
                   </p>
                 )}
-                <div className="mt-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap -mx-1 px-1" data-testid="badge-legend">
+                <div
+                  className="mt-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap -mx-1 px-1"
+                  data-testid="badge-legend"
+                >
                   <button
                     type="button"
                     onClick={() => setBadgeFilter((v) => (v === "any" ? null : "any"))}
@@ -289,17 +329,26 @@ export default function AdminPage() {
                       type="button"
                       onClick={() => setBadgeFilter((v) => (v === k ? null : k))}
                       aria-pressed={badgeFilter === k}
-                      title={BADGE_META[k].hint}
+                      title={BADGE_META[k]!.hint}
                       className={`flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[11px] font-editorial transition ${
                         badgeFilter === k
-                          ? `text-white ${BADGE_META[k].bg} border-transparent`
+                          ? `text-white ${BADGE_META[k]!.bg} border-transparent`
                           : "bg-skin-card border-skin-bdr text-skin-text2 hover:border-skin-text3"
                       }`}
                     >
-                      <svg viewBox="0 0 24 24" className={`w-3.5 h-3.5 ${badgeFilter === k ? "" : "text-skin-text2"}`} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d={BADGE_META[k].icon} />
+                      <svg
+                        viewBox="0 0 24 24"
+                        className={`w-3.5 h-3.5 ${badgeFilter === k ? "" : "text-skin-text2"}`}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d={BADGE_META[k]!.icon} />
                       </svg>
-                      {BADGE_META[k].label}
+                      {BADGE_META[k]!.label}
                     </button>
                   ))}
                 </div>
@@ -319,7 +368,7 @@ export default function AdminPage() {
                 </Link>
               </div>
             )}
-            {sorted.length === 0 && products?.length > 0 && (
+            {sorted.length === 0 && (products?.length ?? 0) > 0 && (
               <p className="text-center text-base text-skin-text4 py-16 font-editorial">
                 Tidak ada produk yang cocok
               </p>
@@ -330,7 +379,7 @@ export default function AdminPage() {
                 <ProductCard
                   key={p.kode}
                   product={p}
-                  stok={stokMap[p.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 }}
+                  stok={stokMap[p.kode] ?? EMPTY_STOK}
                   hasStok={Object.prototype.hasOwnProperty.call(stokMap, p.kode)}
                   badge={badges[p.kode] ?? null}
                   keepQty={keepQtyMap[p.kode] ?? 0}
@@ -372,7 +421,6 @@ export default function AdminPage() {
         />
       )}
 
-
       {transferNotif && (
         <div className="fixed top-4 right-4 z-50 bg-skin-card border-2 border-amber-500 shadow-2xl w-80 max-w-[calc(100vw-2rem)]">
           <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-2">
@@ -384,8 +432,8 @@ export default function AdminPage() {
                 {transferNotif.created_by_name}
               </p>
               <p className="text-xs text-skin-text3 mt-0.5">
-                {LOCATION_LABELS[transferNotif.from_location]} &rarr;{" "}
-                {LOCATION_LABELS[transferNotif.to_location]} &middot;{" "}
+                {(LOCATION_LABELS as Record<string, string>)[transferNotif.from_location]} &rarr;{" "}
+                {(LOCATION_LABELS as Record<string, string>)[transferNotif.to_location]} &middot;{" "}
                 {(transferNotif.items ?? []).reduce((s, i) => s + i.qty, 0)} pcs
               </p>
             </div>
@@ -411,7 +459,7 @@ export default function AdminPage() {
       {detailProduct && (
         <ProductDetailModal
           product={detailProduct}
-          stok={stokMap[detailProduct.kode] ?? { gudang: 0, cideng: 0, tegalgubug: 0, ngorder: 0 }}
+          stok={stokMap[detailProduct.kode] ?? EMPTY_STOK}
           hasStok={Object.prototype.hasOwnProperty.call(stokMap, detailProduct.kode)}
           badge={badges[detailProduct.kode] ?? null}
           keepQty={keepQtyMap[detailProduct.kode] ?? 0}

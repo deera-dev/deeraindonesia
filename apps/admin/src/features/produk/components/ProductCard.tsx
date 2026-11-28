@@ -30,7 +30,6 @@ export interface StokCounts {
   cideng?: number;
   tegalgubug?: number;
   ngorder?: number;
-  [key: string]: number | undefined;
 }
 
 export interface ProductCardProps {
@@ -133,7 +132,7 @@ export default function ProductCard({
 
       <div className="grid grid-cols-3 divide-x divide-skin-bdr-lt border-t border-skin-bdr-lt mx-2.5 mb-2">
         {LOCS.map(({ key, label }) => {
-          const val = stok[key] ?? 0;
+          const val = (stok as Record<string, number | undefined>)[key] ?? 0;
           const color =
             val === 0
               ? "text-red-500"

@@ -5,7 +5,6 @@ import {
   overSizeImageNotice,
 } from "@deera/shared/lib/mediaUpload";
 import { generateWABulkText, generateWAText } from "@deera/shared/lib/waFormat";
-import type { ProductVariant } from "./schema";
 
 let shareInFlight = false;
 let shareInFlightTimer: ReturnType<typeof setTimeout> | null = null;
@@ -255,9 +254,9 @@ interface ProductForFilter {
   kode: string;
   nama?: string | null;
   bahan?: string | null;
-  variants?: ProductVariant[];
+  variants?: Array<{ size: string; harga: number }>;
   warna?: string[];
-  hpp?: number;
+  hpp?: number | null;
   created_at?: string;
 }
 
@@ -462,7 +461,7 @@ export function describeBadgeHistory(
     days?: number;
     reason?: string | null;
   }>,
-  currentBadge: string,
+  currentBadge: string | null,
 ) {
   const fmt = (iso: string) =>
     new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });

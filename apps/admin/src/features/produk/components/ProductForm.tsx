@@ -1,8 +1,10 @@
+import type { Product } from "@deera/shared/features/products/schema";
 import { buildKode } from "@deera/shared/lib/constants";
 import { MAX_VIDEO_MB, validateMedia } from "@deera/shared/lib/mediaUpload";
 import { useState } from "react";
 import { useSaveProduct, useStokWarnaByKode } from "../hooks";
 import HppSection from "./HppSection";
+import type { ImageState } from "./ImageSection";
 import ImageSection from "./ImageSection";
 import OrphanStokConfirmModal from "./OrphanStokConfirmModal";
 import SizeSection from "./SizeSection";
@@ -12,7 +14,30 @@ const inputCls =
   "w-full bg-skin-card border-2 border-skin-bdr px-4 py-3 text-skin-text text-base tracking-wide focus:outline-none focus:border-skin-accent disabled:opacity-40 disabled:bg-skin-page placeholder:text-skin-text4 transition";
 const labelCls = "block text-sm tracking-[0.2em] text-skin-text2 mb-2 uppercase";
 
-export default function ProductForm({ product, onClose, onSaved, onDelete }) {
+type ProductFormProduct = Pick<
+  Product,
+  | "kode"
+  | "nama"
+  | "bahan"
+  | "hpp"
+  | "variants"
+  | "warna"
+  | "image"
+  | "seri_warna"
+  | "detail"
+  | "video"
+>;
+
+type VideoFieldState = { type: "url"; url: string } | { type: "file"; file: File; sizeMB: number };
+
+export interface ProductFormProps {
+  product: ProductFormProduct | null;
+  onClose: () => void;
+  onSaved: (message: string) => void;
+  onDelete?: () => void;
+}
+
+export default function ProductForm({ product, onClose, onSaved, onDelete }: ProductFormProps) {
   const isEdit = !!product;
   const [originalKode] = useState(product?.kode ?? "");
   const saveProduct = useSaveProduct();
@@ -26,35 +51,35 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
   const [bahan, setBahan] = useState(product?.bahan ?? "");
   const [hpp, setHpp] = useState(String(product?.hpp ?? ""));
 
-  const [hargaMap, setHargaMap] = useState(() => {
-    const map = {};
+  const [hargaMap, setHargaMap] = useState<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
     (product?.variants ?? []).forEach((v) => {
       map[v.size] = String(v.harga ?? "");
     });
     return map;
   });
-  const [activeSet, setActiveSet] = useState(
+  const [activeSet, setActiveSet] = useState<Set<string>>(
     () => new Set((product?.variants ?? []).map((v) => v.size)),
   );
 
-  const [warna, setWarna] = useState(product?.warna ?? []);
-  const [renameMap, setRenameMap] = useState({});
+  const [warna, setWarna] = useState<string[]>(product?.warna ?? []);
+  const [renameMap, setRenameMap] = useState<Record<string, string>>({});
 
   const { stokWarnaMap, loading: stokLoading } = useStokWarnaByKode(originalKode, {
     enabled: isEdit,
   });
 
-  const [mainImage, setMainImage] = useState(
+  const [mainImage, setMainImage] = useState<ImageState | null>(
     product?.image ? { type: "url", url: product.image } : null,
   );
-  const [seriWarnaImage, setSeriWarnaImage] = useState(
+  const [seriWarnaImage, setSeriWarnaImage] = useState<ImageState | null>(
     product?.seri_warna ? { type: "url", url: product.seri_warna } : null,
   );
-  const [detailImages, setDetailImages] = useState(
-    (product?.detail ?? []).map((url) => ({ type: "url", url })),
+  const [detailImages, setDetailImages] = useState<ImageState[]>(
+    (product?.detail ?? []).map((url) => ({ type: "url" as const, url })),
   );
 
-  const [videoFile, setVideoFile] = useState(
+  const [videoFile, setVideoFile] = useState<VideoFieldState | null>(
     product?.video ? { type: "url", url: product.video } : null,
   );
 
@@ -63,17 +88,17 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
   const [videoErr, setVideoErr] = useState("");
   const [showOrphanStokConfirm, setShowOrphanStokConfirm] = useState(false);
 
-  function toggleSize(size) {
+  function toggleSize(size: string) {
     setActiveSet((prev) => {
       const n = new Set(prev);
       n.has(size) ? n.delete(size) : n.add(size);
       return n;
     });
   }
-  function setHarga(size, val) {
+  function setHarga(size: string, val: string) {
     setHargaMap((prev) => ({ ...prev, [size]: val.replace(/\D/g, "") }));
   }
-  function warnaHasStok(w) {
+  function warnaHasStok(w: string): boolean {
     const original = Object.keys(renameMap).find((k) => renameMap[k] === w) ?? w;
     for (const warnaMap of Object.values(stokWarnaMap)) {
       const stok = warnaMap[original];
@@ -82,7 +107,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     return false;
   }
 
-  function handleRenameWarna(old, next) {
+  function handleRenameWarna(old: string, next: string) {
     setWarna((prev) => prev.map((w) => (w === old ? next : w)));
     setRenameMap((prev) => {
       const chainedKey = Object.keys(prev).find((k) => prev[k] === old);
@@ -91,7 +116,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     });
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     setErrMsg("");
     const finalKode = generatedKode || originalKode;
@@ -111,7 +136,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
     await doSave(finalKode);
   }
 
-  async function doSave(finalKode) {
+  async function doSave(finalKode: string) {
     setSaving(true);
     try {
       const warnaRenames = Object.entries(renameMap)
@@ -133,16 +158,16 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
       });
 
       onSaved(product ? `${finalKode} berhasil diperbarui.` : `${finalKode} berhasil ditambahkan.`);
-    } catch (err) {
-      setErrMsg("Gagal simpan: " + (err.message ?? String(err)));
+    } catch (err: unknown) {
+      setErrMsg(`Gagal simpan: ${(err as Error)?.message ?? String(err)}`);
       setSaving(false);
     }
   }
 
   const orphanWarnas = (() => {
-    if (!isEdit || stokLoading) return new Set();
+    if (!isEdit || stokLoading) return new Set<string>();
     const currentSet = new Set(warna.length > 0 ? warna : ["_"]);
-    const orphans = new Set();
+    const orphans = new Set<string>();
     for (const warnaMap of Object.values(stokWarnaMap)) {
       for (const w of Object.keys(warnaMap)) {
         if (currentSet.has(w)) continue;
@@ -156,9 +181,9 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
   // BUG FIX (November 2026) — subset dari orphanWarnas yang MASIH punya
   // stok > 0 (lihat OrphanStokConfirmModal.jsx). Orphan dgn stok 0 tetap
   // aman dibersihkan diam2 seperti sebelumnya, tidak masuk sini.
-  const orphanWarnaStokEntries = (() => {
+  const orphanWarnaStokEntries: Array<[string, number]> = (() => {
     if (orphanWarnas.size === 0) return [];
-    const qtyByWarna = new Map();
+    const qtyByWarna = new Map<string, number>();
     for (const warnaMap of Object.values(stokWarnaMap)) {
       for (const [w, stok] of Object.entries(warnaMap)) {
         if (!orphanWarnas.has(w)) continue;
@@ -251,7 +276,7 @@ export default function ProductForm({ product, onClose, onSaved, onDelete }) {
             <label className={labelCls}>Bahan</label>
             <input
               type="text"
-              value={bahan}
+              value={bahan ?? ""}
               onChange={(e) => setBahan(e.target.value)}
               disabled={saving}
               placeholder="Aurora burkat mix jasmin"
