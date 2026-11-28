@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import AdminBottomNav from "../../../shared/components/AdminBottomNav";
 import AdminSidebar from "../../../shared/components/AdminSidebar";
 import { useMarkNotificationRead, useMarkNotificationsSeen, useNotifications } from "../hooks";
+import type { NotificationRow } from "../schema";
 import { fmtRelative } from "../utils";
 
 export default function NotifikasiPage() {
@@ -10,7 +11,7 @@ export default function NotifikasiPage() {
   const { markSeen, marking } = useMarkNotificationsSeen();
   const markRead = useMarkNotificationRead();
 
-  function open(n) {
+  function open(n: NotificationRow) {
     if (n.is_unread) markRead(n.id);
     navigate(n.url || "/");
   }
@@ -77,7 +78,7 @@ export default function NotifikasiPage() {
             </div>
             {n.body && <p className="text-xs text-skin-text2 mt-1 whitespace-pre-line">{n.body}</p>}
             <p className="text-[11px] text-skin-text3 mt-2">
-              Buka {n.section ? n.section.split("›").pop().trim() : "halaman"} ›
+              Buka {n.section ? n.section.split("›").pop()?.trim() : "halaman"} ›
             </p>
           </button>
         ))}

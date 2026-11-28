@@ -1,7 +1,11 @@
 import { Link } from "react-router-dom";
 import { useNotifications } from "../hooks";
 
-export default function NotifBell({ className = "" }) {
+export interface NotifBellProps {
+  className?: string;
+}
+
+export default function NotifBell({ className = "" }: NotifBellProps) {
   const { unreadCount } = useNotifications();
   return (
     <Link

@@ -16,7 +16,7 @@ export default function LoginPage() {
     return null;
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -58,7 +58,7 @@ export default function LoginPage() {
             </label>
             <PasswordInput
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               autoComplete="current-password"
               required
               className="bg-skin-card border-2 border-skin-bdr text-skin-text px-4 py-3.5 font-editorial text-base rounded-none outline-none focus:border-skin-accent transition text-lg"

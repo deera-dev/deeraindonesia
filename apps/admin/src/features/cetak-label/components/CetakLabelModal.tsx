@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import { labelDataUrl, labelText, labelUrl, useLabelPrint } from "../hooks";
 
-export default function CetakLabelModal({ kode, onClose }) {
+export interface CetakLabelModalProps {
+  kode: string;
+  onClose: () => void;
+}
+
+export default function CetakLabelModal({ kode, onClose }: CetakLabelModalProps) {
   const { rows, isLoading, setQty, total, print, busy, progress, error } = useLabelPrint(kode);
-  const [preview, setPreview] = useState(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const firstSize = rows[0]?.size;
   useEffect(() => {
     let cancelled = false;
