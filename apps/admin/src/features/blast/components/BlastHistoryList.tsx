@@ -5,22 +5,27 @@ import {
   useDeleteCampaignMutation,
   useTargetCountsQuery,
 } from "../hooks";
+import type { BlastCampaign } from "../schema";
 import BlastCampaignDetail from "./BlastCampaignDetail";
 
-const STATUS_LABEL = { draft: "Draft", berjalan: "Berjalan", selesai: "Selesai" };
+const STATUS_LABEL: Record<string, string> = {
+  draft: "Draft",
+  berjalan: "Berjalan",
+  selesai: "Selesai",
+};
 
-export default function BlastHistoryList({ autoOpenId } = {}) {
+export default function BlastHistoryList({ autoOpenId }: { autoOpenId?: string | null } = {}) {
   const { data: campaigns = [], isLoading } = useCampaignsQuery();
   const { data: counts = {} } = useTargetCountsQuery();
   const deleteMutation = useDeleteCampaignMutation();
-  const [openCampaignId, setOpenCampaignId] = useState(autoOpenId ?? null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [openCampaignId, setOpenCampaignId] = useState<string | null>(autoOpenId ?? null);
+  const [confirmDelete, setConfirmDelete] = useState<BlastCampaign | null>(null);
 
   useEffect(() => {
     if (autoOpenId) setOpenCampaignId(autoOpenId);
   }, [autoOpenId]);
 
-  const { data: detail } = useCampaignDetailQuery(openCampaignId);
+  const { data: detail } = useCampaignDetailQuery(openCampaignId ?? "");
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -33,7 +38,7 @@ export default function BlastHistoryList({ autoOpenId } = {}) {
 
       <div className="divide-y divide-skin-bdr-lt">
         {campaigns.map((c) => {
-          const cnt = counts[c.id] ?? { total: 0, terkirim: 0, dilewati: 0 };
+          const cnt = counts[c.id] ?? { total: 0, terkirim: 0, dilewati: 0, pending: 0 };
           return (
             <button
               key={c.id}

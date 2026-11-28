@@ -5,17 +5,18 @@ import {
   useMessageTemplatesQuery,
   useUpdateMessageTemplateMutation,
 } from "../hooks";
+import type { MessageTemplate } from "../schema";
 
-export default function BlastTemplatePicker({ onPick }) {
+export default function BlastTemplatePicker({ onPick }: { onPick: (pesan: string) => void }) {
   const { data: templates = [], isLoading } = useMessageTemplatesQuery();
   const createMutation = useCreateMessageTemplateMutation();
   const updateMutation = useUpdateMessageTemplateMutation();
   const deleteMutation = useDeleteMessageTemplateMutation();
 
-  const [editing, setEditing] = useState(null);
+  const [editing, setEditing] = useState<MessageTemplate | "new" | null>(null);
   const [formNama, setFormNama] = useState("");
   const [formPesan, setFormPesan] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState<MessageTemplate | null>(null);
   const [error, setError] = useState("");
 
   function openNew() {
@@ -25,7 +26,7 @@ export default function BlastTemplatePicker({ onPick }) {
     setEditing("new");
   }
 
-  function openEdit(tpl) {
+  function openEdit(tpl: MessageTemplate) {
     setFormNama(tpl.nama);
     setFormPesan(tpl.pesan);
     setError("");
@@ -36,15 +37,15 @@ export default function BlastTemplatePicker({ onPick }) {
     try {
       if (editing === "new") {
         await createMutation.mutateAsync({ nama: formNama, pesan: formPesan });
-      } else {
+      } else if (editing) {
         await updateMutation.mutateAsync({
           id: editing.id,
           patch: { nama: formNama, pesan: formPesan },
         });
       }
       setEditing(null);
-    } catch (err) {
-      setError(err.message ?? "Gagal menyimpan template.");
+    } catch (err: unknown) {
+      setError((err as Error).message ?? "Gagal menyimpan template.");
     }
   }
 

@@ -1,7 +1,16 @@
+import type { Product } from "@deera/shared/features/products/schema";
 import { cldUrl } from "@deera/shared/lib/cloudinary";
 import { useMemo, useState } from "react";
 
-export default function BlastProductPicker({ products, selectedKodes, onChange }) {
+export default function BlastProductPicker({
+  products,
+  selectedKodes,
+  onChange,
+}: {
+  products: Product[] | null | undefined;
+  selectedKodes: Set<string>;
+  onChange: (next: Set<string>) => void;
+}) {
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -12,7 +21,7 @@ export default function BlastProductPicker({ products, selectedKodes, onChange }
     );
   }, [products, search]);
 
-  function toggle(kode) {
+  function toggle(kode: string) {
     const next = new Set(selectedKodes);
     if (next.has(kode)) next.delete(kode);
     else next.add(kode);

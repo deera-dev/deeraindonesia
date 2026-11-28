@@ -4,7 +4,7 @@ import BlastHistoryList from "./BlastHistoryList";
 
 export default function BlastPanel() {
   const [mode, setMode] = useState("create");
-  const [justCreatedId, setJustCreatedId] = useState(null);
+  const [justCreatedId, setJustCreatedId] = useState<string | null>(null);
 
   return (
     <div className="mx-4 mt-4 bg-skin-card border border-skin-bdr flex flex-col h-[calc(100dvh-16rem)] min-h-[420px]">

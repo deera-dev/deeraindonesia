@@ -1,18 +1,46 @@
+import type { ComponentType } from "react";
 import { useMemo, useState } from "react";
 import { useCalonCustomerListQuery } from "../../calon-customer";
 import CalonCustomerFormModal from "../../calon-customer/components/CalonCustomerFormModal";
-import TokoFormModal from "../../ngorder/components/TokoFormModal";
+import type { CalonCustomer } from "../../calon-customer/schema";
+import TokoFormModalRaw from "../../ngorder/components/TokoFormModal";
 import { distinctDaerahList, useTokoListQuery } from "../../ngorder/hooks";
+import type { Toko } from "../../ngorder/schema";
 import { usePelangganList } from "../../pelanggan";
+import type { Pelanggan } from "../../pelanggan/schema";
 
-const SOURCE_EMPTY = {
+const TokoFormModal = TokoFormModalRaw as unknown as ComponentType<{
+  daerahOptions: string[];
+  onClose: () => void;
+  onSaved: (row: { id: string; nama: string; no_hp: string | null }) => void;
+}>;
+
+const SOURCE_EMPTY: Record<string, string> = {
   toko: "Belum ada toko Ngorder",
   pelanggan: "Tidak ada pelanggan cocok",
   calon: "Belum ada calon customer",
 };
 
-export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) {
-  const [tab, setTab] = useState("toko");
+export interface BlastTargetSelection {
+  key: string;
+  source: string;
+  contactId: string;
+  nama: string;
+  noHp: string | null;
+}
+
+type TargetTab = "toko" | "pelanggan" | "calon";
+
+export default function BlastTargetPicker({
+  selected,
+  onToggle,
+  onSelectMany,
+}: {
+  selected: Map<string, BlastTargetSelection>;
+  onToggle: (t: BlastTargetSelection) => void;
+  onSelectMany: (list: BlastTargetSelection[]) => void;
+}) {
+  const [tab, setTab] = useState<TargetTab>("toko");
   const [addingToko, setAddingToko] = useState(false);
   const [belumSaja, setBelumSaja] = useState(false);
   const [search, setSearch] = useState("");
@@ -23,22 +51,23 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
   const { data: tokoList = [] } = useTokoListQuery();
   const daerahOptions = useMemo(() => distinctDaerahList(tokoList), [tokoList]);
 
-  const list = tab === "toko" ? tokoList : tab === "pelanggan" ? pelangganList : calonList;
+  const list: Array<Toko | Pelanggan | CalonCustomer> =
+    tab === "toko" ? tokoList : tab === "pelanggan" ? pelangganList : calonList;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return list.filter((c) => {
-      if (tab === "toko" && belumSaja && c.status_approach === "sudah") return false;
+      if (tab === "toko" && belumSaja && (c as Toko).status_approach === "sudah") return false;
       if (!q) return true;
       return (
         c.nama.toLowerCase().includes(q) ||
         (c.no_hp ?? "").toLowerCase().includes(q) ||
-        (tab === "toko" && (c.daerah ?? "").toLowerCase().includes(q))
+        (tab === "toko" && ((c as Toko).daerah ?? "").toLowerCase().includes(q))
       );
     });
   }, [list, search, tab, belumSaja]);
 
-  function keyFor(c) {
+  function keyFor(c: Toko | Pelanggan | CalonCustomer) {
     return `${tab}:${c.id}`;
   }
 
@@ -59,11 +88,13 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
   return (
     <div className="flex flex-col h-full">
       <div className="px-4 pt-3 flex-shrink-0 flex gap-2 border-b border-skin-bdr-lt">
-        {[
-          { key: "toko", label: "Toko Ngorder" },
-          { key: "pelanggan", label: "Pelanggan" },
-          { key: "calon", label: "Calon Customer" },
-        ].map((t) => (
+        {(
+          [
+            { key: "toko", label: "Toko Ngorder" },
+            { key: "pelanggan", label: "Pelanggan" },
+            { key: "calon", label: "Calon Customer" },
+          ] as const
+        ).map((t) => (
           <button
             key={t.key}
             type="button"
@@ -158,18 +189,18 @@ export default function BlastTargetPicker({ selected, onToggle, onSelectMany }) 
                 </span>
                 <span className="block text-xs text-skin-text3 truncate">
                   {c.no_hp || "- no HP -"}
-                  {tab === "toko" && c.daerah ? ` · ${c.daerah}` : ""}
+                  {tab === "toko" && (c as Toko).daerah ? ` · ${(c as Toko).daerah}` : ""}
                 </span>
               </span>
               {tab === "toko" && (
                 <span
                   className={`flex-shrink-0 text-[10px] font-editorial uppercase tracking-wide px-1.5 py-0.5 border ${
-                    c.status_approach === "sudah"
+                    (c as Toko).status_approach === "sudah"
                       ? "border-emerald-500/40 text-emerald-600 bg-emerald-500/10"
                       : "border-skin-bdr text-skin-text3"
                   }`}
                 >
-                  {c.status_approach === "sudah" ? "Sudah" : "Belum"}
+                  {(c as Toko).status_approach === "sudah" ? "Sudah" : "Belum"}
                 </span>
               )}
             </button>

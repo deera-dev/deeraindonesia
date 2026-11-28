@@ -1,45 +1,59 @@
 import { useProducts } from "@deera/shared/features/products/hooks";
+import type { Product } from "@deera/shared/features/products/schema";
 import { useEffect, useRef, useState } from "react";
 import ProductCodeCard from "../../produk/components/ProductCodeCard";
 import { useMarkTargetMutation } from "../hooks";
+import type { BlastCampaign, BlastTarget, BlastTargetStatus } from "../schema";
 import { applyTemplatePlaceholders, buildWaLink, calcProgress } from "../utils";
 
-const STATUS_LABEL = { pending: "Menunggu", terkirim: "Terkirim", dilewati: "Dilewati" };
-const STATUS_COLOR = {
+const STATUS_LABEL: Record<BlastTargetStatus, string> = {
+  pending: "Menunggu",
+  terkirim: "Terkirim",
+  dilewati: "Dilewati",
+};
+const STATUS_COLOR: Record<BlastTargetStatus, string> = {
   pending: "text-skin-text3",
   terkirim: "text-[#25D366]",
   dilewati: "text-skin-text4",
 };
 
-function firstUkuranBerharga(product) {
+function firstUkuranBerharga(product: Product): string | null {
   const variants = (product.variants ?? []).filter((v) => v.harga > 0);
   return variants[0]?.size ?? null;
 }
 
-function waitForCardImages(el) {
+function waitForCardImages(el: HTMLElement | null): Promise<void[]> {
   const imgs = el ? el.querySelectorAll("img") : [];
   return Promise.all(
     Array.from(imgs).map((img) => {
       if (img.complete) return Promise.resolve();
-      return new Promise((resolve) => {
-        img.addEventListener("load", resolve, { once: true });
-        img.addEventListener("error", resolve, { once: true });
+      return new Promise<void>((resolve) => {
+        img.addEventListener("load", () => resolve(), { once: true });
+        img.addEventListener("error", () => resolve(), { once: true });
       });
     }),
   );
 }
 
-export default function BlastCampaignDetail({ campaign, targets, onClose }) {
+export default function BlastCampaignDetail({
+  campaign,
+  targets,
+  onClose,
+}: {
+  campaign: BlastCampaign;
+  targets: BlastTarget[];
+  onClose: () => void;
+}) {
   const markMutation = useMarkTargetMutation(campaign.id);
   const progress = calcProgress(targets);
 
   const { products = [] } = useProducts();
   const blastProducts = (campaign.product_kodes ?? [])
-    .map((kode) => products.find((p) => p.kode === kode))
-    .filter(Boolean);
+    .map((kode) => (products ?? []).find((p) => p.kode === kode))
+    .filter((p): p is Product => !!p);
 
-  const [productFiles, setProductFiles] = useState(null);
-  const cardRefs = useRef([]);
+  const [productFiles, setProductFiles] = useState<File[] | null>(null);
+  const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,14 +66,14 @@ export default function BlastCampaignDetail({ campaign, targets, onClose }) {
       const { toPng } = await import("html-to-image");
       await Promise.all(cardRefs.current.map((el) => (el ? waitForCardImages(el) : null)));
       await new Promise((resolve) => requestAnimationFrame(resolve));
-      const files = [];
+      const files: File[] = [];
       for (let i = 0; i < blastProducts.length; i++) {
         const el = cardRefs.current[i];
         if (!el) continue;
         try {
           const dataUrl = await toPng(el, { pixelRatio: 3 });
           const blob = await (await fetch(dataUrl)).blob();
-          files.push(new File([blob], `${blastProducts[i].kode}.png`, { type: "image/png" }));
+          files.push(new File([blob], `${blastProducts[i]!.kode}.png`, { type: "image/png" }));
         } catch {}
       }
       if (!cancelled) setProductFiles(files);
@@ -72,16 +86,17 @@ export default function BlastCampaignDetail({ campaign, targets, onClose }) {
 
   const preparingPhotos = blastProducts.length > 0 && productFiles === null;
 
-  async function handleKirim(target) {
+  async function handleKirim(target: BlastTarget) {
     const message = applyTemplatePlaceholders(campaign.message, target);
 
-    if (productFiles?.length > 0 && navigator.canShare?.({ files: productFiles })) {
+    if (productFiles && productFiles.length > 0 && navigator.canShare?.({ files: productFiles })) {
       try {
         await navigator.share({ files: productFiles, text: message });
         markMutation.mutate({ targetId: target.id, status: "terkirim" });
         return;
-      } catch (err) {
-        if (err?.name === "AbortError" || err?.name === "InvalidStateError") return;
+      } catch (err: unknown) {
+        const name = (err as { name?: string })?.name;
+        if (name === "AbortError" || name === "InvalidStateError") return;
       }
     }
 
@@ -90,11 +105,11 @@ export default function BlastCampaignDetail({ campaign, targets, onClose }) {
     markMutation.mutate({ targetId: target.id, status: "terkirim" });
   }
 
-  function handleLewati(target) {
+  function handleLewati(target: BlastTarget) {
     markMutation.mutate({ targetId: target.id, status: "dilewati" });
   }
 
-  function handleUndo(target) {
+  function handleUndo(target: BlastTarget) {
     markMutation.mutate({ targetId: target.id, status: "pending" });
   }
 
@@ -136,7 +151,7 @@ export default function BlastCampaignDetail({ campaign, targets, onClose }) {
             Menyiapkan foto produk...
           </p>
         )}
-        {!preparingPhotos && productFiles?.length > 0 && (
+        {!preparingPhotos && productFiles && productFiles.length > 0 && (
           <p className="px-4 py-2 text-xs text-skin-text3 font-editorial border-b border-skin-bdr-lt flex-shrink-0">
             {productFiles.length} foto produk akan ikut terkirim bersama pesan.
           </p>

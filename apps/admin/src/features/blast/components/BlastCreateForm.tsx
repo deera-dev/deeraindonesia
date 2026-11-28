@@ -1,13 +1,19 @@
 import { useProducts } from "@deera/shared/features/products/hooks";
 import { toast } from "@deera/shared/features/toast/hooks";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useCreateCampaignMutation } from "../hooks";
+import type { BlastCampaign, CreateCampaignInput } from "../schema";
 import { composeBlastMessage } from "../utils";
 import BlastProductPicker from "./BlastProductPicker";
+import type { BlastTargetSelection } from "./BlastTargetPicker";
 import BlastTargetPicker from "./BlastTargetPicker";
 import BlastTemplatePicker from "./BlastTemplatePicker";
 
-export default function BlastCreateForm({ onCreated }) {
+export default function BlastCreateForm({
+  onCreated,
+}: {
+  onCreated?: (campaign: BlastCampaign) => void;
+}) {
   const { products = [] } = useProducts();
   const createMutation = useCreateCampaignMutation();
 
@@ -15,16 +21,13 @@ export default function BlastCreateForm({ onCreated }) {
   const [nama, setNama] = useState("");
   const [message, setMessage] = useState("");
   const [showProductPicker, setShowProductPicker] = useState(false);
-  const [selectedKodes, setSelectedKodes] = useState(() => new Set());
-  const [selectedTargets, setSelectedTargets] = useState(() => new Map());
+  const [selectedKodes, setSelectedKodes] = useState<Set<string>>(() => new Set());
+  const [selectedTargets, setSelectedTargets] = useState<Map<string, BlastTargetSelection>>(
+    () => new Map(),
+  );
   const [error, setError] = useState("");
 
-  const selectedProducts = useMemo(
-    () => products.filter((p) => selectedKodes.has(p.kode)),
-    [products, selectedKodes],
-  );
-
-  function toggleTarget(t) {
+  function toggleTarget(t: BlastTargetSelection) {
     setSelectedTargets((prev) => {
       const next = new Map(prev);
       if (next.has(t.key)) next.delete(t.key);
@@ -33,7 +36,7 @@ export default function BlastCreateForm({ onCreated }) {
     });
   }
 
-  function selectManyTargets(list) {
+  function selectManyTargets(list: BlastTargetSelection[]) {
     setSelectedTargets((prev) => {
       const next = new Map(prev);
       list.forEach((t) => next.set(t.key, t));
@@ -65,12 +68,12 @@ export default function BlastCreateForm({ onCreated }) {
         nama,
         productKodes: [...selectedKodes],
         message: finalMessage,
-        targets: [...selectedTargets.values()],
+        targets: [...selectedTargets.values()] as unknown as CreateCampaignInput["targets"],
       });
       toast.success(`Blast "${nama}" dibuat dengan ${selectedTargets.size} target.`);
       onCreated?.(campaign);
-    } catch (err) {
-      setError(err.message ?? "Gagal membuat blast.");
+    } catch (err: unknown) {
+      setError((err as Error).message ?? "Gagal membuat blast.");
     }
   }
 
